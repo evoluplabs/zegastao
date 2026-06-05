@@ -71,10 +71,25 @@ Para desenvolvimento com emuladores: `firebase emulators:start`.
 - `src/pages/` — Dashboard, Trilha, Importar, Transações, Dívidas, Regras, Metas, Investimentos, Projeção, Copiloto
 - `src/hooks/` — listeners do Firestore em tempo real (usam cache offline)
 
+## Projeções, contratos e contexto pessoal
+
+- **Motor de amortização** (`amortization-engine.ts` / `lib/amortization.ts`): tabela Price/SAC,
+  adiantamento de parcelas com ROI ("para cada R$1 adiantado, economiza R$X") e comparador de
+  até 3 cenários lado a lado. Tudo local, sem IA.
+- **Análise de contratos** (`analyzeContract`): upload de PDF em `contracts/` → Sonnet extrai
+  taxa, CET, multas, cláusulas em linguagem simples, red flags e oportunidades de negociação;
+  cria a dívida correspondente. O PDF **nunca** é deletado do Storage.
+- **Contexto pessoal**: diário colaborativo — coluna do usuário (editável) + coluna do copiloto
+  (anotações geradas no job noturno: padrões, pontos fortes, áreas de risco, foco da semana).
+- **Modo impulso**: o chat detecta vontades de compra, valida o sentimento, mostra o custo real
+  e registra o impulso no histórico — sem sermão.
+- **Guia de negociação**: scripts prontos por situação + alertas automáticos por dívida.
+
 ## Modelo de dados (Firestore)
 
 `users/{uid}` → `profile`, `transactions`, `debts`, `goals`, `rules`, `rule_applications`,
 `category_cache`, `uploads`, `insights/latest`, `journey_milestones`, `daily_tasks/today`,
-`investments`.
+`investments`, `contracts`, `documents`, `negotiation_alerts/latest`,
+`personal_context/{user_written,copilot_notes,impulse_history}`.
 
 > Single-user MVP. Sem complexidade multi-tenant.

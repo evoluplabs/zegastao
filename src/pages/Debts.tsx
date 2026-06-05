@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingDown } from 'lucide-react';
+import { Plus, Trash2, TrendingDown, Handshake } from 'lucide-react';
 import { useDebts } from '@/hooks/useDebts';
+import { useNegotiationAlerts } from '@/hooks/useDocuments';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
+import { NEGOTIATION_SCRIPTS } from '@/lib/negotiation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +13,8 @@ import { formatBRL } from '@/lib/utils';
 
 export function Debts() {
   const { data: debts } = useDebts();
+  const alerts = useNegotiationAlerts();
+  const [openScript, setOpenScript] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ creditor: '', balance: '', payment: '', rate: '' });
 
@@ -49,6 +53,34 @@ export function Debts() {
           <Plus className="h-4 w-4" /> Nova
         </Button>
       </div>
+
+      {/* Alertas de negociação (gerados pelo job noturno) */}
+      {alerts.map((a, i) => {
+        const script = NEGOTIATION_SCRIPTS[a.scriptId];
+        const isOpen = openScript === `${i}`;
+        return (
+          <Card key={i} className="border-amber-300/50 bg-amber-50 dark:bg-amber-950/20">
+            <CardContent className="space-y-2 py-3 text-sm">
+              <div className="flex items-start gap-2">
+                <Handshake className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <p className="flex-1 text-amber-900 dark:text-amber-100">{a.message}</p>
+              </div>
+              {script && (
+                <Button variant="outline" size="sm" onClick={() => setOpenScript(isOpen ? null : `${i}`)}>
+                  {isOpen ? 'Fechar' : a.action}
+                </Button>
+              )}
+              {isOpen && script && (
+                <div className="space-y-2 rounded-md border bg-card p-3">
+                  <p className="font-medium">{script.title}</p>
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground">{script.script}</pre>
+                  <p className="text-xs text-muted-foreground">💡 {script.tip}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {open && (
         <Card>

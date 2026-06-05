@@ -12,6 +12,8 @@ import {
   MILESTONES,
   PHASE_INVESTMENT_CONTEXT,
 } from '../services/phase-engine';
+import { updateCopilotNotes } from '../services/personal-context';
+import { detectNegotiationAlerts } from '../services/negotiation';
 
 export const nightlyDigest = onSchedule(
   {
@@ -59,7 +61,24 @@ export const nightlyDigest = onSchedule(
             contextSnapshot: contextWithPhase,
           });
 
-        // 5. Zera contador mensal de regras no dia 1
+        // 5. Anotações automáticas do copiloto (contexto pessoal colaborativo)
+        const notable = snapshot.context.expenses.byCategory
+          .slice(0, 3)
+          .map((c) => `${c.name} R$${c.amount.toFixed(0)}`)
+          .join(', ');
+        await updateCopilotNotes(userId, contextWithPhase, notable);
+
+        // 6. Alertas de negociação a partir das dívidas ativas
+        const debtsSnap = await userDoc.ref
+          .collection('debts').where('status', '==', 'active').get();
+        const alerts = detectNegotiationAlerts(
+          debtsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        );
+        await db.collection('users').doc(userId)
+          .collection('negotiation_alerts').doc('latest')
+          .set({ alerts, generatedAt: new Date() });
+
+        // 7. Zera contador mensal de regras no dia 1
         if (new Date().getDate() === 1) {
           const rulesSnap = await userDoc.ref.collection('rules').get();
           if (!rulesSnap.empty) {

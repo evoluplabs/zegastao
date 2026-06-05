@@ -9,6 +9,8 @@ import {
   Map,
   PiggyBank,
   TrendingUp,
+  FolderOpen,
+  Brain,
   MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,10 +21,12 @@ const NAV = [
   { to: '/upload', label: 'Importar', icon: Upload },
   { to: '/transactions', label: 'Transações', icon: Receipt },
   { to: '/debts', label: 'Dívidas', icon: CreditCard },
+  { to: '/projection', label: 'Projeção', icon: TrendingUp },
   { to: '/rules', label: 'Regras', icon: Zap },
   { to: '/goals', label: 'Metas', icon: Target },
   { to: '/investments', label: 'Investimentos', icon: PiggyBank },
-  { to: '/projection', label: 'Projeção', icon: TrendingUp },
+  { to: '/documents', label: 'Documentos', icon: FolderOpen },
+  { to: '/context', label: 'Contexto', icon: Brain },
   { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
 ];
 

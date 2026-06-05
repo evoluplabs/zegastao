@@ -170,3 +170,125 @@ export const CATEGORIES = [
   'Financiamento', 'Empréstimo', 'Transferência',
   'Salário', 'Renda extra', 'Outros',
 ] as const;
+
+// ---- Amortização e projeções ----
+
+export interface Installment {
+  number: number;
+  dueDate: string;
+  principal: number;
+  interest: number;
+  payment: number;
+  remainingBalance: number;
+  isAdvanced?: boolean;
+}
+
+export interface AmortizationResult {
+  originalSchedule: Installment[];
+  acceleratedSchedule: Installment[];
+  savings: {
+    interestSaved: number;
+    monthsSaved: number;
+    newEndDate: string;
+    roi: string;
+  };
+}
+
+export interface ScenarioSummary {
+  label: string;
+  monthsToClear: number;
+  endDate: string;
+  totalInterest: number;
+  totalPaid: number;
+  interestSavedVsBaseline: number;
+}
+
+// ---- Contratos e documentos ----
+
+export type ContractType =
+  | 'personal_loan' | 'financing' | 'credit_card'
+  | 'overdraft' | 'consortium' | 'other';
+
+export interface ExtractedContract {
+  contractNumber?: string;
+  creditor: string;
+  contractDate: string;
+  contractType: ContractType;
+  principalAmount: number;
+  totalAmount: number;
+  monthlyInterestRate: number;
+  annualInterestRate: number;
+  cetRate?: number;
+  totalInstallments: number;
+  installmentAmount: number;
+  firstDueDate: string;
+  lastDueDate: string;
+  amortizationType: 'price' | 'sac' | 'other';
+  latePaymentFee?: number;
+  lateInterestRate?: number;
+  earlyPaymentDiscount?: boolean;
+  keyClausesForUser: string[];
+  redFlags: string[];
+  negotiationOpportunities: string[];
+}
+
+export interface Contract {
+  id: string;
+  filename: string;
+  status: 'pending' | 'analyzing' | 'analyzed' | 'error';
+  storagePath?: string;
+  extracted?: ExtractedContract;
+  linkedDebtId?: string | null;
+  errorMessage?: string;
+}
+
+export type DocumentType = 'contract' | 'statement' | 'receipt' | 'proof' | 'other';
+
+export interface UserDocument {
+  id: string;
+  filename: string;
+  type: DocumentType;
+  description?: string;
+  tags?: string[];
+  storagePath?: string;
+  linkedEntityId?: string;
+}
+
+// ---- Contexto pessoal ----
+
+export interface CopilotNotes {
+  behaviorPatterns?: string[];
+  strengths?: string[];
+  riskAreas?: string[];
+  progressNotes?: string[];
+  suggestedFocus?: string;
+  lastAnalysis?: string;
+}
+
+export interface UserWrittenContext {
+  skills?: string[];
+  goals?: string[];
+  fears?: string[];
+  currentFeelings?: string;
+  impulses?: string[];
+  lifeEvents?: string[];
+  notes?: string;
+}
+
+export interface ImpulseItem {
+  id: string;
+  impulse: string;
+  copilotResponse?: string;
+  outcome: 'resisted' | 'acted' | 'pending';
+  impactIfActed?: number | null;
+}
+
+// ---- Negociação ----
+
+export interface NegotiationAlert {
+  debtId: string;
+  creditor: string;
+  message: string;
+  action: string;
+  scriptId: string;
+}

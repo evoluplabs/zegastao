@@ -14,6 +14,8 @@ import { Projection } from '@/pages/Projection';
 import { Copilot } from '@/pages/Copilot';
 import { Journey } from '@/pages/Journey';
 import { Investments } from '@/pages/Investments';
+import { Documents } from '@/pages/Documents';
+import { PersonalContext } from '@/pages/PersonalContext';
 
 export default function App() {
   useAuthListener();
@@ -38,6 +40,8 @@ export default function App() {
         <Route path="/journey" element={<Journey />} />
         <Route path="/investments" element={<Investments />} />
         <Route path="/projection" element={<Projection />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/context" element={<PersonalContext />} />
         <Route path="/copilot" element={<Copilot />} />
       </Route>
     </Routes>

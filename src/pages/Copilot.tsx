@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 
 const chat = httpsCallable<
   { message: string; history: ChatMessage[] },
-  { response: string }
+  { response: string; impulse?: boolean }
 >(functions, 'copilotChat');
 
 interface ChatMessage {
@@ -17,10 +17,10 @@ interface ChatMessage {
 }
 
 const SUGGESTIONS = [
-  'Quanto gastei com delivery esse mês?',
   'Qual dívida devo pagar primeiro?',
-  'Me cria uma regra para guardar 30% de toda renda extra',
   'Quando vou quitar minhas dívidas no ritmo atual?',
+  'Tô pensando em comprar um tênis de R$400, posso?',
+  'Me cria uma regra para guardar 30% de toda renda extra',
 ];
 
 export function Copilot() {

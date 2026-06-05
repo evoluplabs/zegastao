@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { FirebaseError } from 'firebase/app';
 import { authActions } from '@/hooks/useAuth';
@@ -25,7 +25,7 @@ export function Login() {
 
   if (!authLoading && user) return <Navigate to="/" replace />;
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     setError('');
     setBusy(true);

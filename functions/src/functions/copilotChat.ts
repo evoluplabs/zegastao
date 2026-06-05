@@ -1,7 +1,14 @@
 // HTTP callable: chat do copiloto (Sonnet) usando contexto JÁ comprimido do cache.
+// Detecta impulsos de compra e ativa o "modo impulso" (validar + custo real).
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import Anthropic from '@anthropic-ai/sdk';
+import {
+  isImpulse,
+  extractAmount,
+  impulseGuidance,
+  saveImpulseToHistory,
+} from '../services/personal-context';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -29,6 +36,10 @@ export const copilotChat = onCall(
       ? insightsDoc.data()!.contextSnapshot
       : 'Contexto ainda não disponível. O job noturno ainda não rodou.';
 
+    // Modo impulso: detecta padrão de vontade de compra.
+    const impulse = isImpulse(message);
+    const impulseAmount = impulse ? extractAmount(message) : null;
+
     const client = new Anthropic();
 
     // Limitar histórico a 10 mensagens (economiza tokens)
@@ -36,7 +47,7 @@ export const copilotChat = onCall(
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 600, // respostas curtas são melhores
+      max_tokens: impulse ? 700 : 600,
       system: `Você é o copiloto financeiro pessoal do usuário, que o acompanha da fase de
 sobrevivência (endividado) até a de investidor. Fale APENAS do que é relevante para a
 fase atual (descrita no contexto): não mencione investimentos para quem ainda tem dívida cara.
@@ -46,6 +57,7 @@ Ao falar de qualquer investimento, inclua sempre o aviso: "Isso é orientação 
 não consultoria financeira regulamentada pela CVM — investimentos envolvem risco."
 Se o usuário pedir para criar uma regra, retorne no final um JSON:
 {"create_rule": {"name":"...","trigger_type":"...","trigger_category":"...","trigger_threshold":0,"action_percentage":0,"action_goal":"..."}}
+${impulse ? `\n${impulseGuidance(impulseAmount)}` : ''}
 
 CONTEXTO FINANCEIRO ATUAL (inclui a fase e como agir nela):
 ${contextSnapshot}`,
@@ -55,9 +67,17 @@ ${contextSnapshot}`,
       ],
     });
 
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+
+    // Registra o impulso no histórico do contexto pessoal.
+    if (impulse) {
+      await saveImpulseToHistory(userId, message, impulseAmount, text).catch(() => {});
+    }
+
     return {
-      response: response.content[0].type === 'text' ? response.content[0].text : '',
-      usage: response.usage, // para logging de custo
+      response: text,
+      impulse, // o frontend pode destacar a resposta
+      usage: response.usage,
     };
   }
 );
