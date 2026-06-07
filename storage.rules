@@ -1,0 +1,19 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Extratos: processados e deletados pela Cloud Function após a importação.
+    match /uploads/{userId}/{uploadId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Contratos: analisados pela IA. O arquivo NUNCA é deletado — o usuário tem direito a ele.
+    match /contracts/{userId}/{contractId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Biblioteca geral de documentos do usuário.
+    match /documents/{userId}/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
