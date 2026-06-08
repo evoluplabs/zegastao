@@ -8,7 +8,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { to: '/', label: 'Início', icon: LayoutDashboard, end: true },
+  { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
   { to: '/financas', label: 'Finanças', icon: CreditCard },
   { to: '/transactions', label: 'Transações', icon: Receipt },
   { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
