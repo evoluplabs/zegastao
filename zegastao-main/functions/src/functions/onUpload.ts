@@ -1,6 +1,6 @@
 // Trigger: Storage finalize → parse → categoriza (cascata) → grava em lote → regras.
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
-import { getFirestore, WriteBatch } from 'firebase-admin/firestore';
+import { getFirestore, WriteBatch, Firestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { classifyByKeyword, normalizeDescription } from '../services/keyword-classifier';
 import {
@@ -10,7 +10,8 @@ import {
 } from '../services/category-cache';
 import { categorizeBatch } from '../services/ai-categorizer';
 import { evaluateRules } from '../services/rules-engine';
-import { parseFile, ParseError, lastPdfDebug } from '../services/parsers/pdf-parser';
+import { parseFile, ParseError, lastPdfDebug, lastStatementText } from '../services/parsers/pdf-parser';
+import { extractCreditCardDebt } from '../services/statement-extractor';
 import { ParsedTransaction } from '../types';
 
 export const onStatementUpload = onObjectFinalized(
@@ -33,6 +34,7 @@ export const onStatementUpload = onObjectFinalized(
       // Lê o tipo de extrato escolhido no wizard (conta corrente vs cartão).
       const uploadSnap = await uploadRef.get();
       const statementType = (uploadSnap.data()?.statementType as string) || 'checking';
+      const uploadBank = (uploadSnap.data()?.bank as string) || 'generico';
 
       // 1. Download do arquivo
       const file = getStorage().bucket(bucket).file(filePath);
@@ -148,6 +150,10 @@ export const onStatementUpload = onObjectFinalized(
       // 5. Avaliar regras contra as novas transações
       await evaluateRules(userId, allTransactions);
 
+      // 5b. Auto-popular finanças (TRANSPARENTE: tudo marcado com source e
+      //     editável/removível pelo usuário).
+      await autoPopulateFinances(db, userId, statementType, uploadBank);
+
       // 6. Atualizar status do upload
       await uploadRef.set(
         {
@@ -173,3 +179,62 @@ export const onStatementUpload = onObjectFinalized(
     }
   }
 );
+
+// Auto-popula dívidas/metas a partir do extrato. Tudo é TRANSPARENTE:
+// - dívida do cartão marcada com source:'auto-upload' (dedup por creditor)
+// - meta padrão só criada se o usuário ainda não tem nenhuma, source:'auto-default'
+// O usuário pode editar ou excluir qualquer item depois.
+async function autoPopulateFinances(
+  db: Firestore,
+  userId: string,
+  statementType: string,
+  bank: string,
+): Promise<void> {
+  try {
+    // (a) Dívida do cartão a partir do resumo da fatura (só extrato de cartão).
+    if (statementType === 'credit_card' && lastStatementText) {
+      const info = extractCreditCardDebt(lastStatementText, bank);
+      if (info && info.totalBalance > 0) {
+        const debtsCol = db.collection('users').doc(userId).collection('debts');
+        const existing = await debtsCol.where('creditor', '==', info.creditor).limit(1).get();
+        const data = {
+          creditor: info.creditor,
+          type: 'Cartão de crédito',
+          totalBalance: info.totalBalance,
+          monthlyPayment: info.monthlyPayment,
+          remainingInstallments: 0,
+          interestRateMonthly: info.interestRateMonthly,
+          dueDay: info.dueDay,
+          status: 'active' as const,
+          source: 'auto-upload',
+          notes: 'Criado automaticamente da sua fatura. Confira e ajuste se precisar.',
+          updatedAt: new Date(),
+        };
+        if (existing.empty) {
+          await debtsCol.add({ ...data, createdAt: new Date() });
+        } else {
+          await existing.docs[0].ref.set(data, { merge: true });
+        }
+      }
+    }
+
+    // (b) Meta padrão de reserva de emergência (só se o usuário não tem metas).
+    const goalsCol = db.collection('users').doc(userId).collection('goals');
+    const goalsSnap = await goalsCol.limit(1).get();
+    if (goalsSnap.empty) {
+      await goalsCol.add({
+        name: 'Reserva de emergência',
+        type: 'emergency',
+        targetAmount: 3000,
+        currentAmount: 0,
+        status: 'active',
+        source: 'auto-default',
+        notes: 'Sugestão inicial — ajuste o valor para a sua realidade.',
+        createdAt: new Date(),
+      });
+    }
+  } catch (err) {
+    // Auto-população é best-effort: nunca derruba o processamento do extrato.
+    console.error('autoPopulateFinances falhou:', err);
+  }
+}

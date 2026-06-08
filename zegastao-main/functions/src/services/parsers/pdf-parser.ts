@@ -54,6 +54,9 @@ export interface PdfDebug {
 // pdfDebug.version, o código rodando é antigo (deploy/pull desatualizado).
 const PARSER_VERSION = 'hibrido-v5';
 export let lastPdfDebug: PdfDebug | null = null;
+// Texto completo reconstruído do último PDF (Tier A) — usado para extrair o
+// resumo da fatura (total, juros, vencimento) e auto-popular a dívida do cartão.
+export let lastStatementText = '';
 
 // Orquestra os dois tiers de parsing de PDF.
 async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
@@ -65,9 +68,11 @@ async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
   lastPdfDebug = dbg;
   console.log(`[PDF] parser ${PARSER_VERSION} iniciado`);
 
+  lastStatementText = '';
   // ── Tier A: extração por coordenadas + regex (grátis) ──
   try {
     const text = await extractTextByCoordinate(buffer);
+    lastStatementText = text;
     dbg.tierAChars = text.length;
     if (text.trim()) {
       const bank = detectBank(text);
