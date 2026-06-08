@@ -23,7 +23,7 @@ export function Login() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (!authLoading && user) return <Navigate to="/" replace />;
+  if (!authLoading && user) return <Navigate to="/dashboard" replace />;
 
   async function submit(e: FormEvent) {
     e.preventDefault();

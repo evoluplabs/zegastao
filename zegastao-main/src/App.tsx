@@ -20,7 +20,8 @@ export default function App() {
   return (
     <Routes>
       {/* Páginas públicas */}
-      <Route path="/welcome" element={<Landing />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/welcome" element={<Navigate to="/" replace />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/empresas" element={<Empresas />} />
       <Route path="/login" element={<Login />} />
@@ -34,7 +35,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/financas" element={<Financas />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/copilot" element={<Copilot />} />

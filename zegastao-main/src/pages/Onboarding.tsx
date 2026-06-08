@@ -45,7 +45,7 @@ export function Onboarding() {
   const [busy, setBusy] = useState(false);
 
   if (!authLoading && !user) return <Navigate to="/login" replace />;
-  if (profile?.onboardingDone) return <Navigate to="/" replace />;
+  if (profile?.onboardingDone) return <Navigate to="/dashboard" replace />;
 
   const toggle = (arr: string[], set: (v: string[]) => void, v: string) =>
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -82,7 +82,7 @@ export function Onboarding() {
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length });
       // Solicitar push em background — não bloquear navegação
       if (user) registerForPushNotifications(user.uid).catch(() => {});
-      navigate('/');
+      navigate('/dashboard');
     } finally {
       setBusy(false);
     }
