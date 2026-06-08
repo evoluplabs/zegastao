@@ -14,17 +14,23 @@ const KEYWORD_MAP: Record<string, string> = {
 
   // Transporte app
   'UBER*': 'Transporte app', '99 ': 'Transporte app', '99*': 'Transporte app',
+  'DL*99': 'Transporte app', '99 RIDE': 'Transporte app',
   'CABIFY': 'Transporte app', 'INDRIVE': 'Transporte app', 'INDRIVER': 'Transporte app',
 
   // Combustível / transporte
-  'POSTO ': 'Combustível', 'SHELL': 'Combustível', 'PETROBRAS': 'Combustível',
-  'IPIRANGA': 'Combustível', 'BR DISTRIBUIDORA': 'Combustível',
+  'POSTO ': 'Combustível', 'AUTO POSTO': 'Combustível', 'SHELL': 'Combustível',
+  'PETROBRAS': 'Combustível', 'IPIRANGA': 'Combustível', 'BR DISTRIBUIDORA': 'Combustível',
 
   // Mercado / alimentação
   'SUPERMERCADO': 'Mercado', 'MERCADO': 'Mercado', 'ATACADO': 'Mercado',
   'ASSAI': 'Mercado', 'CARREFOUR': 'Mercado', 'EXTRA ': 'Mercado',
   'HORTIFRUTI': 'Mercado', 'PEIXARIA': 'Mercado', 'ACOUGUE': 'Mercado',
-  'PADARIA': 'Mercado', 'PANIFICADORA': 'Mercado',
+  'PADARIA': 'Mercado', 'PANIFICADORA': 'Mercado', 'PANIFIC': 'Mercado',
+  'DEPOSITO': 'Mercado', 'EMPORIO': 'Mercado',
+
+  // Comida pronta / restaurante
+  'ACAI': 'Alimentação', 'PIZZARIA': 'Restaurantes', 'RAGAZZO': 'Restaurantes',
+  'LANCHONETE': 'Restaurantes', 'RESTAURANTE': 'Restaurantes', 'BAR ': 'Restaurantes',
 
   // Farmácia / saúde
   'FARMACIA': 'Farmácia', 'DROGARIA': 'Farmácia', 'DROGA': 'Farmácia',
