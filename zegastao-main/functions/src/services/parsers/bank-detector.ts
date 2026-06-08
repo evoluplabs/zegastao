@@ -16,6 +16,9 @@ export function detectBank(content: string): string {
 
 // Formato de data BR → ISO (yyyy-mm-dd)
 export function parseBRDate(str: string): string | null {
+  // ISO yyyy-mm-dd (ex: export CSV do Nubank)
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
   const match = str.match(/(\d{2})[/\-.](\d{2})[/\-.](\d{2,4})/);
   if (!match) return null;
   const [, d, m, y] = match;

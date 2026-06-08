@@ -5,7 +5,7 @@ import { ParsedTransaction } from '../../types';
 import { parseBRAmount, parseBRDate } from './bank-detector';
 
 const DATE_KEYS = ['data', 'date', 'data lancamento', 'data movimento', 'dt'];
-const DESC_KEYS = ['descricao', 'descrição', 'description', 'historico', 'histórico', 'lancamento', 'lançamento', 'memo', 'estabelecimento'];
+const DESC_KEYS = ['descricao', 'descrição', 'description', 'historico', 'histórico', 'lancamento', 'lançamento', 'memo', 'estabelecimento', 'title'];
 const AMOUNT_KEYS = ['valor', 'amount', 'value', 'montante'];
 const CREDIT_KEYS = ['credito', 'crédito', 'entrada'];
 const DEBIT_KEYS = ['debito', 'débito', 'saida', 'saída'];
