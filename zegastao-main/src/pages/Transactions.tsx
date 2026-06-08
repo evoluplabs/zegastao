@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { writeBatch, collection, query, where, getDocs, doc } from 'firebase/firestore';
 import { db, auth, functions } from '@/firebase';
+import { useTransactions } from '@/hooks/useTransactions';
 import { useUploads } from '@/hooks/useUploads';
 import { useCategories } from '@/hooks/useCategories';
-import { useMonthlySummaries, type MonthSummary } from '@/hooks/useMonthlySummaries';
-import { useMonthTransactions } from '@/hooks/useMonthTransactions';
 import { deleteUserDoc, updateUserDoc } from '@/lib/firestore';
+import type { Transaction } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -23,45 +23,49 @@ import { formatBRL, formatDateBR } from '@/lib/utils';
 const categorizeManual = httpsCallable(functions, 'categorizeManual');
 const SUPPORTED_BANKS = ['Nubank', 'Inter', 'Itaú', 'Bradesco', 'BB', 'Santander', 'C6', 'Caixa'];
 
-export function Transactions() {
-  const [selectedMonth, setSelectedMonth] = useState<MonthSummary | null>(null);
-  const [openWizard, setOpenWizard] = useState(false);
-
-  if (selectedMonth) {
-    return (
-      <>
-        <MonthDetail month={selectedMonth} onBack={() => setSelectedMonth(null)} />
-        {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
-      </>
-    );
-  }
-
-  return (
-    <MonthsOverview
-      onOpenMonth={setSelectedMonth}
-      onManual={() => setOpenWizard(true)}
-      wizardOpen={openWizard}
-      onCloseWizard={() => setOpenWizard(false)}
-    />
-  );
+interface MonthGroup {
+  month: string;   // 'YYYY-MM'
+  label: string;   // 'maio de 2026'
+  net: number;
+  count: number;
+  txs: Transaction[];
 }
 
-/* ───────────────── Visão geral: cards por mês (lê só agregados) ───────────────── */
+// Agrupa as transações por mês no cliente (1 leitura da coleção, sem agregação
+// server-side nem índice composto). A lista de um mês fica em memória e é
+// filtrada localmente ao abrir o card — sem novas queries.
+function groupByMonth(txs: Transaction[]): MonthGroup[] {
+  const map = new Map<string, MonthGroup>();
+  for (const t of txs) {
+    const month = (t.date || '').slice(0, 7); // 'YYYY-MM'
+    if (!month) continue;
+    let g = map.get(month);
+    if (!g) {
+      const [y, m] = month.split('-');
+      const label = new Date(Number(y), Number(m) - 1, 1)
+        .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      g = { month, label, net: 0, count: 0, txs: [] };
+      map.set(month, g);
+    }
+    g.net += t.amount;
+    g.count += 1;
+    g.txs.push(t);
+  }
+  return Array.from(map.values()).sort((a, b) => b.month.localeCompare(a.month));
+}
 
-function MonthsOverview({
-  onOpenMonth, onManual, wizardOpen, onCloseWizard,
-}: {
-  onOpenMonth: (m: MonthSummary) => void;
-  onManual: () => void;
-  wizardOpen: boolean;
-  onCloseWizard: () => void;
-}) {
-  const { data: months, loading } = useMonthlySummaries(12);
+export function Transactions() {
+  const { data: transactions, loading } = useTransactions(false);
   const { data: uploads } = useUploads();
   const navigate = useNavigate();
+
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [openWizard, setOpenWizard] = useState(false);
   const [batchesOpen, setBatchesOpen] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
 
+  const groups = useMemo(() => groupByMonth(transactions), [transactions]);
+  const current = selectedMonth ? groups.find((g) => g.month === selectedMonth) : null;
   const uploadsDone = uploads.filter((u) => u.status === 'done');
 
   async function deleteUploadBatch(uploadId: string) {
@@ -83,6 +87,17 @@ function MonthsOverview({
     }
   }
 
+  // ── Detalhe de um mês ──
+  if (current) {
+    return (
+      <>
+        <MonthDetail group={current} onBack={() => setSelectedMonth(null)} />
+        {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
+      </>
+    );
+  }
+
+  // ── Visão geral: cards por mês ──
   return (
     <div className="space-y-4 pb-12">
       {/* Banner importar */}
@@ -106,9 +121,8 @@ function MonthsOverview({
         </Button>
       </div>
 
-      {/* Ação manual */}
       <div className="flex justify-end">
-        <Button size="sm" variant="outline" className="gap-2" onClick={onManual}>
+        <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenWizard(true)}>
           <Plus className="h-4 w-4" /> Lançar manual
         </Button>
       </div>
@@ -158,32 +172,32 @@ function MonthsOverview({
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Por mês</h2>
         {loading && <p className="p-6 text-sm text-muted-foreground">Carregando…</p>}
-        {!loading && months.length === 0 && (
+        {!loading && groups.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-sm text-muted-foreground mb-3">
                 Nenhuma transação ainda. Importe um extrato ou lance manualmente.
               </p>
-              <Button size="sm" variant="outline" className="gap-2" onClick={onManual}>
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenWizard(true)}>
                 <Plus className="h-3.5 w-3.5" /> Lançar manualmente
               </Button>
             </CardContent>
           </Card>
         )}
         <div className="grid gap-2 sm:grid-cols-2">
-          {months.map((m) => (
+          {groups.map((g) => (
             <button
-              key={m.month}
-              onClick={() => onOpenMonth(m)}
+              key={g.month}
+              onClick={() => setSelectedMonth(g.month)}
               className="flex items-center justify-between rounded-xl border bg-card p-4 text-left hover:border-primary/50 hover:shadow-sm transition-all"
             >
               <div>
-                <p className="text-sm font-semibold capitalize">{m.label}</p>
-                <p className="text-xs text-muted-foreground">{m.count} transações</p>
+                <p className="text-sm font-semibold capitalize">{g.label}</p>
+                <p className="text-xs text-muted-foreground">{g.count} transações</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${m.net < 0 ? 'text-foreground' : 'text-success'}`}>
-                  {formatBRL(m.net)}
+                <span className={`text-sm font-bold ${g.net < 0 ? 'text-foreground' : 'text-success'}`}>
+                  {formatBRL(g.net)}
                 </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
@@ -192,15 +206,14 @@ function MonthsOverview({
         </div>
       </div>
 
-      {wizardOpen && <TransactionWizard onClose={onCloseWizard} />}
+      {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
     </div>
   );
 }
 
-/* ───────────────── Detalhe: lista de UM mês (carrega sob demanda) ───────────────── */
+/* ───────────────── Detalhe: lista de UM mês (em memória) ───────────────── */
 
-function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => void }) {
-  const { data: transactions, loading } = useMonthTransactions(month.start, month.endExclusive);
+function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void }) {
   const { all: allCategories, custom: customCategories, add: addCategory, remove: removeCategory } = useCategories();
 
   const [search, setSearch] = useState('');
@@ -211,19 +224,19 @@ function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => voi
   const [newCategoryInput, setNewCategoryInput] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
 
-  const filtered = useMemo(() => transactions.filter((t) => {
+  const filtered = useMemo(() => group.txs.filter((t) => {
     if (category !== 'all' && t.category !== category) return false;
     if (search && !t.description.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }), [transactions, search, category]);
+  }), [group.txs, search, category]);
 
   const { income, expense } = useMemo(() => {
     let income = 0, expense = 0;
-    for (const t of transactions) {
+    for (const t of group.txs) {
       if (t.amount >= 0) income += t.amount; else expense += t.amount;
     }
     return { income, expense };
-  }, [transactions]);
+  }, [group.txs]);
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -256,18 +269,18 @@ function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => voi
 
   return (
     <div className="space-y-4 pb-24">
-      {/* Header do mês */}
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Button size="sm" variant="ghost" className="gap-1.5 px-2" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex-1">
-          <h1 className="text-base font-bold capitalize leading-tight">{month.label}</h1>
-          <p className="text-xs text-muted-foreground">{month.count} transações</p>
+          <h1 className="text-base font-bold capitalize leading-tight">{group.label}</h1>
+          <p className="text-xs text-muted-foreground">{group.count} transações</p>
         </div>
       </div>
 
-      {/* Resumo entradas/saídas */}
+      {/* Resumo */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl border bg-card p-3">
           <p className="text-[10px] uppercase text-muted-foreground">Entradas</p>
@@ -279,8 +292,8 @@ function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => voi
         </div>
         <div className="rounded-xl border bg-card p-3">
           <p className="text-[10px] uppercase text-muted-foreground">Saldo</p>
-          <p className={`text-sm font-bold ${month.net < 0 ? 'text-foreground' : 'text-success'}`}>
-            {formatBRL(month.net)}
+          <p className={`text-sm font-bold ${group.net < 0 ? 'text-foreground' : 'text-success'}`}>
+            {formatBRL(group.net)}
           </p>
         </div>
       </div>
@@ -340,8 +353,7 @@ function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => voi
       {/* Lista */}
       <Card>
         <CardContent className="p-0">
-          {loading && <p className="p-6 text-sm text-muted-foreground">Carregando…</p>}
-          {!loading && filtered.length === 0 && (
+          {filtered.length === 0 && (
             <p className="p-8 text-center text-sm text-muted-foreground">
               Nenhuma transação encontrada com este filtro.
             </p>
@@ -389,7 +401,7 @@ function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => voi
         </CardContent>
       </Card>
 
-      {/* Barra de exclusão em massa */}
+      {/* Exclusão em massa */}
       {selectMode && selected.size > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-50 mx-auto max-w-2xl px-4">
           <div className="flex items-center justify-between rounded-2xl border bg-card shadow-xl px-4 py-3">

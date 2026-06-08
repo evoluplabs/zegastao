@@ -71,7 +71,11 @@ async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
 // layouts incomuns ou bancos sem regex específico. Usado apenas quando o Tier A
 // não extraiu nenhuma transação.
 async function parsePDFWithClaude(buffer: Buffer): Promise<ParsedTransaction[]> {
-  const client = new Anthropic();
+  // Header beta habilita input de documento (PDF) no SDK 0.32.x. Se já for GA,
+  // o header é simplesmente ignorado — não quebra nada.
+  const client = new Anthropic({
+    defaultHeaders: { 'anthropic-beta': 'pdfs-2024-09-25' },
+  });
 
   let response: Anthropic.Message;
   try {
