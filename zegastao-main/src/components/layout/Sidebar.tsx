@@ -21,8 +21,9 @@ export function Sidebar() {
   const { profile } = useStore();
 
   const phase = profile?.financialPhase;
+  // Em modo de teste (VITE_FEATURE_ZE_APOSTADOR=true), mostra para qualquer fase.
   const showBetting =
-    FEATURES.ZE_APOSTADOR && phase && !BLOCKED_BETTING_PHASES.includes(phase);
+    FEATURES.ZE_APOSTADOR && (import.meta.env.DEV || !phase || !BLOCKED_BETTING_PHASES.includes(phase));
 
   const NAV = [
     { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
