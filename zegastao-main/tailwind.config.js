@@ -80,6 +80,34 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-4px)' },
         },
+        float: {
+          '0%, 100%': { transform: 'perspective(1200px) rotateX(8deg) rotateY(-6deg) translateY(0px)' },
+          '50%': { transform: 'perspective(1200px) rotateX(8deg) rotateY(-6deg) translateY(-10px)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'gradient-x': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'draw-line': {
+          '0%': { strokeDashoffset: '1000' },
+          '100%': { strokeDashoffset: '0' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.92)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        'chat-appear': {
+          from: { opacity: '0', transform: 'translateY(8px) scale(0.96)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'count-up': {
+          from: { opacity: '0', transform: 'translateY(12px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -89,6 +117,13 @@ export default {
         'slide-in-right': 'slide-in-right 0.25s ease-out',
         pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         bounce: 'bounce 1s infinite',
+        float: 'float 5s ease-in-out infinite',
+        shimmer: 'shimmer 2.5s linear infinite',
+        'gradient-x': 'gradient-x 6s ease infinite',
+        'draw-line': 'draw-line 1.5s ease-out forwards',
+        'scale-in': 'scale-in 0.3s ease-out',
+        'chat-appear': 'chat-appear 0.4s ease-out forwards',
+        'count-up': 'count-up 0.5s ease-out',
       },
       transitionTimingFunction: {
         spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
