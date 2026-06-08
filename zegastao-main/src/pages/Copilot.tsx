@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
 import { Send, Zap, Bot, User, Lock } from 'lucide-react';
 import { functions } from '@/firebase';
 import { Button } from '@/components/ui/button';
+import { Documents } from './Documents';
+import { PersonalContext } from './PersonalContext';
 import { cn } from '@/lib/utils';
 
 const chat = httpsCallable<
@@ -23,6 +26,14 @@ const SUGGESTIONS = [
   'Me cria uma regra para guardar 30% de toda renda extra',
 ];
 
+const TABS = [
+  { id: 'chat', label: 'Chat' },
+  { id: 'documentos', label: 'Documentos' },
+  { id: 'historico', label: 'Histórico' },
+] as const;
+
+type TabId = typeof TABS[number]['id'];
+
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
@@ -38,7 +49,7 @@ function TypingIndicator() {
   );
 }
 
-export function Copilot() {
+function ChatView() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -95,38 +106,27 @@ export function Copilot() {
   const limitPct = usedMessages !== null ? (usedMessages / dailyLimit) * 100 : 0;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-9rem)] max-w-2xl flex-col gap-0">
-      {/* Header com contador */}
-      <div className="flex items-center justify-between border-b pb-3 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-            <Bot className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Copiloto Financeiro</p>
-            <p className="text-xs text-muted-foreground">Powered by Claude Sonnet</p>
+    <div className="flex h-[calc(100vh-12rem)] flex-col gap-0">
+      {/* Contador */}
+      {remaining !== null && (
+        <div className="flex items-center justify-end gap-2 pb-3">
+          <span className={cn(
+            'text-xs font-medium',
+            remaining <= 2 ? 'text-destructive' : remaining <= 5 ? 'text-amber-500' : 'text-muted-foreground'
+          )}>
+            {remaining} mensagens restantes hoje
+          </span>
+          <div className="h-1 w-20 rounded-full bg-secondary overflow-hidden">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                limitPct > 80 ? 'bg-destructive' : limitPct > 50 ? 'bg-amber-500' : 'bg-primary'
+              )}
+              style={{ width: `${limitPct}%` }}
+            />
           </div>
         </div>
-        {remaining !== null && (
-          <div className="flex flex-col items-end gap-1">
-            <span className={cn(
-              'text-xs font-medium',
-              remaining <= 2 ? 'text-destructive' : remaining <= 5 ? 'text-amber-500' : 'text-muted-foreground'
-            )}>
-              {remaining} mensagens restantes hoje
-            </span>
-            <div className="h-1 w-24 rounded-full bg-secondary overflow-hidden">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all duration-500',
-                  limitPct > 80 ? 'bg-destructive' : limitPct > 50 ? 'bg-amber-500' : 'bg-primary'
-                )}
-                style={{ width: `${limitPct}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Mensagens */}
       <div className="flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
@@ -227,6 +227,51 @@ export function Copilot() {
           </form>
         )}
       </div>
+    </div>
+  );
+}
+
+export function Copilot() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [active, setActive] = useState<TabId>(
+    TABS.find((t) => t.id === tabParam)?.id ?? 'chat'
+  );
+
+  useEffect(() => {
+    if (tabParam && TABS.find((t) => t.id === tabParam)) {
+      setActive(tabParam as TabId);
+    }
+  }, [tabParam]);
+
+  function switchTab(id: TabId) {
+    setActive(id);
+    setSearchParams(id === 'chat' ? {} : { tab: id }, { replace: true });
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-0">
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b mb-4">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => switchTab(t.id)}
+            className={cn(
+              'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
+              active === t.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {active === 'chat' && <ChatView />}
+      {active === 'documentos' && <Documents />}
+      {active === 'historico' && <PersonalContext />}
     </div>
   );
 }

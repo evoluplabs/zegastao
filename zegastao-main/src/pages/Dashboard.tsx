@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, CheckCircle2, Circle, Zap } from 'lucide-react';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, CheckCircle2, Plus, Zap } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
@@ -13,6 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FlowChart } from '@/components/charts/FlowChart';
 import { CategoryBreakdown } from '@/components/charts/CategoryBreakdown';
+import { DebtWizard } from '@/components/flows/DebtWizard';
+import { GoalWizard } from '@/components/flows/GoalWizard';
+import { TransactionWizard } from '@/components/flows/TransactionWizard';
 import { formatBRL } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
 import { cn } from '@/lib/utils';
@@ -50,10 +53,9 @@ function SkeletonCard({ className }: { className?: string }) {
   );
 }
 
-function EmptyDashboard({ name }: { name?: string }) {
+function EmptyDashboard({ name, onDebt, onTransaction }: { name?: string; onDebt: () => void; onTransaction: () => void }) {
   return (
     <div className="space-y-6">
-      {/* Hero welcome */}
       <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8">
         <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/5 blur-2xl" />
         <div className="relative">
@@ -65,31 +67,31 @@ function EmptyDashboard({ name }: { name?: string }) {
             Olá{name ? `, ${name}` : ''}! Vamos começar? 👋
           </h1>
           <p className="text-muted-foreground text-sm max-w-md mb-6">
-            Importe seu extrato bancário e em segundos o Copiloto analisa seus gastos, identifica padrões e começa a te guiar rumo à liberdade financeira.
+            Importe seu extrato bancário ou cadastre suas dívidas — em segundos o Copiloto analisa sua situação e começa a te guiar.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button asChild size="lg" className="rounded-xl gap-2">
-              <Link to="/upload">
+              <Link to="/transactions">
                 <Upload className="h-4 w-4" />
-                Importar meu primeiro extrato
+                Importar extrato
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="rounded-xl gap-2">
-              <Link to="/debts">
-                Adicionar dívida manualmente
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+            <Button variant="outline" size="lg" className="rounded-xl gap-2" onClick={onDebt}>
+              <Plus className="h-4 w-4" />
+              Adicionar dívida
+            </Button>
+            <Button variant="ghost" size="lg" className="rounded-xl gap-2" onClick={onTransaction}>
+              Lançar transação
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Como funciona */}
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { step: '1', icon: '📤', title: 'Importe seu extrato', desc: 'CSV, Excel ou PDF do seu banco. Funciona com Nubank, Itaú, Bradesco, BB e mais 5 bancos.' },
+          { step: '1', icon: '📤', title: 'Importe seu extrato', desc: 'CSV, Excel ou PDF do seu banco. Funciona com Nubank, Itaú, Bradesco, BB e mais.' },
           { step: '2', icon: '🤖', title: 'IA categoriza tudo', desc: 'Alimentação, transporte, lazer... o Copiloto organiza automaticamente em segundos.' },
-          { step: '3', icon: '🎯', title: 'Receba seu plano', desc: 'Com base na sua fase financeira, o Copiloto gera tarefas diárias e insights personalizados.' },
+          { step: '3', icon: '🎯', title: 'Receba seu plano', desc: 'Com base na sua fase financeira, tarefas diárias e insights personalizados.' },
         ].map((item) => (
           <div key={item.step} className="rounded-xl border bg-card p-5">
             <div className="text-2xl mb-3">{item.icon}</div>
@@ -110,6 +112,10 @@ export function Dashboard() {
   const { data: rules } = useRules();
   const { insights } = useInsights();
   const tasks = useDailyTasks();
+
+  const [openDebt, setOpenDebt] = useState(false);
+  const [openGoal, setOpenGoal] = useState(false);
+  const [openTx, setOpenTx] = useState(false);
 
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
@@ -134,6 +140,16 @@ export function Dashboard() {
   const balance = income - expenses;
   const redirectedThisMonth = rules.reduce((s, r) => s + (r.monthRedirected || 0), 0);
 
+  // Dívida de maior juro (destaque no dashboard)
+  const topDebt = [...debts]
+    .filter((d) => d.status === 'active')
+    .sort((a, b) => b.interestRateMonthly - a.interestRateMonthly)[0];
+
+  // Meta mais próxima de 100%
+  const topGoal = [...goals]
+    .filter((g) => g.status === 'active')
+    .sort((a, b) => (b.currentAmount / (b.targetAmount || 1)) - (a.currentAmount / (a.targetAmount || 1)))[0];
+
   if (txLoading) {
     return (
       <div className="space-y-4">
@@ -148,146 +164,249 @@ export function Dashboard() {
   }
 
   if (transactions.length === 0 && !txLoading) {
-    return <EmptyDashboard name={profile?.name} />;
+    return (
+      <>
+        <EmptyDashboard name={profile?.name} onDebt={() => setOpenDebt(true)} onTransaction={() => setOpenTx(true)} />
+        {openDebt && <DebtWizard onClose={() => setOpenDebt(false)} />}
+        {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
+      </>
+    );
   }
 
   return (
-    <div className="space-y-5">
-      {/* Hero: Fase + Saldo */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Saldo do mês */}
-        <div className="md:col-span-2 rounded-2xl border bg-card p-6">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Saldo estimado este mês</p>
-          <p className={cn(
-            'text-4xl font-bold tracking-tight',
-            balance >= 0 ? 'text-success' : 'text-destructive'
-          )}>
-            {formatBRL(balance)}
-          </p>
-          <div className="mt-3 flex gap-4 text-sm">
-            <span className="text-muted-foreground">
-              Renda <span className="font-semibold text-success">{formatBRL(income)}</span>
-            </span>
-            <span className="text-muted-foreground">
-              Gastos <span className="font-semibold text-destructive">{formatBRL(expenses)}</span>
-            </span>
+    <>
+      <div className="space-y-5">
+        {/* Hero: Fase + Saldo */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="md:col-span-2 rounded-2xl border bg-card p-6">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Saldo estimado este mês</p>
+            <p className={cn(
+              'text-4xl font-bold tracking-tight',
+              balance >= 0 ? 'text-success' : 'text-destructive'
+            )}>
+              {formatBRL(balance)}
+            </p>
+            <div className="mt-3 flex gap-4 text-sm">
+              <span className="text-muted-foreground">
+                Renda <span className="font-semibold text-success">{formatBRL(income)}</span>
+              </span>
+              <span className="text-muted-foreground">
+                Gastos <span className="font-semibold text-destructive">{formatBRL(expenses)}</span>
+              </span>
+            </div>
+            {balance < 0 && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                Você gastou mais do que ganhou. O Copiloto pode ajudar a reverter isso.
+              </div>
+            )}
           </div>
-          {balance < 0 && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              Você gastou mais do que ganhou. O Copiloto pode ajudar a reverter isso.
+
+          {phase ? (
+            <div className={cn('rounded-2xl border p-5 flex flex-col justify-between', PHASE_COLORS[phase])}>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-2">Sua fase atual</p>
+                <p className="text-xl font-bold">{PHASE_LABELS[phase]}</p>
+                <p className="text-xs mt-1 opacity-70 leading-relaxed">{PHASE_DESCRIPTIONS[phase]}</p>
+              </div>
+              <Link to="/journey" className="mt-4 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100 transition-opacity">
+                Ver trilha completa <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-card p-5 flex items-center justify-center text-center">
+              <p className="text-sm text-muted-foreground">Fase calculada pelo copiloto à meia-noite</p>
             </div>
           )}
         </div>
 
-        {/* Fase financeira */}
-        {phase ? (
-          <div className={cn(
-            'rounded-2xl border p-5 flex flex-col justify-between',
-            PHASE_COLORS[phase]
-          )}>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-2">Sua fase atual</p>
-              <p className="text-xl font-bold">{PHASE_LABELS[phase]}</p>
-              <p className="text-xs mt-1 opacity-70 leading-relaxed">{PHASE_DESCRIPTIONS[phase]}</p>
-            </div>
-            <Link to="/journey" className="mt-4 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100 transition-opacity">
-              Ver trilha completa <ArrowRight className="h-3 w-3" />
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => setOpenDebt(true)}>
+            <Plus className="h-3.5 w-3.5" /> Dívida
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => setOpenGoal(true)}>
+            <Plus className="h-3.5 w-3.5" /> Meta
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => setOpenTx(true)}>
+            <Plus className="h-3.5 w-3.5" /> Transação
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2 rounded-full" asChild>
+            <Link to="/transactions">
+              <Upload className="h-3.5 w-3.5" /> Importar extrato
             </Link>
-          </div>
-        ) : (
-          <div className="rounded-2xl border bg-card p-5 flex items-center justify-center text-center">
-            <p className="text-sm text-muted-foreground">Fase calculada pelo copiloto à meia-noite</p>
+          </Button>
+        </div>
+
+        {/* Tarefas de hoje */}
+        {tasks.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                Ações de hoje
+              </h2>
+              <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                ver todas →
+              </Link>
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              {tasks.slice(0, 2).map((t, i) => (
+                <div key={i} className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm">
+                  <span className="text-xl">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm leading-snug">{t.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      ⏱ {t.estimatedTime}
+                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Tarefas de hoje */}
-      {tasks.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-500" />
-              Ações de hoje
-            </h2>
-            <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              ver todas →
-            </Link>
-          </div>
-          <div className="grid gap-2 md:grid-cols-2">
-            {tasks.slice(0, 2).map((t, i) => (
-              <div key={i} className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm">
-                <span className="text-xl">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
-                <div className="min-w-0">
-                  <p className="font-medium text-sm leading-snug">{t.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    ⏱ {t.estimatedTime}
-                    {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
-                  </p>
+        {/* Dívida + Meta em destaque */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">Dívida prioritária</CardTitle>
+              <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setOpenDebt(true)}>
+                <Plus className="h-3.5 w-3.5" /> Adicionar
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {topDebt ? (
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <p className="font-semibold">{topDebt.creditor}</p>
+                    <span className="text-xs text-destructive font-medium">
+                      {(topDebt.interestRateMonthly * 100).toFixed(1)}% a.m.
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold">{formatBRL(topDebt.totalBalance)}</p>
+                  <Link
+                    to="/financas?tab=debts"
+                    className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                  >
+                    Ver todas as dívidas <ArrowRight className="h-3 w-3" />
+                  </Link>
                 </div>
-                <Circle className="h-5 w-5 shrink-0 ml-auto text-muted-foreground/30 group-hover:text-primary/40 transition-colors" />
-              </div>
-            ))}
-          </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">Nenhuma dívida cadastrada.</p>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setOpenDebt(true)}>
+                    <Plus className="h-3.5 w-3.5" /> Cadastrar dívida
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold">Meta mais próxima</CardTitle>
+              <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setOpenGoal(true)}>
+                <Plus className="h-3.5 w-3.5" /> Criar
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {topGoal ? (
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <p className="font-semibold truncate max-w-[65%]">{topGoal.name}</p>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {Math.min(100, (topGoal.currentAmount / (topGoal.targetAmount || 1)) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-700"
+                      style={{ width: `${Math.min(100, (topGoal.currentAmount / (topGoal.targetAmount || 1)) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{formatBRL(topGoal.currentAmount)}</span>
+                    <span>{formatBRL(topGoal.targetAmount)}</span>
+                  </div>
+                  <Link
+                    to="/financas?tab=goals"
+                    className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                  >
+                    Ver todas as metas <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">Nenhuma meta criada ainda.</p>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setOpenGoal(true)}>
+                    <Plus className="h-3.5 w-3.5" /> Criar meta
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
 
-      {/* Fluxo + Categorias */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Fluxo do mês</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FlowChart
-              data={[
-                { label: 'Renda', value: income, color: '#10b981' },
-                { label: 'Gastos', value: expenses, color: '#ef4444' },
-                { label: 'Dívidas', value: debtPayments, color: '#f59e0b' },
-              ]}
-            />
-          </CardContent>
-        </Card>
+        {/* Fluxo + Categorias */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Fluxo do mês</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FlowChart
+                data={[
+                  { label: 'Renda', value: income, color: '#10b981' },
+                  { label: 'Gastos', value: expenses, color: '#ef4444' },
+                  { label: 'Dívidas', value: debtPayments, color: '#f59e0b' },
+                ]}
+              />
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Para onde foi o dinheiro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {byCategory.length > 0 ? (
-              <>
-                <CategoryBreakdown data={byCategory.slice(0, 6)} />
-                <ul className="mt-3 space-y-2 text-sm">
-                  {byCategory.slice(0, 5).map((c) => (
-                    <li key={c.name} className="flex items-center justify-between">
-                      <span className="text-muted-foreground truncate max-w-[60%]">{c.name}</span>
-                      <div className="text-right">
-                        <span className="font-medium">{formatBRL(c.amount)}</span>
-                        {income > 0 && (
-                          <span className="ml-1.5 text-xs text-muted-foreground">
-                            {((c.amount / income) * 100).toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Para onde foi o dinheiro</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {byCategory.length > 0 ? (
+                <>
+                  <CategoryBreakdown data={byCategory.slice(0, 6)} />
+                  <ul className="mt-3 space-y-2 text-sm">
+                    {byCategory.slice(0, 5).map((c) => (
+                      <li key={c.name} className="flex items-center justify-between">
+                        <span className="text-muted-foreground truncate max-w-[60%]">{c.name}</span>
+                        <div className="text-right">
+                          <span className="font-medium">{formatBRL(c.amount)}</span>
+                          {income > 0 && (
+                            <span className="ml-1.5 text-xs text-muted-foreground">
+                              {((c.amount / income) * 100).toFixed(0)}%
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Regras + Metas */}
-      <div className="grid gap-4 md:grid-cols-2">
+        {/* Regras automáticas */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <TrendingUp className="h-4 w-4 text-primary" />
               Regras automáticas
             </CardTitle>
+            <Link to="/financas?tab=rules" className="text-xs text-muted-foreground hover:text-foreground">
+              gerenciar →
+            </Link>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-success">{formatBRL(redirectedThisMonth)}</p>
@@ -295,86 +414,51 @@ export function Dashboard() {
               redirecionados automaticamente · {rules.filter((r) => r.isActive).length} regra(s) ativa(s)
             </p>
             {rules.length === 0 && (
-              <Link to="/rules" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              <Link to="/financas?tab=rules" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
                 Criar minha primeira regra <ArrowRight className="h-3 w-3" />
               </Link>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Progresso das metas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {goals.length === 0 ? (
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Nenhuma meta criada ainda.</p>
-                <Link to="/goals" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-                  Criar primeira meta <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-            ) : (
-              goals.slice(0, 3).map((g) => {
-                const pct = Math.min(100, (g.currentAmount / (g.targetAmount || 1)) * 100);
-                return (
-                  <div key={g.id}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium truncate max-w-[70%]">{g.name}</span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {pct >= 100 && <CheckCircle2 className="h-3.5 w-3.5 text-success" />}
-                        <span className={cn('text-xs', pct >= 100 ? 'text-success font-semibold' : 'text-muted-foreground')}>{pct.toFixed(0)}%</span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full rounded-full transition-all duration-700',
-                          pct >= 100 ? 'bg-success' : pct > 50 ? 'bg-primary' : 'bg-primary/60'
-                        )}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Insights do copiloto */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Insights do copiloto
-          </h2>
-          <Badge variant="outline" className="text-xs">Atualiza à meia-noite</Badge>
-        </div>
-        {insights.length === 0 ? (
-          <div className="rounded-xl border bg-card/50 p-6 text-center">
-            <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Seus insights personalizados aparecem aqui após o primeiro processamento noturno.
-            </p>
+        {/* Insights do copiloto */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Insights do copiloto
+            </h2>
+            <Badge variant="outline" className="text-xs">Atualiza à meia-noite</Badge>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {insights.map((ins, i) => (
-              <div key={i} className="group rounded-xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-sm">
-                <div className="flex items-start gap-3">
-                  {ins.emoji && <span className="text-xl shrink-0">{ins.emoji}</span>}
-                  <div>
-                    <p className="font-semibold text-sm">{ins.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{ins.body}</p>
+          {insights.length === 0 ? (
+            <div className="rounded-xl border bg-card/50 p-6 text-center">
+              <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Seus insights personalizados aparecem aqui após o primeiro processamento noturno.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {insights.map((ins, i) => (
+                <div key={i} className="group rounded-xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-sm">
+                  <div className="flex items-start gap-3">
+                    {ins.emoji && <span className="text-xl shrink-0">{ins.emoji}</span>}
+                    <div>
+                      <p className="font-semibold text-sm">{ins.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{ins.body}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Wizards */}
+      {openDebt && <DebtWizard onClose={() => setOpenDebt(false)} />}
+      {openGoal && <GoalWizard onClose={() => setOpenGoal(false)} />}
+      {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
+    </>
   );
 }

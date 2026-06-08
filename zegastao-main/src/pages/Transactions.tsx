@@ -1,22 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { Search } from 'lucide-react';
-import { functions } from '@/firebase';
+import { ref as storageRef, uploadBytes } from 'firebase/storage';
+import { addDoc, collection } from 'firebase/firestore';
+import { Search, Upload, Plus, FileUp, Loader2 } from 'lucide-react';
+import { functions, storage, db, auth } from '@/firebase';
 import { useTransactions } from '@/hooks/useTransactions';
 import { updateUserDoc } from '@/lib/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { TransactionWizard } from '@/components/flows/TransactionWizard';
 import { CATEGORIES } from '@/types';
 import { formatBRL, formatDateBR } from '@/lib/utils';
 
 const categorizeManual = httpsCallable(functions, 'categorizeManual');
 
+const SUPPORTED_BANKS = ['Nubank', 'Inter', 'Itaú', 'Bradesco', 'BB', 'Santander', 'C6', 'Caixa'];
+
 export function Transactions() {
   const { data: transactions, loading } = useTransactions(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const [openWizard, setOpenWizard] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
@@ -27,17 +36,82 @@ export function Transactions() {
   }, [transactions, search, category]);
 
   async function changeCategory(id: string, newCategory: string) {
-    // Atualização otimista local + persistência que aprende no cache pessoal.
     await updateUserDoc('transactions', id, { category: newCategory, userCorrected: true });
     try {
       await categorizeManual({ transactionId: id, category: newCategory });
     } catch {
-      /* a atualização local já valeu; o aprendizado de cache é best-effort */
+      /* best-effort */
     }
+  }
+
+  async function handleFile(file: File) {
+    const user = auth.currentUser;
+    if (!user || uploading) return;
+    setUploading(true);
+    try {
+      const docRef = await addDoc(collection(db, 'users', user.uid, 'uploads'), {
+        filename: file.name,
+        status: 'pending',
+        uploadedAt: new Date(),
+      });
+      await uploadBytes(
+        storageRef(storage, `uploads/${user.uid}/${docRef.id}/${file.name}`),
+        file,
+        { contentType: file.type || 'text/csv' }
+      );
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
   }
 
   return (
     <div className="space-y-4">
+      {/* Banner de importação compacto */}
+      <div
+        className="flex flex-col sm:flex-row items-center gap-3 rounded-xl border border-dashed bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
+        onClick={() => !uploading && fileRef.current?.click()}
+      >
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,.pdf,.txt,.ofx"
+          className="hidden"
+          onChange={onFileChange}
+        />
+        <div className="flex items-center gap-3 flex-1">
+          {uploading ? (
+            <Loader2 className="h-9 w-9 shrink-0 text-primary animate-spin" />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <FileUp className="h-4 w-4 text-primary" />
+            </div>
+          )}
+          <div>
+            <p className="text-sm font-medium">
+              {uploading ? 'Enviando extrato…' : 'Importar extrato do banco'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {uploading
+                ? 'A IA vai categorizar tudo automaticamente'
+                : `CSV, Excel ou PDF · ${SUPPORTED_BANKS.slice(0, 5).join(', ')} e mais`}
+            </p>
+          </div>
+        </div>
+        {!uploading && (
+          <Button size="sm" variant="outline" className="shrink-0 gap-2 pointer-events-none">
+            <Upload className="h-3.5 w-3.5" />
+            Importar
+          </Button>
+        )}
+      </div>
+
+      {/* Barra de busca + filtro + botão manual */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -48,21 +122,35 @@ export function Transactions() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select className="sm:w-56" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <Select className="sm:w-48" value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="all">Todas as categorias</option>
           {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
+            <option key={c} value={c}>{c}</option>
           ))}
         </Select>
+        <Button size="default" variant="outline" className="shrink-0 gap-2" onClick={() => setOpenWizard(true)}>
+          <Plus className="h-4 w-4" />
+          Lançar manual
+        </Button>
       </div>
 
+      {/* Lista de transações */}
       <Card>
         <CardContent className="p-0">
           {loading && <p className="p-6 text-sm text-muted-foreground">Carregando…</p>}
           {!loading && filtered.length === 0 && (
-            <p className="p-6 text-sm text-muted-foreground">Nenhuma transação encontrada.</p>
+            <div className="p-8 text-center">
+              <p className="text-sm text-muted-foreground mb-3">
+                {transactions.length === 0
+                  ? 'Nenhuma transação ainda. Importe um extrato ou lance manualmente.'
+                  : 'Nenhuma transação encontrada com este filtro.'}
+              </p>
+              {transactions.length === 0 && (
+                <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenWizard(true)}>
+                  <Plus className="h-3.5 w-3.5" /> Lançar manualmente
+                </Button>
+              )}
+            </div>
           )}
           <ul className="divide-y">
             {filtered.map((t) => (
@@ -84,16 +172,10 @@ export function Transactions() {
                   onChange={(e) => changeCategory(t.id, e.target.value)}
                 >
                   {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </Select>
-                <span
-                  className={`w-24 text-right text-sm font-semibold ${
-                    t.amount < 0 ? 'text-foreground' : 'text-success'
-                  }`}
-                >
+                <span className={`w-24 text-right text-sm font-semibold ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
                   {formatBRL(t.amount)}
                 </span>
               </li>
@@ -101,6 +183,8 @@ export function Transactions() {
           </ul>
         </CardContent>
       </Card>
+
+      {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
     </div>
   );
 }
