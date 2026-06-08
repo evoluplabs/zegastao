@@ -37,15 +37,22 @@ async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
   // ── Tier A: extração por coordenadas + regex (grátis) ──
   try {
     const text = await extractTextByCoordinate(buffer);
+    console.log(`[PDF] Tier A: extraiu ${text.length} chars de texto`);
     if (text.trim()) {
       const bank = detectBank(text);
       const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+      console.log(`[PDF] Tier A: banco=${bank}, ${lines.length} linhas. Amostra:`);
+      console.log('[PDF] ' + lines.slice(0, 12).join('\n[PDF] '));
       const result = bank === 'nubank'
         ? parseNubankLines(lines, text)
         : parseGenericLines(lines, bank);
 
+      console.log(`[PDF] Tier A: regex extraiu ${result.length} transações`);
       // Conseguimos extrair transações sem IA → retorna (custo $0).
       if (result.length > 0) return result;
+      console.log('[PDF] Tier A não extraiu nada → caindo para Tier B (Haiku)');
+    } else {
+      console.log('[PDF] Tier A: texto vazio → caindo para Tier B (Haiku)');
     }
   } catch (err) {
     // PDF protegido por senha é definitivo — nem a IA resolve.
@@ -53,6 +60,7 @@ async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
       throw new ParseError('password', 'PDF protegido por senha');
     }
     // Outros erros do Tier A: cai para o Tier B silenciosamente.
+    console.log(`[PDF] Tier A falhou (${err instanceof Error ? err.message : err}) → Tier B`);
   }
 
   // ── Tier B: Claude Haiku (fallback automático, ~$0.008) ──
@@ -99,6 +107,7 @@ Regras:
     });
   } catch (err) {
     const msg = String(err).toLowerCase();
+    console.error('[PDF] Tier B: chamada Haiku falhou:', err);
     if (msg.includes('password') || msg.includes('encrypt')) {
       throw new ParseError('password', 'PDF protegido por senha');
     }
@@ -106,6 +115,7 @@ Regras:
   }
 
   const raw = response.content[0].type === 'text' ? response.content[0].text : '';
+  console.log(`[PDF] Tier B: Haiku respondeu ${raw.length} chars. Amostra: ${raw.slice(0, 200)}`);
   const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] ?? '{}';
 
   try {
@@ -118,12 +128,14 @@ Regras:
         amount: Number(tx.v),
         type: Number(tx.v) >= 0 ? 'in' as const : 'out' as const,
       }));
+    console.log(`[PDF] Tier B: Haiku extraiu ${parsed.length} transações`);
     if (parsed.length === 0) {
       throw new ParseError('unreadable', 'Nenhuma transação encontrada no PDF');
     }
     return parsed;
   } catch (err) {
     if (err instanceof ParseError) throw err;
+    console.error('[PDF] Tier B: JSON inválido:', err);
     throw new ParseError('unreadable', 'Resposta inválida ao processar PDF');
   }
 }

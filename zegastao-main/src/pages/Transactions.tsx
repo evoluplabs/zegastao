@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Upload, Plus, FileUp, ArrowRight, Trash2,
-  CheckSquare, Square, ChevronDown, ChevronUp, FileText, Tag,
+  Search, Upload, Plus, FileUp, ArrowRight, Trash2, ArrowLeft,
+  CheckSquare, Square, ChevronDown, ChevronUp, FileText, Tag, ChevronRight,
 } from 'lucide-react';
-import { writeBatch, collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { writeBatch, collection, query, where, getDocs, doc } from 'firebase/firestore';
 import { db, auth, functions } from '@/firebase';
-import { useTransactions } from '@/hooks/useTransactions';
 import { useUploads } from '@/hooks/useUploads';
 import { useCategories } from '@/hooks/useCategories';
+import { useMonthlySummaries, type MonthSummary } from '@/hooks/useMonthlySummaries';
+import { useMonthTransactions } from '@/hooks/useMonthTransactions';
 import { deleteUserDoc, updateUserDoc } from '@/lib/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,76 +21,61 @@ import { TransactionWizard } from '@/components/flows/TransactionWizard';
 import { formatBRL, formatDateBR } from '@/lib/utils';
 
 const categorizeManual = httpsCallable(functions, 'categorizeManual');
-
 const SUPPORTED_BANKS = ['Nubank', 'Inter', 'Itaú', 'Bradesco', 'BB', 'Santander', 'C6', 'Caixa'];
 
 export function Transactions() {
-  const { data: transactions, loading } = useTransactions(false);
-  const { data: uploads } = useUploads();
-  const { all: allCategories, custom: customCategories, add: addCategory, remove: removeCategory } = useCategories();
-
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState<MonthSummary | null>(null);
   const [openWizard, setOpenWizard] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [batchesOpen, setBatchesOpen] = useState(false);
-  const [newCategoryInput, setNewCategoryInput] = useState('');
-  const [addingCategory, setAddingCategory] = useState(false);
-  const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
+
+  if (selectedMonth) {
+    return (
+      <>
+        <MonthDetail month={selectedMonth} onBack={() => setSelectedMonth(null)} />
+        {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
+      </>
+    );
+  }
+
+  return (
+    <MonthsOverview
+      onOpenMonth={setSelectedMonth}
+      onManual={() => setOpenWizard(true)}
+      wizardOpen={openWizard}
+      onCloseWizard={() => setOpenWizard(false)}
+    />
+  );
+}
+
+/* ───────────────── Visão geral: cards por mês (lê só agregados) ───────────────── */
+
+function MonthsOverview({
+  onOpenMonth, onManual, wizardOpen, onCloseWizard,
+}: {
+  onOpenMonth: (m: MonthSummary) => void;
+  onManual: () => void;
+  wizardOpen: boolean;
+  onCloseWizard: () => void;
+}) {
+  const { data: months, loading } = useMonthlySummaries(12);
+  const { data: uploads } = useUploads();
   const navigate = useNavigate();
+  const [batchesOpen, setBatchesOpen] = useState(false);
+  const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    return transactions.filter((t) => {
-      if (category !== 'all' && t.category !== category) return false;
-      if (search && !t.description.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
-  }, [transactions, search, category]);
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
-  function exitSelectMode() {
-    setSelectMode(false);
-    setSelected(new Set());
-  }
-
-  async function deleteSelected() {
-    if (selected.size === 0) return;
-    const user = auth.currentUser;
-    if (!user) return;
-    const batch = writeBatch(db);
-    selected.forEach((id) => {
-      batch.delete(doc(db, 'users', user.uid, 'transactions', id));
-    });
-    await batch.commit();
-    exitSelectMode();
-  }
-
-  async function deleteSingle(id: string) {
-    await deleteUserDoc('transactions', id);
-  }
+  const uploadsDone = uploads.filter((u) => u.status === 'done');
 
   async function deleteUploadBatch(uploadId: string) {
     const user = auth.currentUser;
     if (!user) return;
     setDeletingBatch(uploadId);
     try {
-      // Deletar todas as transações do lote
       const txQuery = query(
         collection(db, 'users', user.uid, 'transactions'),
-        where('uploadId', '==', uploadId)
+        where('uploadId', '==', uploadId),
       );
       const snap = await getDocs(txQuery);
       const batch = writeBatch(db);
       snap.docs.forEach((d) => batch.delete(d.ref));
-      // Deletar o doc do upload também
       batch.delete(doc(db, 'users', user.uid, 'uploads', uploadId));
       await batch.commit();
     } finally {
@@ -97,21 +83,8 @@ export function Transactions() {
     }
   }
 
-  async function changeCategory(id: string, newCat: string) {
-    if (newCat === '__new__') return; // handled inline
-    await updateUserDoc('transactions', id, { category: newCat, userCorrected: true });
-    try { await categorizeManual({ transactionId: id, category: newCat }); } catch { /* best-effort */ }
-  }
-
-  async function handleAddCategory() {
-    const ok = await addCategory(newCategoryInput);
-    if (ok) { setNewCategoryInput(''); setAddingCategory(false); }
-  }
-
-  const uploadsDone = uploads.filter((u) => u.status === 'done');
-
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4 pb-12">
       {/* Banner importar */}
       <div
         className="flex flex-col sm:flex-row items-center gap-3 rounded-xl border border-dashed bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
@@ -129,13 +102,18 @@ export function Transactions() {
           </div>
         </div>
         <Button size="sm" variant="outline" className="shrink-0 gap-2 pointer-events-none">
-          <Upload className="h-3.5 w-3.5" />
-          Importar
-          <ArrowRight className="h-3.5 w-3.5" />
+          <Upload className="h-3.5 w-3.5" /> Importar <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>
 
-      {/* Lotes de importação */}
+      {/* Ação manual */}
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" className="gap-2" onClick={onManual}>
+          <Plus className="h-4 w-4" /> Lançar manual
+        </Button>
+      </div>
+
+      {/* Lotes importados */}
       {uploadsDone.length > 0 && (
         <Card>
           <button
@@ -176,25 +154,149 @@ export function Transactions() {
         </Card>
       )}
 
+      {/* Cards por mês */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Por mês</h2>
+        {loading && <p className="p-6 text-sm text-muted-foreground">Carregando…</p>}
+        {!loading && months.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-sm text-muted-foreground mb-3">
+                Nenhuma transação ainda. Importe um extrato ou lance manualmente.
+              </p>
+              <Button size="sm" variant="outline" className="gap-2" onClick={onManual}>
+                <Plus className="h-3.5 w-3.5" /> Lançar manualmente
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+        <div className="grid gap-2 sm:grid-cols-2">
+          {months.map((m) => (
+            <button
+              key={m.month}
+              onClick={() => onOpenMonth(m)}
+              className="flex items-center justify-between rounded-xl border bg-card p-4 text-left hover:border-primary/50 hover:shadow-sm transition-all"
+            >
+              <div>
+                <p className="text-sm font-semibold capitalize">{m.label}</p>
+                <p className="text-xs text-muted-foreground">{m.count} transações</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold ${m.net < 0 ? 'text-foreground' : 'text-success'}`}>
+                  {formatBRL(m.net)}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {wizardOpen && <TransactionWizard onClose={onCloseWizard} />}
+    </div>
+  );
+}
+
+/* ───────────────── Detalhe: lista de UM mês (carrega sob demanda) ───────────────── */
+
+function MonthDetail({ month, onBack }: { month: MonthSummary; onBack: () => void }) {
+  const { data: transactions, loading } = useMonthTransactions(month.start, month.endExclusive);
+  const { all: allCategories, custom: customCategories, add: addCategory, remove: removeCategory } = useCategories();
+
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [openWizard, setOpenWizard] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+
+  const filtered = useMemo(() => transactions.filter((t) => {
+    if (category !== 'all' && t.category !== category) return false;
+    if (search && !t.description.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  }), [transactions, search, category]);
+
+  const { income, expense } = useMemo(() => {
+    let income = 0, expense = 0;
+    for (const t of transactions) {
+      if (t.amount >= 0) income += t.amount; else expense += t.amount;
+    }
+    return { income, expense };
+  }, [transactions]);
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function exitSelectMode() { setSelectMode(false); setSelected(new Set()); }
+
+  async function deleteSelected() {
+    const user = auth.currentUser;
+    if (!user || selected.size === 0) return;
+    const batch = writeBatch(db);
+    selected.forEach((id) => batch.delete(doc(db, 'users', user.uid, 'transactions', id)));
+    await batch.commit();
+    exitSelectMode();
+  }
+
+  async function changeCategory(id: string, newCat: string) {
+    if (newCat === '__new__') { setAddingCategory(true); return; }
+    await updateUserDoc('transactions', id, { category: newCat, userCorrected: true });
+    try { await categorizeManual({ transactionId: id, category: newCat }); } catch { /* best-effort */ }
+  }
+
+  async function handleAddCategory() {
+    const ok = await addCategory(newCategoryInput);
+    if (ok) { setNewCategoryInput(''); setAddingCategory(false); }
+  }
+
+  return (
+    <div className="space-y-4 pb-24">
+      {/* Header do mês */}
+      <div className="flex items-center gap-3">
+        <Button size="sm" variant="ghost" className="gap-1.5 px-2" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-base font-bold capitalize leading-tight">{month.label}</h1>
+          <p className="text-xs text-muted-foreground">{month.count} transações</p>
+        </div>
+      </div>
+
+      {/* Resumo entradas/saídas */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl border bg-card p-3">
+          <p className="text-[10px] uppercase text-muted-foreground">Entradas</p>
+          <p className="text-sm font-bold text-success">{formatBRL(income)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3">
+          <p className="text-[10px] uppercase text-muted-foreground">Saídas</p>
+          <p className="text-sm font-bold text-foreground">{formatBRL(expense)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3">
+          <p className="text-[10px] uppercase text-muted-foreground">Saldo</p>
+          <p className={`text-sm font-bold ${month.net < 0 ? 'text-foreground' : 'text-success'}`}>
+            {formatBRL(month.net)}
+          </p>
+        </div>
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Buscar por descrição…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Input className="pl-9" placeholder="Buscar…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Select className="sm:w-48" value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="all">Todas as categorias</option>
-          {allCategories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+        <Select className="sm:w-44" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="all">Todas categorias</option>
+          {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
         </Select>
         <Button size="default" variant="outline" className="shrink-0 gap-2" onClick={() => setOpenWizard(true)}>
-          <Plus className="h-4 w-4" /> Lançar manual
+          <Plus className="h-4 w-4" /> Manual
         </Button>
         <Button
           size="default"
@@ -202,37 +304,25 @@ export function Transactions() {
           className="shrink-0 gap-2"
           onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
         >
-          <CheckSquare className="h-4 w-4" />
-          {selectMode ? 'Cancelar' : 'Selecionar'}
+          <CheckSquare className="h-4 w-4" /> {selectMode ? 'Cancelar' : 'Selecionar'}
         </Button>
       </div>
 
-      {/* Gerenciar categorias personalizadas */}
+      {/* Categorias personalizadas */}
       <div className="flex flex-wrap items-center gap-2">
         {customCategories.map((c) => (
           <span key={c} className="flex items-center gap-1 rounded-full border bg-secondary px-2.5 py-0.5 text-xs font-medium">
-            <Tag className="h-3 w-3 text-muted-foreground" />
-            {c}
-            <button
-              onClick={() => removeCategory(c)}
-              className="ml-0.5 text-muted-foreground hover:text-destructive leading-none"
-            >
-              ×
-            </button>
+            <Tag className="h-3 w-3 text-muted-foreground" />{c}
+            <button onClick={() => removeCategory(c)} className="ml-0.5 text-muted-foreground hover:text-destructive leading-none">×</button>
           </span>
         ))}
         {addingCategory ? (
           <div className="flex items-center gap-1">
             <Input
-              autoFocus
-              className="h-7 w-36 text-xs"
-              placeholder="Nome da categoria"
+              autoFocus className="h-7 w-36 text-xs" placeholder="Nome da categoria"
               value={newCategoryInput}
               onChange={(e) => setNewCategoryInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddCategory();
-                if (e.key === 'Escape') setAddingCategory(false);
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') setAddingCategory(false); }}
             />
             <Button size="sm" className="h-7 px-2 text-xs" onClick={handleAddCategory}>Salvar</Button>
             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setAddingCategory(false)}>×</Button>
@@ -252,31 +342,18 @@ export function Transactions() {
         <CardContent className="p-0">
           {loading && <p className="p-6 text-sm text-muted-foreground">Carregando…</p>}
           {!loading && filtered.length === 0 && (
-            <div className="p-8 text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                {transactions.length === 0
-                  ? 'Nenhuma transação ainda. Importe um extrato ou lance manualmente.'
-                  : 'Nenhuma transação encontrada com este filtro.'}
-              </p>
-              {transactions.length === 0 && (
-                <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenWizard(true)}>
-                  <Plus className="h-3.5 w-3.5" /> Lançar manualmente
-                </Button>
-              )}
-            </div>
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              Nenhuma transação encontrada com este filtro.
+            </p>
           )}
           <ul className="divide-y">
             {filtered.map((t) => (
               <li key={t.id} className="flex items-center gap-2 p-3">
-                {/* Checkbox / select mode */}
                 {selectMode && (
                   <button onClick={() => toggleSelect(t.id)} className="shrink-0 text-muted-foreground hover:text-primary">
-                    {selected.has(t.id)
-                      ? <CheckSquare className="h-4 w-4 text-primary" />
-                      : <Square className="h-4 w-4" />}
+                    {selected.has(t.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
                   </button>
                 )}
-
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{t.description}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -286,33 +363,20 @@ export function Transactions() {
                     )}
                   </div>
                 </div>
-
-                {/* Selector de categoria (inclui personalizadas) */}
                 <Select
                   className="h-8 w-40 text-xs"
                   value={t.category}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') {
-                      setAddingCategory(true);
-                    } else {
-                      changeCategory(t.id, e.target.value);
-                    }
-                  }}
+                  onChange={(e) => changeCategory(t.id, e.target.value)}
                 >
-                  {allCategories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
                   <option value="__new__">+ Nova categoria…</option>
                 </Select>
-
                 <span className={`w-24 text-right text-sm font-semibold ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
                   {formatBRL(t.amount)}
                 </span>
-
-                {/* Excluir individual */}
                 {!selectMode && (
                   <button
-                    onClick={() => deleteSingle(t.id)}
+                    onClick={() => deleteUserDoc('transactions', t.id)}
                     className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
                     title="Excluir transação"
                   >
@@ -325,7 +389,7 @@ export function Transactions() {
         </CardContent>
       </Card>
 
-      {/* Barra de ação em massa (fixa no rodapé quando em modo de seleção) */}
+      {/* Barra de exclusão em massa */}
       {selectMode && selected.size > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-50 mx-auto max-w-2xl px-4">
           <div className="flex items-center justify-between rounded-2xl border bg-card shadow-xl px-4 py-3">
