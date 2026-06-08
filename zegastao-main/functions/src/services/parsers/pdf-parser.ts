@@ -32,29 +32,56 @@ export class ParseError extends Error {
   }
 }
 
+// Diagnóstico do último parse de PDF — o onUpload grava no doc do upload para
+// inspeção no Firestore Console (independe do CLI de logs). Temporário.
+export interface PdfDebug {
+  tierAChars: number;
+  bank: string;
+  lineCount: number;
+  sample: string[];
+  tierAResult: number;
+  tierBUsed: boolean;
+  tierBResult: number;
+  note: string;
+}
+export let lastPdfDebug: PdfDebug | null = null;
+
 // Orquestra os dois tiers de parsing de PDF.
 async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
+  const dbg: PdfDebug = {
+    tierAChars: 0, bank: '', lineCount: 0, sample: [],
+    tierAResult: 0, tierBUsed: false, tierBResult: 0, note: '',
+  };
+  lastPdfDebug = dbg;
+
   // ── Tier A: extração por coordenadas + regex (grátis) ──
   try {
     const text = await extractTextByCoordinate(buffer);
-    console.log(`[PDF] Tier A: extraiu ${text.length} chars de texto`);
+    dbg.tierAChars = text.length;
     if (text.trim()) {
       const bank = detectBank(text);
       const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-      console.log(`[PDF] Tier A: banco=${bank}, ${lines.length} linhas. Amostra:`);
-      console.log('[PDF] ' + lines.slice(0, 12).join('\n[PDF] '));
+      dbg.bank = bank;
+      dbg.lineCount = lines.length;
+      dbg.sample = lines.slice(0, 20);
+      console.log(`[PDF] TierA chars=${text.length} banco=${bank} linhas=${lines.length}`);
+      console.log('[PDF] TierA amostra: ' + lines.slice(0, 15).join(' || '));
       const result = bank === 'nubank'
         ? parseNubankLines(lines, text)
         : parseGenericLines(lines, bank);
 
-      console.log(`[PDF] Tier A: regex extraiu ${result.length} transações`);
+      dbg.tierAResult = result.length;
+      console.log(`[PDF] TierA regex=${result.length} transações`);
       // Conseguimos extrair transações sem IA → retorna (custo $0).
-      if (result.length > 0) return result;
-      console.log('[PDF] Tier A não extraiu nada → caindo para Tier B (Haiku)');
+      if (result.length > 0) { dbg.note = 'tierA-ok'; return result; }
+      console.log('[PDF] TierA=0 → caindo para TierB (Haiku)');
+      dbg.note = 'tierA-zero';
     } else {
-      console.log('[PDF] Tier A: texto vazio → caindo para Tier B (Haiku)');
+      console.log('[PDF] TierA texto vazio → caindo para TierB (Haiku)');
+      dbg.note = 'tierA-empty';
     }
   } catch (err) {
+    dbg.note = 'tierA-error: ' + (err instanceof Error ? err.message : String(err));
     // PDF protegido por senha é definitivo — nem a IA resolve.
     if (err instanceof CoordinateParseError && err.code === 'password') {
       throw new ParseError('password', 'PDF protegido por senha');
@@ -64,7 +91,10 @@ async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
   }
 
   // ── Tier B: Claude Haiku (fallback automático, ~$0.008) ──
-  return parsePDFWithClaude(buffer);
+  if (lastPdfDebug) lastPdfDebug.tierBUsed = true;
+  const tierB = await parsePDFWithClaude(buffer);
+  if (lastPdfDebug) lastPdfDebug.tierBResult = tierB.length;
+  return tierB;
 }
 
 // Tier B — leitura por IA (visão de documento). Robusto para PDFs escaneados,

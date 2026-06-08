@@ -10,7 +10,7 @@ import {
 } from '../services/category-cache';
 import { categorizeBatch } from '../services/ai-categorizer';
 import { evaluateRules } from '../services/rules-engine';
-import { parseFile, ParseError } from '../services/parsers/pdf-parser';
+import { parseFile, ParseError, lastPdfDebug } from '../services/parsers/pdf-parser';
 import { ParsedTransaction } from '../types';
 
 export const onStatementUpload = onObjectFinalized(
@@ -40,6 +40,11 @@ export const onStatementUpload = onObjectFinalized(
 
       // 2. Parse → transações raw
       const rawTransactions = await parseFile(buffer, filePath);
+
+      // Diagnóstico do parse de PDF gravado no doc (visível no Firestore Console).
+      if (lastPdfDebug) {
+        await uploadRef.set({ pdfDebug: lastPdfDebug }, { merge: true });
+      }
 
       if (rawTransactions.length === 0) {
         throw new ParseError('unreadable', 'Nenhuma transação encontrada no arquivo');
