@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useStore } from '@/store/useStore';
 import { Logo } from '@/components/ui/Logo';
+import { FEATURES } from '@/lib/features';
 
 const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
@@ -20,7 +21,8 @@ export function Sidebar() {
   const { profile } = useStore();
 
   const phase = profile?.financialPhase;
-  const showBetting = phase && !BLOCKED_BETTING_PHASES.includes(phase);
+  const showBetting =
+    FEATURES.ZE_APOSTADOR && phase && !BLOCKED_BETTING_PHASES.includes(phase);
 
   const NAV = [
     { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
