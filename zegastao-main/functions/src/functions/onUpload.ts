@@ -10,7 +10,7 @@ import {
 } from '../services/category-cache';
 import { categorizeBatch } from '../services/ai-categorizer';
 import { evaluateRules } from '../services/rules-engine';
-import { parseFile } from '../services/parsers/pdf-parser';
+import { parseFile, ParseError } from '../services/parsers/pdf-parser';
 import { ParsedTransaction } from '../types';
 
 export const onStatementUpload = onObjectFinalized(
@@ -30,12 +30,20 @@ export const onStatementUpload = onObjectFinalized(
     try {
       await uploadRef.set({ status: 'processing' }, { merge: true });
 
+      // Lê o tipo de extrato escolhido no wizard (conta corrente vs cartão).
+      const uploadSnap = await uploadRef.get();
+      const statementType = (uploadSnap.data()?.statementType as string) || 'checking';
+
       // 1. Download do arquivo
       const file = getStorage().bucket(bucket).file(filePath);
       const [buffer] = await file.download();
 
       // 2. Parse → transações raw
       const rawTransactions = await parseFile(buffer, filePath);
+
+      if (rawTransactions.length === 0) {
+        throw new ParseError('unreadable', 'Nenhuma transação encontrada no arquivo');
+      }
 
       // 3. Categorização em cascata (Tier 0 → 1 → 2)
       const toAI: ParsedTransaction[] = [];
@@ -122,6 +130,7 @@ export const onStatementUpload = onObjectFinalized(
             aiCategorized: tx.aiCategorized ?? false,
             normalizedDesc: tx.normalizedDesc || null,
             bank: tx.bank || null,
+            statementType,
             isRecurring: tx.isRecurring ?? false,
             source: 'upload',
             uploadId,
@@ -149,7 +158,8 @@ export const onStatementUpload = onObjectFinalized(
       await file.delete().catch(() => {});
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await uploadRef.set({ status: 'error', errorMessage: message }, { merge: true });
+      const errorCode = error instanceof ParseError ? error.code : 'generic';
+      await uploadRef.set({ status: 'error', errorMessage: message, errorCode }, { merge: true });
       console.error(`onStatementUpload failed for ${filePath}:`, error);
     }
   }

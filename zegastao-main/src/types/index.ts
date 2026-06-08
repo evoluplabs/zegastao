@@ -114,6 +114,7 @@ export interface Transaction {
   userCorrected?: boolean;
   source: string;
   bank?: string | null;
+  statementType?: 'checking' | 'credit_card' | null;
   isRecurring?: boolean;
   normalizedDesc?: string | null;
 }
@@ -165,14 +166,20 @@ export interface Rule {
   monthRedirected?: number;
 }
 
+export type StatementType = 'checking' | 'credit_card';
+
 export interface Upload {
   id: string;
   filename: string;
   fileType: string;
   bank?: string;
+  statementType?: StatementType;
   status: 'uploading' | 'processing' | 'done' | 'error';
   totalTransactions?: number;
   errorMessage?: string;
+  errorCode?: 'password' | 'unreadable' | 'unsupported' | 'generic';
+  periodStart?: string;
+  periodEnd?: string;
 }
 
 export interface Insight {

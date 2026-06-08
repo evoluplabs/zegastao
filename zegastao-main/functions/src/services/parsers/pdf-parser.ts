@@ -20,9 +20,30 @@ export async function parseFile(buffer: Buffer, filePath: string): Promise<Parse
   return parseCSV(buffer.toString('utf-8'));
 }
 
+// Erro tipado para o backend mapear em mensagens amigáveis.
+export class ParseError extends Error {
+  code: 'password' | 'unreadable';
+  constructor(code: 'password' | 'unreadable', message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
-  const data = await pdfParse(buffer);
+  let data;
+  try {
+    data = await pdfParse(buffer);
+  } catch (err) {
+    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+    if (msg.includes('password') || msg.includes('encrypt')) {
+      throw new ParseError('password', 'PDF protegido por senha');
+    }
+    throw new ParseError('unreadable', 'Não foi possível ler o PDF');
+  }
   const text = data.text || '';
+  if (!text.trim()) {
+    throw new ParseError('unreadable', 'PDF sem texto legível (pode ser uma imagem digitalizada)');
+  }
   const bank = detectBank(text);
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
 
