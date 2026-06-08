@@ -113,6 +113,7 @@ export interface Transaction {
   aiCategorized: boolean;
   userCorrected?: boolean;
   source: string;
+  uploadId?: string | null;
   bank?: string | null;
   statementType?: 'checking' | 'credit_card' | null;
   isRecurring?: boolean;
