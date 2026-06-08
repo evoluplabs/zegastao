@@ -1,5 +1,105 @@
 // Tipos compartilhados do frontend (espelham a estrutura do Firestore).
 
+// ---- Zé Apostador ----
+
+export interface BettingProfile {
+  weeklyBudget: number;
+  copilotSuggestedBudget: number;
+  preferredMarkets: string[];
+  preferredLeagues: string[];
+  bettingEnabled: boolean;
+  acceptedRiskDisclaimer: boolean;
+  selfExclusionUntil?: { toDate: () => Date };
+  totalStaked: number;
+  totalWon: number;
+  weeklyStaked: number;
+  weeklyReset: string;
+}
+
+export interface ValueMarket {
+  market: string;
+  selection: string;
+  bestOdd: number;
+  worstOdd: number;
+  impliedProb: number;
+  marginPct: number;
+  bookmaker: string;
+  hasValue: boolean;
+}
+
+export interface StrategyOutput {
+  primaryMarket: string;
+  primarySelection: string;
+  primaryOdd: number;
+  alternativeMarket?: string;
+  alternativeSelection?: string;
+  alternativeOdd?: number;
+  betType: 'simples' | 'multipla';
+  confidenceScore: number;
+  minimumOdd: number;
+  reasoning: string;
+}
+
+export interface BettingAnalysis {
+  homeTeam: string;
+  awayTeam: string;
+  league: string;
+  date: string;
+  agentOutputs: {
+    form: string;
+    h2h: string;
+    oddsValue: string;
+    strategy: StrategyOutput;
+  };
+  finalAnalysis: string;
+  confidenceScore: number;
+  recommendedMarket: string;
+  recommendedSelection: string;
+  recommendedOdd: number;
+  minimumOdd: number;
+  alternativeMarket?: string;
+  alternativeSelection?: string;
+  alternativeOdd?: number;
+  suggestedStake: number;
+  betType: 'simples' | 'multipla';
+  availableMarkets: ValueMarket[];
+  disclaimer: string;
+}
+
+export interface BettingHistory {
+  id: string;
+  analysisId?: string;
+  market: string;
+  selection: string;
+  odd: number;
+  amount: number;
+  outcome: 'pending' | 'hit' | 'miss';
+  profit: number;
+  createdAt: { toDate: () => Date };
+}
+
+// Ligas populares para o MVP
+export const BETTING_LEAGUES = [
+  { key: 'soccer_brazil_serie_a', label: 'Brasileirão Série A' },
+  { key: 'soccer_brazil_serie_b', label: 'Brasileirão Série B' },
+  { key: 'soccer_epl', label: 'Premier League' },
+  { key: 'soccer_spain_la_liga', label: 'La Liga' },
+  { key: 'soccer_germany_bundesliga', label: 'Bundesliga' },
+  { key: 'soccer_italy_serie_a', label: 'Serie A (Itália)' },
+  { key: 'soccer_france_ligue_one', label: 'Ligue 1' },
+  { key: 'soccer_uefa_champs_league', label: 'Champions League' },
+] as const;
+
+export const BETTING_MARKET_LABELS: Record<string, string> = {
+  h2h: 'Resultado (1X2)',
+  btts: 'Ambas Marcam',
+  totals: 'Total de Gols',
+  spreads: 'Handicap Asiático',
+};
+
+export const BETTING_DISCLAIMER =
+  'Esta análise é educacional e não garante resultados. Apostas esportivas envolvem risco de perda total do valor apostado. Aposte com responsabilidade e dentro do seu limite semanal configurado com o Copiloto.';
+
 export type TransactionType = 'in' | 'out';
 
 export interface Transaction {
@@ -14,6 +114,7 @@ export interface Transaction {
   userCorrected?: boolean;
   source: string;
   bank?: string | null;
+  statementType?: 'checking' | 'credit_card' | null;
   isRecurring?: boolean;
   normalizedDesc?: string | null;
 }
@@ -65,14 +166,20 @@ export interface Rule {
   monthRedirected?: number;
 }
 
+export type StatementType = 'checking' | 'credit_card';
+
 export interface Upload {
   id: string;
   filename: string;
   fileType: string;
   bank?: string;
+  statementType?: StatementType;
   status: 'uploading' | 'processing' | 'done' | 'error';
   totalTransactions?: number;
   errorMessage?: string;
+  errorCode?: 'password' | 'unreadable' | 'unsupported' | 'generic';
+  periodStart?: string;
+  periodEnd?: string;
 }
 
 export interface Insight {

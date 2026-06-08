@@ -11,6 +11,8 @@ import { Copilot } from '@/pages/Copilot';
 import { Journey } from '@/pages/Journey';
 import { UploadPage } from '@/pages/Upload';
 import { Landing } from '@/pages/Landing';
+import { Betting } from '@/pages/Betting';
+import { FEATURES } from '@/lib/features';
 import { Pricing } from '@/pages/Pricing';
 import { Empresas } from '@/pages/Empresas';
 
@@ -20,7 +22,8 @@ export default function App() {
   return (
     <Routes>
       {/* Páginas públicas */}
-      <Route path="/welcome" element={<Landing />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/welcome" element={<Navigate to="/" replace />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/empresas" element={<Empresas />} />
       <Route path="/login" element={<Login />} />
@@ -34,7 +37,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/financas" element={<Financas />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/copilot" element={<Copilot />} />
@@ -49,6 +52,7 @@ export default function App() {
         <Route path="/documents" element={<Navigate to="/copilot?tab=documentos" replace />} />
         <Route path="/context" element={<Navigate to="/copilot?tab=historico" replace />} />
         <Route path="/upload" element={<UploadPage />} />
+        {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<Betting />} />}
       </Route>
     </Routes>
   );

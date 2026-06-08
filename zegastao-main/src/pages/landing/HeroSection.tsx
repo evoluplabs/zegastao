@@ -102,14 +102,18 @@ export function HeroSection() {
               Powered by Claude AI · Feito para o Brasil
             </div>
 
+            {/* Tagline */}
+            <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-3">
+              Você merece um plano. Não uma planilha.
+            </p>
+
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5">
-              Seu copiloto para{' '}
-              <span className="text-shimmer">sair das dívidas</span>{' '}
-              de vez.
+              Seu copiloto do{' '}
+              <span className="text-shimmer">vermelho à liberdade.</span>
             </h1>
 
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-              O Zé Gastão analisa suas finanças, monta um plano personalizado e te diz{' '}
+              O Zé Gastão analisa suas dívidas, monta um plano personalizado e te diz{' '}
               <strong className="text-foreground">exatamente o que fazer todo mês</strong>{' '}
               — sem planilha, sem vergonha, sem enrolação.
             </p>

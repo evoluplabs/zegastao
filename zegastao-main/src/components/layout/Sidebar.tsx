@@ -6,21 +6,32 @@ import {
   MessageCircle,
   Crown,
   Trophy,
+  Dices,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useStore } from '@/store/useStore';
 import { Logo } from '@/components/ui/Logo';
+import { FEATURES } from '@/lib/features';
 
-const NAV = [
-  { to: '/', label: 'Início', icon: LayoutDashboard, end: true },
-  { to: '/financas', label: 'Finanças', icon: CreditCard },
-  { to: '/transactions', label: 'Transações', icon: Receipt },
-  { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
-  { to: '/journey', label: 'Jornada', icon: Trophy },
-];
+const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
 export function Sidebar() {
   const { isPaid } = useSubscription();
+  const { profile } = useStore();
+
+  const phase = profile?.financialPhase;
+  // Em modo de teste (VITE_FEATURE_ZE_APOSTADOR=true), mostra para qualquer fase.
+  const showBetting =
+    FEATURES.ZE_APOSTADOR && (import.meta.env.DEV || !phase || !BLOCKED_BETTING_PHASES.includes(phase));
+
+  const NAV = [
+    { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
+    { to: '/financas', label: 'Finanças', icon: CreditCard },
+    { to: '/transactions', label: 'Transações', icon: Receipt },
+    { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
+    { to: '/journey', label: 'Jornada', icon: Trophy },
+  ];
 
   return (
     <aside className="hidden md:flex md:w-56 flex-col border-r bg-card">
@@ -47,6 +58,26 @@ export function Sidebar() {
             {label}
           </NavLink>
         ))}
+
+        {showBetting && (
+          <NavLink
+            to="/apostas"
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )
+            }
+          >
+            <Dices className="h-4 w-4 shrink-0" />
+            <span>Zé Apostador</span>
+            <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary leading-none">
+              Beta
+            </span>
+          </NavLink>
+        )}
       </nav>
 
       <div className="border-t p-3">

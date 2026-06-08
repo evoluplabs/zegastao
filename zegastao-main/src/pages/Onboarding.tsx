@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { setProfile, addUserDoc } from '@/lib/firestore';
 import { registerForPushNotifications } from '@/firebase';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 
@@ -45,7 +46,7 @@ export function Onboarding() {
   const [busy, setBusy] = useState(false);
 
   if (!authLoading && !user) return <Navigate to="/login" replace />;
-  if (profile?.onboardingDone) return <Navigate to="/" replace />;
+  if (profile?.onboardingDone) return <Navigate to="/dashboard" replace />;
 
   const toggle = (arr: string[], set: (v: string[]) => void, v: string) =>
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -82,7 +83,7 @@ export function Onboarding() {
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length });
       // Solicitar push em background — não bloquear navegação
       if (user) registerForPushNotifications(user.uid).catch(() => {});
-      navigate('/');
+      navigate('/dashboard');
     } finally {
       setBusy(false);
     }
@@ -105,7 +106,8 @@ export function Onboarding() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4 gap-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 p-4 gap-6">
+      <Link to="/"><Logo size="sm" /></Link>
       {/* Progress indicator */}
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-2">
@@ -146,7 +148,7 @@ export function Onboarding() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Bem-vindo ao Copiloto 👋</CardTitle>
+          <CardTitle>Vamos montar seu plano 👋</CardTitle>
           <CardDescription>
             {STEP_DESCRIPTIONS[step]}
           </CardDescription>
