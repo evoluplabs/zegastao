@@ -33,7 +33,7 @@ export function Betting() {
   const [profile, setProfile] = useState<BettingProfile | null | 'loading'>('loading');
   const [homeTeam, setHomeTeam] = useState('');
   const [awayTeam, setAwayTeam] = useState('');
-  const [league, setLeague] = useState(BETTING_LEAGUES[0].key);
+  const [league, setLeague] = useState<string>(BETTING_LEAGUES[0].key);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
