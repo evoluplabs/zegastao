@@ -78,26 +78,50 @@ function parseNubankDate(day: string, month: string, year: number): string | nul
 }
 
 // Parser específico para fatura Nubank PDF.
-// Formato das linhas de transação: "DD MMM •••• NNNN Descrição R$ X.XXX,XX"
-// Pagamentos aparecem como "DD MMM Pagamento em DD MMM −R$ X.XXX,XX"
-const NUBANK_TX_RE =
-  /^(\d{1,2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+(?:[••]+\s*\d+\s+)?(.+?)\s+R\$\s*([\d.]+,\d{2})$/i;
-const NUBANK_PAY_RE =
-  /^(\d{1,2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+(.+?)\s+[−\-]R\$\s*([\d.]+,\d{2})$/i;
+// Regex simplificado: captura tudo entre data e último R$XX,XX como descrição raw.
+// A máscara do cartão (ex: "•••• 6832" ou "● •••• 6832") é removida em pós-processamento.
+const MONTHS = 'JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ';
+const NUBANK_TX_RE = new RegExp(
+  `^(\\d{1,2})\\s+(${MONTHS})\\s+(.+?)\\s+R\\$\\s*([\\d.]+,\\d{2})$`, 'i'
+);
+const NUBANK_PAY_RE = new RegExp(
+  `^(\\d{1,2})\\s+(${MONTHS})\\s+(.+?)\\s+[−\\-]R\\$\\s*([\\d.]+,\\d{2})$`, 'i'
+);
+
+// Remove prefixo de máscara do cartão: "•••• 6832 " ou "● •••• 6832 " etc.
+function stripCardMask(s: string): string {
+  return s.replace(/^[\s\S]*?[•●*●•·]+[\s\S]*?\d{4}\s+/, '').trim();
+}
+
+// Junta linhas onde a data ficou separada da descrição pelo pdf-parse.
+function joinNubankLines(lines: string[]): string[] {
+  const DATE_ONLY = new RegExp(`^(\\d{1,2})\\s+(${MONTHS})\\s*$`, 'i');
+  const result: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (DATE_ONLY.test(lines[i]) && i + 1 < lines.length) {
+      result.push(`${lines[i]} ${lines[i + 1]}`);
+      i += 2;
+    } else {
+      result.push(lines[i]);
+      i++;
+    }
+  }
+  return result;
+}
 
 function parseNubankLines(lines: string[], fullText: string): ParsedTransaction[] {
   const year = extractFaturaYear(fullText);
   const out: ParsedTransaction[] = [];
   let inPayments = false;
+  const processedLines = joinNubankLines(lines);
 
-  for (const line of lines) {
-    // Detecta seção de pagamentos/financiamentos
+  for (const line of processedLines) {
     if (/pagamentos e financiamentos/i.test(line)) {
       inPayments = true;
       continue;
     }
 
-    // Tenta linha de pagamento/crédito (valor negativo = entrada na conta)
     const payMatch = line.match(NUBANK_PAY_RE);
     if (payMatch) {
       const date = parseNubankDate(payMatch[1], payMatch[2], year);
@@ -106,15 +130,14 @@ function parseNubankLines(lines: string[], fullText: string): ParsedTransaction[
       if (amount === null) continue;
       out.push({
         date,
-        description: payMatch[3].trim(),
-        amount: -amount, // crédito/pagamento: negativo no cartão = entrada
+        description: stripCardMask(payMatch[3].trim()),
+        amount: -amount,
         type: 'in',
         bank: 'nubank',
       });
       continue;
     }
 
-    // Tenta linha de compra (débito no cartão = saída)
     const txMatch = line.match(NUBANK_TX_RE);
     if (txMatch && !inPayments) {
       const date = parseNubankDate(txMatch[1], txMatch[2], year);
@@ -123,8 +146,8 @@ function parseNubankLines(lines: string[], fullText: string): ParsedTransaction[
       if (amount === null) continue;
       out.push({
         date,
-        description: txMatch[3].trim(),
-        amount: -amount, // compra no cartão é saída (negativo)
+        description: stripCardMask(txMatch[3].trim()),
+        amount: -amount,
         type: 'out',
         bank: 'nubank',
       });
