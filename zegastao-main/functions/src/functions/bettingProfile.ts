@@ -4,6 +4,8 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import Anthropic from '@anthropic-ai/sdk';
 
+const ZE_APOSTADOR_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
+
 const client = new Anthropic();
 
 // Sugere budget de apostas com base no contexto financeiro do usuário
@@ -37,6 +39,10 @@ Responda com JSON:
 export const bettingProfile = onCall(
   { region: 'southamerica-east1', enforceAppCheck: false },
   async (request) => {
+    if (!ZE_APOSTADOR_ENABLED) {
+      throw new HttpsError('not-found', 'Zé Apostador ainda não está disponível.');
+    }
+
     const userId = request.auth?.uid;
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
