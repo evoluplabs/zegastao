@@ -14,7 +14,7 @@ import { parseFile } from '../services/parsers/pdf-parser';
 import { ParsedTransaction } from '../types';
 
 export const onStatementUpload = onObjectFinalized(
-  { region: 'southamerica-east1', memory: '512MiB', timeoutSeconds: 300 },
+  { region: 'us-east1', memory: '512MiB', timeoutSeconds: 300 },
   async (event) => {
     const filePath = event.data.name;
     const bucket = event.data.bucket;

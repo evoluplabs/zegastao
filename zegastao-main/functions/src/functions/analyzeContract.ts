@@ -8,7 +8,7 @@ import pdfParse from 'pdf-parse';
 import { ExtractedContract } from '../services/contract-types';
 
 export const analyzeContract = onObjectFinalized(
-  { region: 'southamerica-east1', memory: '1GiB', timeoutSeconds: 300 },
+  { region: 'us-east1', memory: '1GiB', timeoutSeconds: 300 },
   async (event) => {
     const filePath = event.data.name;
     const bucket = event.data.bucket;
