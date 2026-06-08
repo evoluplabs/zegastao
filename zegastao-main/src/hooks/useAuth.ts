@@ -9,7 +9,7 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '@/firebase';
 import { useStore } from '@/store/useStore';
-import type { Profile } from '@/types';
+import type { Profile, Subscription } from '@/types';
 
 // Garante que exista um documento de profile para o usuário.
 async function ensureProfile(uid: string, email: string | null, name: string | null) {
@@ -28,6 +28,21 @@ async function ensureProfile(uid: string, email: string | null, name: string | n
   return snap.data() as Profile;
 }
 
+// Garante o documento de assinatura no schema padrão (free/inactive).
+// O webhook do MercadoPago promove para active ao confirmar pagamento.
+async function ensureSubscription(uid: string) {
+  const ref = doc(db, 'users', uid, 'subscription', 'main');
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    const sub: Subscription = {
+      plan: 'free',
+      status: 'inactive',
+      uploadsThisMonth: 0,
+    };
+    await setDoc(ref, sub);
+  }
+}
+
 export function useAuthListener() {
   const { setUser, setProfile, setAuthLoading } = useStore();
 
@@ -37,6 +52,7 @@ export function useAuthListener() {
       if (user) {
         try {
           const profile = await ensureProfile(user.uid, user.email, user.displayName);
+          await ensureSubscription(user.uid);
           setProfile(profile);
         } catch {
           setProfile(null);
