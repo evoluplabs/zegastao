@@ -5,15 +5,18 @@ import {
   Receipt,
   MessageCircle,
   Crown,
+  Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
+import { Logo } from '@/components/ui/Logo';
 
 const NAV = [
   { to: '/', label: 'Início', icon: LayoutDashboard, end: true },
   { to: '/financas', label: 'Finanças', icon: CreditCard },
   { to: '/transactions', label: 'Transações', icon: Receipt },
   { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
+  { to: '/journey', label: 'Jornada', icon: Trophy },
 ];
 
 export function Sidebar() {
@@ -21,13 +24,8 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex md:w-56 flex-col border-r bg-card">
-      <div className="px-5 py-5 border-b">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-            C
-          </div>
-          <span className="font-bold">Copiloto</span>
-        </div>
+      <div className="px-4 py-4 border-b">
+        <Logo size="sm" />
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">

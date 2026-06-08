@@ -1,4 +1,11 @@
 import { LogOut, Crown } from 'lucide-react';
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
 import { Link } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { authActions } from '@/hooks/useAuth';
@@ -15,7 +22,7 @@ export function TopBar() {
       <div>
         <p className="text-xs text-muted-foreground capitalize">{monthLabel()}</p>
         <h1 className="text-sm font-semibold">
-          Olá, {profile?.name || 'amigo'} 👋
+          {getGreeting()}, {profile?.name || 'amigo'} 👋
         </h1>
       </div>
       <div className="flex items-center gap-2">
