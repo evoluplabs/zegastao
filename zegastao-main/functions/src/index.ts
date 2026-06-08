@@ -9,3 +9,5 @@ export { nightlyDigest } from './functions/nightlyDigest';
 export { copilotChat } from './functions/copilotChat';
 export { categorizeManual } from './functions/categorizeManual';
 export { createMPCheckout, handleMPWebhook } from './functions/mercadopago';
+export { betAnalysis } from './functions/betAnalysis';
+export { bettingProfile } from './functions/bettingProfile';
