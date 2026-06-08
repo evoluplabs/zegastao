@@ -130,11 +130,16 @@ export function Rules() {
       {rules.map((r) => (
         <Card key={r.id}>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               <Zap className="h-4 w-4 text-primary" /> {r.name}
               <Badge variant={r.isActive ? 'success' : 'secondary'}>
                 {r.isActive ? 'Ativa' : 'Pausada'}
               </Badge>
+              {r.source === 'auto-default' && (
+                <span className="rounded-full border border-primary/30 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  💡 Sugestão inicial
+                </span>
+              )}
             </CardTitle>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={() => updateUserDoc('rules', r.id, { isActive: !r.isActive })}>

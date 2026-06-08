@@ -168,6 +168,7 @@ export interface Rule {
   timesTriggered?: number;
   totalRedirected?: number;
   monthRedirected?: number;
+  source?: string; // 'auto-default' = regra inicial sugerida pelo sistema
 }
 
 export type StatementType = 'checking' | 'credit_card';

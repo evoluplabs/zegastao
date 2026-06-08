@@ -233,6 +233,29 @@ async function autoPopulateFinances(
         createdAt: new Date(),
       });
     }
+
+    // (c) Regras padrão de alerta (só se o usuário não tem regras). Dão um
+    //     contexto inicial; o usuário ajusta os limites depois.
+    const rulesCol = db.collection('users').doc(userId).collection('rules');
+    const rulesSnap = await rulesCol.limit(1).get();
+    if (rulesSnap.empty) {
+      const defaults = [
+        { name: 'Alerta: Delivery acima de R$ 300/mês', triggerCategoryName: 'Delivery', triggerThreshold: 300 },
+        { name: 'Alerta: Transporte app acima de R$ 200/mês', triggerCategoryName: 'Transporte app', triggerThreshold: 200 },
+        { name: 'Alerta: Streaming acima de R$ 100/mês', triggerCategoryName: 'Streaming', triggerThreshold: 100 },
+      ];
+      for (const r of defaults) {
+        await rulesCol.add({
+          name: r.name,
+          isActive: true,
+          triggerType: 'category_monthly_over',
+          triggerCategoryName: r.triggerCategoryName,
+          triggerThreshold: r.triggerThreshold,
+          source: 'auto-default',
+          createdAt: new Date(),
+        });
+      }
+    }
   } catch (err) {
     // Auto-população é best-effort: nunca derruba o processamento do extrato.
     console.error('autoPopulateFinances falhou:', err);
