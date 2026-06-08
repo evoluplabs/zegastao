@@ -24,7 +24,7 @@ export function Rules() {
   const [form, setForm] = useState({
     name: '',
     triggerType: 'income_received' as TriggerType,
-    triggerCategoryName: CATEGORIES[0],
+    triggerCategoryName: CATEGORIES[0] as string,
     triggerThreshold: '',
     actionPercentage: '30',
     actionGoalId: '',
