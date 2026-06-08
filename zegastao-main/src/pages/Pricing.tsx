@@ -82,12 +82,12 @@ export function Pricing() {
   const annualPrice = 'R$ 178,80';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
       <div className="mx-auto max-w-5xl px-4 py-12">
         {/* Back */}
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
           <ArrowLeft className="h-4 w-4" />
-          Voltar ao app
+          Voltar ao início
         </Link>
 
         {/* Header */}
@@ -97,10 +97,10 @@ export function Pricing() {
             Planos simples, sem pegadinha
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-3">
-            Escolha seu plano
+            Quanto custa sair das dívidas?
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Comece grátis. Assine quando estiver pronto para levar sua vida financeira a sério.
+            Comece grátis. Assine quando estiver pronto para ter o Zé Gastão do seu lado de verdade.
           </p>
 
           {/* Toggle mensal/anual */}
@@ -153,7 +153,7 @@ export function Pricing() {
               ))}
             </ul>
             <Button variant="outline" className="w-full" asChild>
-              <Link to={user ? '/' : '/login'}>
+              <Link to={user ? '/dashboard' : '/login'}>
                 {plan !== 'free' ? 'Seu plano atual' : user ? 'Continuar grátis' : 'Começar grátis'}
               </Link>
             </Button>
