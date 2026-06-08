@@ -7,9 +7,11 @@ import {
   Crown,
   Trophy,
   Dices,
+  Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useReferral } from '@/hooks/useReferral';
 import { useStore } from '@/store/useStore';
 import { Logo } from '@/components/ui/Logo';
 import { FEATURES } from '@/lib/features';
@@ -18,6 +20,7 @@ const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
 export function Sidebar() {
   const { isPaid } = useSubscription();
+  const referral = useReferral();
   const { profile } = useStore();
 
   const phase = profile?.financialPhase;
@@ -80,7 +83,14 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className="border-t p-3">
+      <div className="border-t p-3 space-y-0.5">
+        <button
+          onClick={() => referral.share('sidebar')}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+        >
+          <Gift className="h-4 w-4 shrink-0" />
+          Indicar um amigo
+        </button>
         {!isPaid && (
           <NavLink
             to="/pricing"

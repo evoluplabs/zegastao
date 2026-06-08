@@ -16,6 +16,8 @@ import { CategoryBreakdown } from '@/components/charts/CategoryBreakdown';
 import { DebtWizard } from '@/components/flows/DebtWizard';
 import { GoalWizard } from '@/components/flows/GoalWizard';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
+import { ShareWinBanner } from '@/components/share/ShareWinBanner';
+import { deriveWins } from '@/lib/wins';
 import { formatBRL } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
 import { cn } from '@/lib/utils';
@@ -150,6 +152,9 @@ export function Dashboard() {
     .filter((g) => g.status === 'active')
     .sort((a, b) => (b.currentAmount / (b.targetAmount || 1)) - (a.currentAmount / (a.targetAmount || 1)))[0];
 
+  // Mini-vitórias compartilháveis (alavanca de crescimento orgânico)
+  const wins = deriveWins({ balance, topGoal, redirectedThisMonth });
+
   if (txLoading) {
     return (
       <div className="space-y-4">
@@ -176,6 +181,9 @@ export function Dashboard() {
   return (
     <>
       <div className="space-y-5">
+        {/* Mini-vitória compartilhável (crescimento orgânico) */}
+        <ShareWinBanner wins={wins} />
+
         {/* Hero: Fase + Saldo */}
         <div className="grid gap-4 md:grid-cols-3">
           <div className="md:col-span-2 rounded-2xl border bg-card p-6">

@@ -35,6 +35,7 @@ export const Events = {
   CHAT_LIMIT_REACHED: 'chat_limit_reached',
   MILESTONE_ACHIEVED: 'milestone_achieved',
   MILESTONE_SHARED: 'milestone_shared',
+  WIN_SHARED: 'win_shared',
   UPGRADE_MODAL_SHOWN: 'upgrade_modal_shown',
   UPGRADE_CLICKED: 'upgrade_clicked',
   UPGRADE_COMPLETED: 'upgrade_completed',

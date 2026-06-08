@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Circle, Trophy, Share2, X, PartyPopper } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { updateUserDoc } from '@/lib/firestore';
 import { useMilestones, useDailyTasks } from '@/hooks/useJourney';
+import { useReferral } from '@/hooks/useReferral';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ShareableCard } from '@/components/share/ShareableCard';
 import { MILESTONE_ORDER, PHASE_LABELS, type Milestone } from '@/types';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
@@ -39,45 +41,51 @@ function CelebrationModal({
   milestone: Milestone;
   onClose: () => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const milestoneInfo = MILESTONE_ORDER.find((m) => m.id === milestone.id);
   const emoji = MILESTONE_EMOJIS[milestone.id] || '🎯';
+  const { referralUrl, share: shareReferral } = useReferral();
+  const [referred, setReferred] = useState(false);
 
-  async function handleShare() {
-    const text = `Acabei de conquistar "${milestoneInfo?.name}" na minha jornada financeira! ${emoji}\n\nUsando o Copiloto Financeiro para sair das dívidas e construir patrimônio. #CopilosoFinanceiro`;
-    track(Events.MILESTONE_SHARED, { milestoneId: milestone.id });
-    if (navigator.share) {
-      try {
-        await navigator.share({ text, url: window.location.origin });
-      } catch { /* cancelou */ }
-    } else {
-      await navigator.clipboard.writeText(text);
-      alert('Texto copiado! Cole onde quiser compartilhar.');
-    }
+  async function handleReferral() {
+    const r = await shareReferral('celebration');
+    if (r === 'copied') setReferred(true);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div ref={cardRef} className="w-full max-w-sm rounded-2xl border bg-card shadow-md animate-slide-up text-center overflow-hidden">
-        {/* Gradient header */}
-        <div className="bg-gradient-to-br from-primary/20 via-success/10 to-primary/5 px-6 pt-8 pb-6">
-          <div className="text-6xl mb-3">{emoji}</div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-success/15 border border-success/30 px-3 py-1 text-xs font-semibold text-success mb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+      <div className="relative my-auto w-full max-w-sm rounded-2xl border bg-card shadow-md animate-slide-up overflow-hidden">
+        <div className="px-6 pt-7 pb-2 text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-success/15 border border-success/30 px-3 py-1 text-xs font-semibold text-success mb-4">
             <PartyPopper className="h-3 w-3" />
             Marco conquistado!
           </div>
-          <h2 className="text-xl font-bold">{milestoneInfo?.name}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Você está evoluindo na sua jornada financeira. Continue assim!
-          </p>
+
+          {/* Card compartilhável como IMAGEM (alavanca 1) */}
+          <ShareableCard
+            emoji={emoji}
+            title={milestoneInfo?.name || 'Conquista!'}
+            subtitle="Conquista na minha jornada financeira"
+            shareText={`Conquistei "${milestoneInfo?.name}" no Zé Gastão! ${emoji} Saindo do vermelho à liberdade.`}
+            shareUrl={referralUrl || window.location.origin}
+            analyticsId={Events.MILESTONE_SHARED}
+          />
         </div>
 
-        <div className="p-6 flex flex-col gap-3">
-          <Button className="w-full gap-2" onClick={handleShare}>
-            <Share2 className="h-4 w-4" />
-            Compartilhar conquista
+        {/* CTA de indicação no momento de maior orgulho (alavanca 3) */}
+        <div className="mx-6 mb-4 mt-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold">
+            <Gift className="h-4 w-4 text-primary" /> Chama um amigo pra essa jornada
+          </p>
+          <p className="mt-0.5 mb-2 text-xs text-muted-foreground">
+            Indique alguém que precisa sair das dívidas — vocês dois ganham.
+          </p>
+          <Button variant="outline" size="sm" className="w-full" onClick={handleReferral}>
+            {referred ? 'Link copiado! 🎉' : 'Indicar um amigo'}
           </Button>
-          <Button variant="outline" className="w-full" onClick={onClose}>
+        </div>
+
+        <div className="px-6 pb-6">
+          <Button variant="ghost" className="w-full" onClick={onClose}>
             Continuar a jornada
           </Button>
         </div>
