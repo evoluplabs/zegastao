@@ -35,6 +35,7 @@ export class ParseError extends Error {
 // Diagnóstico do último parse de PDF — o onUpload grava no doc do upload para
 // inspeção no Firestore Console (independe do CLI de logs). Temporário.
 export interface PdfDebug {
+  version: string;
   tierAChars: number;
   bank: string;
   lineCount: number;
@@ -44,15 +45,20 @@ export interface PdfDebug {
   tierBResult: number;
   note: string;
 }
+// Marcador de versão do parser — se o doc do upload não tiver este valor em
+// pdfDebug.version, o código rodando é antigo (deploy/pull desatualizado).
+const PARSER_VERSION = 'hibrido-v5';
 export let lastPdfDebug: PdfDebug | null = null;
 
 // Orquestra os dois tiers de parsing de PDF.
 async function parsePDF(buffer: Buffer): Promise<ParsedTransaction[]> {
   const dbg: PdfDebug = {
+    version: PARSER_VERSION,
     tierAChars: 0, bank: '', lineCount: 0, sample: [],
     tierAResult: 0, tierBUsed: false, tierBResult: 0, note: '',
   };
   lastPdfDebug = dbg;
+  console.log(`[PDF] parser ${PARSER_VERSION} iniciado`);
 
   // ── Tier A: extração por coordenadas + regex (grátis) ──
   try {

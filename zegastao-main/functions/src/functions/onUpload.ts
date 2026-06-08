@@ -164,7 +164,11 @@ export const onStatementUpload = onObjectFinalized(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const errorCode = error instanceof ParseError ? error.code : 'generic';
-      await uploadRef.set({ status: 'error', errorMessage: message, errorCode }, { merge: true });
+      // Grava o diagnóstico do parser mesmo quando o parse lança erro.
+      await uploadRef.set(
+        { status: 'error', errorMessage: message, errorCode, pdfDebug: lastPdfDebug ?? null },
+        { merge: true },
+      );
       console.error(`onStatementUpload failed for ${filePath}:`, error);
     }
   }
