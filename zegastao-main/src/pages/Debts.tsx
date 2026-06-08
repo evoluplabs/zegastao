@@ -119,11 +119,16 @@ export function Debts() {
       {ranked.map((d, i) => (
         <Card key={d.id}>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {d.creditor}
               {i === 0 && (
                 <Badge variant="destructive">
                   <TrendingDown className="mr-1 h-3 w-3" /> Pague primeiro
+                </Badge>
+              )}
+              {d.source === 'auto-upload' && (
+                <Badge variant="outline" className="border-primary/30 text-primary">
+                  ✨ Do seu extrato
                 </Badge>
               )}
             </CardTitle>
@@ -144,6 +149,11 @@ export function Debts() {
               <span className="text-muted-foreground">Juros</span>
               <span>{(d.interestRateMonthly * 100).toFixed(1)}% a.m.</span>
             </div>
+            {d.source === 'auto-upload' && d.notes && (
+              <p className="mt-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-muted-foreground">
+                {d.notes} <span className="text-primary">Toque para editar.</span>
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}

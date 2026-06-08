@@ -30,10 +30,12 @@ export function extractCreditCardDebt(text: string, bank: string): StatementDebt
   if (totalBalance <= 0) return null;
 
   // Juros rotativo ("Juros rotativo 16,1% ao mês" ou "rotativos de 16,1% ao mês")
+  // Armazenado como FRAÇÃO (0.161) para bater com o padrão do app (Debts.tsx
+  // grava rate/100 e exibe rate*100).
   const juros =
     text.match(/juros rotativo\s*([\d.,]+)\s*%?\s*ao m[êe]s/i) ||
     text.match(/rotativos?\s*de\s*([\d.,]+)\s*%\s*ao m[êe]s/i);
-  const interestRateMonthly = juros ? parsePercent(juros[1]) : 0;
+  const interestRateMonthly = juros ? parsePercent(juros[1]) / 100 : 0;
 
   // Pagamento mínimo ("Pagamento mínimo ... R$ 683,83")
   const minimo = text.match(/pagamento m[íi]nimo[^R]{0,40}R\$\s*([\d.]+,\d{2})/i);

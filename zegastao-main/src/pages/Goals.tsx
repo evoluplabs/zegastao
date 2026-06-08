@@ -73,7 +73,14 @@ export function Goals() {
           return (
             <Card key={g.id}>
               <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">{g.name}</CardTitle>
+                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                  {g.name}
+                  {g.source === 'auto-default' && (
+                    <span className="rounded-full border border-primary/30 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      💡 Sugestão inicial
+                    </span>
+                  )}
+                </CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => deleteUserDoc('goals', g.id)}>
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>

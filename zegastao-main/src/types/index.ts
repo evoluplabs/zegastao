@@ -132,6 +132,7 @@ export interface Debt {
   status: 'active' | 'paid' | 'overdue';
   overdueMonths?: number;
   notes?: string;
+  source?: string; // 'auto-upload' = criado automaticamente do extrato
 }
 
 export interface Goal {
@@ -144,6 +145,8 @@ export interface Goal {
   priority?: number;
   status: 'active' | 'done' | 'paused';
   color?: string;
+  notes?: string;
+  source?: string; // 'auto-default' = sugestão inicial criada pelo sistema
 }
 
 export type TriggerType =
