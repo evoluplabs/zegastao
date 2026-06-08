@@ -9,17 +9,22 @@ import { parseCSV, parseXLSX } from './csv-parser';
 import { extractTextByCoordinate, CoordinateParseError } from './pdf-coordinate';
 
 export async function parseFile(buffer: Buffer, filePath: string): Promise<ParsedTransaction[]> {
+  // ATENÇÃO: o arquivo é salvo no Storage SEM extensão (uploads/{uid}/{uploadId}),
+  // então a detecção por extensão do filePath não funciona. Detectamos o tipo
+  // pelos magic bytes do conteúdo — robusto e independente do nome.
+  const head = buffer.subarray(0, 8).toString('latin1');
   const lower = filePath.toLowerCase();
-  if (lower.endsWith('.csv') || lower.endsWith('.txt')) {
-    return parseCSV(buffer.toString('utf-8'));
-  }
-  if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
-    return parseXLSX(buffer);
-  }
-  if (lower.endsWith('.pdf')) {
+
+  // PDF: assinatura "%PDF"
+  if (head.startsWith('%PDF') || lower.endsWith('.pdf')) {
     return parsePDF(buffer);
   }
-  // Tentativa: assume texto/CSV
+  // XLSX é um zip ("PK"); XLS antigo é OLE ("\xD0\xCF")
+  if (head.startsWith('PK') || head.startsWith('\xD0\xCF') ||
+      lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+    return parseXLSX(buffer);
+  }
+  // Texto: CSV / TXT (inclui o caso sem extensão com conteúdo textual)
   return parseCSV(buffer.toString('utf-8'));
 }
 
