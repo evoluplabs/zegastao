@@ -68,12 +68,13 @@ function extractFaturaYear(text: string): number {
   return new Date().getFullYear();
 }
 
-// Converte "14 MAR" + ano em Date. Retorna null se inválido.
-function parseNubankDate(day: string, month: string, year: number): Date | null {
+// Converte "14 MAR" + ano em string ISO yyyy-mm-dd. Retorna null se inválido.
+function parseNubankDate(day: string, month: string, year: number): string | null {
   const mo = MONTH_MAP[month.toUpperCase()];
   if (!mo) return null;
   const d = new Date(year, mo - 1, parseInt(day, 10));
-  return isNaN(d.getTime()) ? null : d;
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
 }
 
 // Parser específico para fatura Nubank PDF.
