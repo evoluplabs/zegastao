@@ -123,7 +123,7 @@ export function FinancialSimulator({ income, expenses, debts, onClose }: Props) 
     }
   }, [scenario, numVal, income, expenses, activeDebts, baseline]);
 
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     positive: 'border-success/30 bg-success/5 text-success',
     warn: 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
     danger: 'border-destructive/30 bg-destructive/5 text-destructive',
