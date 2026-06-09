@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { X, Trash2, CheckCircle2, TrendingDown, AlertTriangle } from 'lucide-react';
+import { X, Trash2, CheckCircle2, TrendingDown, AlertTriangle, MessageCircle } from 'lucide-react';
 import { updateUserDoc, deleteUserDoc } from '@/lib/firestore';
 import { calcAmortization } from '@/lib/amortization';
 import { Button } from '@/components/ui/button';
@@ -46,10 +46,17 @@ export function DebtEditModal({ debt, onClose }: Props) {
     remainingInstallments: String(debt.remainingInstallments || 0),
     status: debt.status,
     statementMonth: debt.statementMonth || '',
+    informalUrgency: debt.informalUrgency || 'whenever',
     notes: debt.notes || '',
   });
 
-  const isCard = form.type === 'Cartão de crédito';
+  const isCard     = form.type === 'Cartão de crédito';
+  const isInformal = form.type === 'Familiar / Amigos';
+
+  function buildWhatsAppUrl(): string {
+    const script = `Olá! Tenho uma dívida de ${formatBRL(debt.totalBalance)} com ${debt.creditor}. Gostaria de negociar as condições de pagamento — posso pagar um valor à vista com desconto ou reparcelar em condições melhores. Qual seria a melhor opção disponível para mim?`;
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(script)}`;
+  }
 
   // Projection: pay minimum vs +100
   const projection = useMemo(() => {
@@ -87,6 +94,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
         notes: form.notes || undefined,
       };
       if (isCard && form.statementMonth) patch.statementMonth = form.statementMonth;
+      if (isInformal) patch.informalUrgency = form.informalUrgency as Debt['informalUrgency'];
       await updateUserDoc('debts', debt.id, patch);
       onClose();
     } finally {
@@ -191,6 +199,20 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 </div>
               )}
 
+              {/* Botão negociar WhatsApp */}
+              {debt.status === 'active' && (
+                <a
+                  href={buildWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-green-400/50 bg-green-50 dark:bg-green-500/5 dark:border-green-500/20 px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-400 hover:bg-green-100 transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  💬 Negociar via WhatsApp
+                  <span className="text-[10px] font-normal opacity-70">abre com script pronto</span>
+                </a>
+              )}
+
               {/* Actions */}
               <div className="flex gap-2 pt-1">
                 {debt.status !== 'paid' && (
@@ -283,6 +305,32 @@ export function DebtEditModal({ debt, onClose }: Props) {
                     value={form.statementMonth}
                     onChange={(e) => setForm({ ...form, statementMonth: e.target.value })}
                   />
+                </div>
+              )}
+
+              {isInformal && (
+                <div className="space-y-2">
+                  <Label>Essa pessoa precisa do dinheiro quando?</Label>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {[
+                      { id: 'whenever', label: '😌 Quando eu puder — sem prazo', sub: 'A pessoa entende a situação' },
+                      { id: 'monthly',  label: '📅 Todo mês — combinamos uma data', sub: 'Trato como parcela mensal' },
+                      { id: 'urgent',   label: '🚨 Tá precisando agora', sub: 'Prioridade máxima — antes das outras' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, informalUrgency: opt.id as typeof form.informalUrgency })}
+                        className={cn(
+                          'flex flex-col items-start rounded-lg border px-3 py-2 text-xs text-left transition-colors',
+                          form.informalUrgency === opt.id ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-accent'
+                        )}
+                      >
+                        <span>{opt.label}</span>
+                        <span className="text-muted-foreground">{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 

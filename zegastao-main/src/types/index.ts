@@ -134,6 +134,7 @@ export interface Debt {
   notes?: string;
   source?: string;
   statementMonth?: string; // 'YYYY-MM' — mês de referência da fatura (cartão)
+  informalUrgency?: 'whenever' | 'monthly' | 'urgent'; // para dívidas familiares/amigos
 }
 
 export interface Goal {
@@ -204,6 +205,23 @@ export type FinancialPhase =
 
 export type RiskProfile = 'conservative' | 'moderate' | 'aggressive';
 
+export type ExtraIncomeType =
+  | 'decimo_terceiro'
+  | 'plr'
+  | 'bonus'
+  | 'bolsa_familia'
+  | 'bpc'
+  | 'aluguel'
+  | 'pensao'
+  | 'outro';
+
+export interface ExtraIncomeSource {
+  type: ExtraIncomeType;
+  estimatedAmount: number;
+  month?: number; // 1-12, undefined = recorrente mensal
+  label?: string;
+}
+
 export interface Profile {
   name?: string;
   email?: string;
@@ -215,6 +233,7 @@ export interface Profile {
   skills?: string[];
   investmentGoals?: string[];
   incomeSources?: { type: string; amount: number }[];
+  extraIncomeSources?: ExtraIncomeSource[];
   riskProfile?: RiskProfile;
   alreadyInvests?: 'yes' | 'no' | 'no_idea';
 }

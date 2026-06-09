@@ -21,6 +21,9 @@ import { ProfileCompletionRing } from '@/components/ProfileCompletionRing';
 import { ShareWinBanner } from '@/components/share/ShareWinBanner';
 import { FinancialDiagnostic } from '@/components/FinancialDiagnostic';
 import { CategoryAnalysis } from '@/components/CategoryAnalysis';
+import { WeeklyChallenge } from '@/components/WeeklyChallenge';
+import { FinancialSimulator } from '@/components/FinancialSimulator';
+import { RecurringExpenses } from '@/components/RecurringExpenses';
 import { deriveWins } from '@/lib/wins';
 import { formatBRL, currentMonthStart } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
@@ -73,16 +76,29 @@ export function Dashboard() {
   const [openGoal, setOpenGoal] = useState(false);
   const [openTx, setOpenTx] = useState(false);
   const [openSetup, setOpenSetup] = useState(false);
+  const [openSimulator, setOpenSimulator] = useState(false);
 
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
 
   const monthStart = currentMonthStart();
 
+  // Início do mês anterior para calcular queda de categoria
+  const prevMonthStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().substring(0, 10);
+  }, []);
+
   // Transactions for current month (for balance/expenses)
   const currentMonthTx = useMemo(
     () => allTransactions.filter((t) => t.date >= monthStart),
     [allTransactions, monthStart]
+  );
+
+  // Transactions for previous month
+  const prevMonthTx = useMemo(
+    () => allTransactions.filter((t) => t.date >= prevMonthStart && t.date < monthStart),
+    [allTransactions, prevMonthStart, monthStart]
   );
 
   const { expenses, byCategory, debtPayments } = useMemo(() => {
@@ -102,6 +118,28 @@ export function Dashboard() {
     return { expenses, byCategory, debtPayments };
   }, [currentMonthTx, debts]);
 
+  // Categorias do mês anterior (para calcular queda)
+  const prevByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const t of prevMonthTx) {
+      if (t.amount < 0) {
+        const abs = Math.abs(t.amount);
+        map[t.category] = (map[t.category] || 0) + abs;
+      }
+    }
+    return map;
+  }, [prevMonthTx]);
+
+  // Queda na maior categoria de gasto vs mês anterior
+  const topCategoryDropPct = useMemo(() => {
+    if (!byCategory.length || !prevMonthTx.length) return undefined;
+    const top = byCategory[0];
+    const prevAmount = prevByCategory[top.name] || 0;
+    if (prevAmount === 0) return undefined;
+    const drop = ((prevAmount - top.amount) / prevAmount) * 100;
+    return drop >= 15 ? Math.round(drop) : undefined;
+  }, [byCategory, prevByCategory, prevMonthTx.length]);
+
   // Use fixed expenses from profile if no transaction data yet for this month
   const effectiveExpenses = expenses > 0 ? expenses : (profile?.fixedExpenses || 0);
 
@@ -116,7 +154,17 @@ export function Dashboard() {
     .filter((g) => g.status === 'active')
     .sort((a, b) => (b.currentAmount / (b.targetAmount || 1)) - (a.currentAmount / (a.targetAmount || 1)))[0];
 
-  const wins = deriveWins({ balance, topGoal, redirectedThisMonth });
+  const wins = deriveWins({ balance, topGoal, redirectedThisMonth, topCategoryDropPct });
+
+  // Categorias over-budget para WeeklyChallenge
+  const overBudgetCategories = useMemo(() => {
+    const BENCH: Record<string, number> = {
+      'Delivery': 8, 'Restaurantes': 8, 'Transporte app': 5, 'Lazer': 10, 'Streaming': 3, 'Beleza': 5, 'Vestuário': 5,
+    };
+    return byCategory
+      .map((c) => ({ ...c, pct: income > 0 ? (c.amount / income) * 100 : 0, ideal: BENCH[c.name] || 0 }))
+      .filter((c) => c.ideal > 0 && c.pct > c.ideal * 1.1);
+  }, [byCategory, income]);
 
   const hasAnyData = income > 0 || debts.length > 0 || allTransactions.length > 0 || goals.length > 0;
   const hasCurrentMonthTx = currentMonthTx.length > 0;
@@ -272,6 +320,14 @@ export function Dashboard() {
             <Link to="/upload">
               <Upload className="h-3.5 w-3.5" /> Importar extrato
             </Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 rounded-full border-amber-400/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+            onClick={() => setOpenSimulator(true)}
+          >
+            <Zap className="h-3.5 w-3.5" /> E se eu…
           </Button>
         </div>
 
@@ -433,7 +489,11 @@ export function Dashboard() {
                 {byCategory.length > 0 ? (
                   <div className="space-y-3">
                     <CategoryBreakdown data={byCategory.slice(0, 5)} />
-                    <CategoryAnalysis categories={byCategory.slice(0, 6)} income={income} />
+                    <CategoryAnalysis
+                      categories={byCategory.slice(0, 6)}
+                      income={income}
+                      transactions={currentMonthTx}
+                    />
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
@@ -441,6 +501,26 @@ export function Dashboard() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Desafio semanal — aparece quando há categoria acima do ideal */}
+        {overBudgetCategories.length > 0 && (
+          <WeeklyChallenge
+            overBudgetCategories={overBudgetCategories}
+            currentMonthTx={currentMonthTx}
+          />
+        )}
+
+        {/* Gastos recorrentes detectados */}
+        {allTransactions.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Assinaturas e recorrentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecurringExpenses transactions={allTransactions} />
+            </CardContent>
+          </Card>
         )}
 
         {/* Aviso quando tem transações antigas mas não deste mês */}
@@ -520,6 +600,14 @@ export function Dashboard() {
       {openGoal && <GoalWizard onClose={() => setOpenGoal(false)} />}
       {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
       {openSetup && <FinancialSetupWizard onClose={() => setOpenSetup(false)} />}
+      {openSimulator && (
+        <FinancialSimulator
+          income={income}
+          expenses={effectiveExpenses}
+          debts={debts}
+          onClose={() => setOpenSimulator(false)}
+        />
+      )}
     </>
   );
 }

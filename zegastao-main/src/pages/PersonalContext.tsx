@@ -18,7 +18,8 @@ import { formatBRL } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { PHASE_LABELS } from '@/types';
-import type { UserWrittenContext, ImpulseItem } from '@/types';
+import type { UserWrittenContext, ImpulseItem, ExtraIncomeSource, ExtraIncomeType } from '@/types';
+import { setProfile } from '@/lib/firestore';
 
 function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
@@ -336,6 +337,112 @@ function ImpulseHistory({ impulses }: { impulses: ImpulseItem[] }) {
   );
 }
 
+const EXTRA_INCOME_OPTIONS: { type: ExtraIncomeType; label: string; emoji: string; month?: number }[] = [
+  { type: 'decimo_terceiro', label: '13º salário',       emoji: '🎁', month: 12 },
+  { type: 'plr',             label: 'PLR / participação', emoji: '📊' },
+  { type: 'bonus',           label: 'Bônus anual',        emoji: '💼' },
+  { type: 'bolsa_familia',   label: 'Bolsa Família',      emoji: '🏛️' },
+  { type: 'bpc',             label: 'BPC/LOAS',           emoji: '🏛️' },
+  { type: 'aluguel',         label: 'Aluguel recebido',   emoji: '🏠' },
+  { type: 'pensao',          label: 'Pensão/alimony',     emoji: '👨‍👩‍👧' },
+  { type: 'outro',           label: 'Outra renda extra',  emoji: '💰' },
+];
+
+/* ── Extra Income Card ── */
+function ExtraIncomeCard() {
+  const user = useStore((s) => s.user);
+  const profile = useStore((s) => s.profile);
+  const [sources, setSources] = useState<ExtraIncomeSource[]>(profile?.extraIncomeSources || []);
+  const [saving, setSaving] = useState(false);
+
+  function toggle(type: ExtraIncomeType) {
+    setSources((prev) =>
+      prev.find((s) => s.type === type)
+        ? prev.filter((s) => s.type !== type)
+        : [...prev, { type, estimatedAmount: 0, month: EXTRA_INCOME_OPTIONS.find((o) => o.type === type)?.month }]
+    );
+  }
+
+  function setAmount(type: ExtraIncomeType, val: string) {
+    setSources((prev) =>
+      prev.map((s) => s.type === type ? { ...s, estimatedAmount: parseFloat(val.replace(',', '.')) || 0 } : s)
+    );
+  }
+
+  async function save() {
+    if (!user) return;
+    setSaving(true);
+    try { await setProfile({ extraIncomeSources: sources }); }
+    finally { setSaving(false); }
+  }
+
+  const totalExtra = sources.reduce((s, e) => s + (e.estimatedAmount || 0), 0);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-green-500" /> Rendas extras previsíveis
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">13º, PLR, Bolsa Família… O Zé Gastão avisa antes de chegar e sugere como usar bem.</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-1.5">
+          {EXTRA_INCOME_OPTIONS.map((opt) => {
+            const active = sources.find((s) => s.type === opt.type);
+            return (
+              <button
+                key={opt.type}
+                type="button"
+                onClick={() => toggle(opt.type)}
+                className={cn(
+                  'flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs text-left transition-colors',
+                  active ? 'border-green-400 bg-green-50 dark:bg-green-500/10 font-medium text-green-700 dark:text-green-400' : 'hover:bg-accent'
+                )}
+              >
+                <span>{opt.emoji}</span>
+                <span className="truncate">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {sources.length > 0 && (
+          <div className="space-y-2 border-t pt-3">
+            <p className="text-xs font-semibold text-muted-foreground">Valor estimado de cada um:</p>
+            {sources.map((src) => {
+              const opt = EXTRA_INCOME_OPTIONS.find((o) => o.type === src.type)!;
+              return (
+                <div key={src.type} className="flex items-center gap-2">
+                  <span className="text-sm shrink-0">{opt.emoji}</span>
+                  <p className="text-xs flex-1 truncate">{opt.label}</p>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={src.estimatedAmount || ''}
+                    onChange={(e) => setAmount(src.type, e.target.value)}
+                    placeholder="R$ 0"
+                    className="w-24 rounded-md border border-input bg-background px-2 py-1 text-xs text-right focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
+              );
+            })}
+            {totalExtra > 0 && (
+              <p className="text-xs font-semibold text-green-600 text-right">
+                Total extra previsto: {formatBRL(totalExtra)}
+              </p>
+            )}
+          </div>
+        )}
+
+        <Button size="sm" onClick={save} disabled={saving} className="w-full gap-2">
+          <Save className="h-4 w-4" /> {saving ? 'Salvando…' : 'Salvar rendas extras'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ── Main Component ── */
 export function PersonalContext() {
   const user = useStore((s) => s.user);
@@ -435,6 +542,9 @@ export function PersonalContext() {
       {/* Contexto Tab */}
       {activeTab === 'contexto' && (
         <div className="space-y-4">
+          {/* Rendas extras previsíveis */}
+          <ExtraIncomeCard />
+
           {/* Habilidades */}
           <Card>
             <CardHeader className="pb-2">
