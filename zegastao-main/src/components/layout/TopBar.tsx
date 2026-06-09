@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { LogOut, Crown, HelpCircle, MessageSquarePlus } from 'lucide-react';
+import { Crown, HelpCircle, MessageSquarePlus, UserCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
-import { authActions } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { monthLabel } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -13,6 +12,21 @@ function getGreeting(): string {
   if (h < 12) return 'Bom dia';
   if (h < 18) return 'Boa tarde';
   return 'Boa noite';
+}
+
+function AvatarChip({ name }: { name?: string }) {
+  const initials = name
+    ? name.split(' ').slice(0, 2).map((w) => w[0].toUpperCase()).join('')
+    : '?';
+  return (
+    <Link
+      to="/profile"
+      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 border border-primary/30 text-xs font-bold text-primary hover:bg-primary/25 transition-colors shrink-0"
+      title="Meu perfil"
+    >
+      {initials}
+    </Link>
+  );
 }
 
 export function TopBar() {
@@ -60,10 +74,7 @@ export function TopBar() {
               <span className="hidden sm:inline text-xs">Ajuda</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => authActions.logout()} className="gap-1.5">
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </Button>
+          <AvatarChip name={profile?.name} />
         </div>
       </header>
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}

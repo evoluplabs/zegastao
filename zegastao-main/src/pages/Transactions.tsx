@@ -360,44 +360,48 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
           )}
           <ul className="divide-y">
             {filtered.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 p-3">
-                {selectMode && (
-                  <button onClick={() => toggleSelect(t.id)} className="shrink-0 text-muted-foreground hover:text-primary">
-                    {selected.has(t.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                  </button>
-                )}
-                {/* Row 1: description + amount + delete */}
-                <div className="min-w-0 flex-1" style={{ minWidth: '120px' }}>
-                  <p className="truncate text-sm font-medium">{t.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatDateBR(t.date)}</span>
-                    {t.aiCategorized && !t.userCorrected && (
-                      <Badge variant="outline">IA {Math.round((t.aiConfidence || 0) * 100)}%</Badge>
+              <li key={t.id} className="p-3 space-y-2 border-b last:border-0">
+                {/* Linha 1: checkbox + descrição + valor + lixeira */}
+                <div className="flex items-start gap-2">
+                  {selectMode && (
+                    <button onClick={() => toggleSelect(t.id)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-primary">
+                      {selected.has(t.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
+                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium leading-snug break-words">{t.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatDateBR(t.date)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className={`text-sm font-semibold whitespace-nowrap ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
+                      {formatBRL(t.amount)}
+                    </span>
+                    {!selectMode && (
+                      <button
+                        onClick={() => deleteUserDoc('transactions', t.id)}
+                        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Excluir transação"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     )}
                   </div>
                 </div>
-                <span className={`shrink-0 text-sm font-semibold ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
-                  {formatBRL(t.amount)}
-                </span>
-                {!selectMode && (
-                  <button
-                    onClick={() => deleteUserDoc('transactions', t.id)}
-                    className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Excluir transação"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-                {/* Row 2 on mobile: category selector spans full width */}
-                <div className="w-full sm:w-auto sm:order-none order-last">
+                {/* Linha 2: select de categoria + badge IA */}
+                <div className="flex items-center gap-2">
                   <Select
-                    className="h-8 w-full sm:w-40 text-xs"
+                    className="h-7 flex-1 text-xs min-w-0"
                     value={t.category}
                     onChange={(e) => changeCategory(t.id, e.target.value)}
                   >
                     {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
                     <option value="__new__">+ Nova categoria…</option>
                   </Select>
+                  {t.aiCategorized && !t.userCorrected && t.aiConfidence > 0 && (
+                    <Badge variant="outline" className="shrink-0 text-[10px] whitespace-nowrap">
+                      IA {Math.round(t.aiConfidence * 100)}%
+                    </Badge>
+                  )}
                 </div>
               </li>
             ))}

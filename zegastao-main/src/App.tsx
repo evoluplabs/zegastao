@@ -19,6 +19,7 @@ import { Empresas } from '@/pages/Empresas';
 import { Terms } from '@/pages/Terms';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { Help } from '@/pages/Help';
+import { Profile } from '@/pages/Profile';
 
 export default function App() {
   useAuthListener();
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/documents" element={<Navigate to="/copilot?tab=documentos" replace />} />
           <Route path="/context" element={<Navigate to="/copilot?tab=historico" replace />} />
           <Route path="/upload" element={<UploadPage />} />
+          <Route path="/profile" element={<Profile />} />
           {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<Betting />} />}
         </Route>
       </Routes>
