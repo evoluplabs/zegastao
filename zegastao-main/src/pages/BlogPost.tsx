@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Clock, ChevronRight, ArrowLeft, Share2 } from 'lucide-react';
-import { getPostBySlug, getRelatedPosts } from '@/lib/blog';
+import { getRelatedPosts } from '@/lib/blog';
+import { usePostBySlug } from '@/hooks/useBlogPosts';
 import { BlogCard } from '@/components/BlogCard';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +23,7 @@ function formatDate(iso: string) {
 
 export function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const post = slug ? getPostBySlug(slug) : undefined;
+  const { post, loading } = usePostBySlug(slug ?? '');
 
   useEffect(() => {
     if (!post) return;
@@ -40,6 +41,7 @@ export function BlogPost() {
     setMeta('og:type', 'article', true);
   }, [post]);
 
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="h-1 w-32 bg-primary/30 rounded animate-pulse" /></div>;
   if (!post) return <Navigate to="/blog" replace />;
 
   const related = getRelatedPosts(post);

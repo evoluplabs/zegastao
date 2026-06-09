@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ChevronRight } from 'lucide-react';
-import { getPosts, getFeaturedPosts, BLOG_CATEGORIES } from '@/lib/blog';
+import { BLOG_CATEGORIES } from '@/lib/blog';
+import { useBlogPosts } from '@/hooks/useBlogPosts';
 import { BlogCard } from '@/components/BlogCard';
 import { cn } from '@/lib/utils';
 
@@ -36,8 +37,9 @@ export function Blog() {
     'https://zegastao.com.br/blog'
   );
 
-  const featured = getFeaturedPosts();
-  const all = getPosts(category ?? undefined);
+  const { posts: allPosts, loading } = useBlogPosts();
+  const featured = allPosts.filter((p) => p.featured).slice(0, 3);
+  const all = category ? allPosts.filter((p) => p.category === category) : allPosts;
   const filtered = search.trim()
     ? all.filter(
         (p) =>
@@ -48,6 +50,7 @@ export function Blog() {
 
   return (
     <div className="min-h-screen bg-background">
+      {loading && <div className="h-0.5 w-full bg-primary/30 animate-pulse" />}
       {/* Header */}
       <div className="border-b bg-card/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-muted-foreground">
