@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift } from 'lucide-react';
+import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { updateUserDoc } from '@/lib/firestore';
 import { useMilestones, useDailyTasks } from '@/hooks/useJourney';
+import { useDebts } from '@/hooks/useDebts';
 import { useReferral } from '@/hooks/useReferral';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShareableCard } from '@/components/share/ShareableCard';
+import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { MILESTONE_ORDER, PHASE_LABELS, type Milestone } from '@/types';
+import { formatBRL } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 
@@ -106,9 +110,18 @@ export function Journey() {
   const user = useStore((s) => s.user);
   const milestones = useMilestones();
   const tasks = useDailyTasks();
+  const { data: debts } = useDebts();
   const achieved = new Set(milestones.map((m) => m.id));
   const phase = profile?.financialPhase;
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
+
+  const skills = profile?.skills || [];
+  const incomeTaskSuggestions = generateIncomeTaskSuggestions(skills, debts, []).slice(0, 3);
+
+  // Debt payoff context
+  const activeDebts = debts.filter((d) => d.status === 'active');
+  const topDebt = [...activeDebts].sort((a, b) => b.interestRateMonthly - a.interestRateMonthly)[0];
+  const totalDebtBalance = activeDebts.reduce((s, d) => s + d.totalBalance, 0);
 
   // Detecta novos milestones não celebrados
   useEffect(() => {
@@ -141,14 +154,49 @@ export function Journey() {
         )}
       </div>
 
+      {/* Progresso de quitação */}
+      {topDebt && (
+        <div className="rounded-2xl border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Foco de quitação</p>
+            <Badge variant="destructive" className="text-[10px]">
+              {(topDebt.interestRateMonthly * 100).toFixed(1)}% a.m.
+            </Badge>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <p className="font-bold text-base">{topDebt.creditor}</p>
+            <p className="text-sm font-semibold">{formatBRL(topDebt.totalBalance)}</p>
+          </div>
+          {totalDebtBalance > 0 && (
+            <>
+              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: `${Math.max(5, 100 - (topDebt.totalBalance / totalDebtBalance) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {activeDebts.length} dívida{activeDebts.length !== 1 ? 's' : ''} ativa{activeDebts.length !== 1 ? 's' : ''} · Total {formatBRL(totalDebtBalance)}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Tarefas de hoje */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ações de hoje</h3>
         {tasks.length === 0 ? (
-          <div className="rounded-xl border bg-card p-5 text-center">
+          <div className="rounded-xl border bg-card p-5 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
               Suas tarefas personalizadas aparecem aqui após o processamento noturno (00:00).
             </p>
+            {incomeTaskSuggestions.length > 0 && (
+              <p className="text-xs text-primary">
+                Enquanto isso, veja sugestões de renda extra no{' '}
+                <Link to="/copilot?tab=historico" className="underline font-medium">Copiloto → Persona & Contexto</Link>
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -171,6 +219,37 @@ export function Journey() {
           </div>
         )}
       </div>
+
+      {/* Renda Extra Suggestions (always visible) */}
+      {incomeTaskSuggestions.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-amber-500" /> Ideias de renda extra
+            </h3>
+            <Link to="/copilot?tab=historico" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+              ver todas <LinkIcon className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {incomeTaskSuggestions.map((t) => (
+              <div key={t.id} className="rounded-xl border bg-card p-4 flex items-start gap-3">
+                <span className="text-lg shrink-0">💰</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm leading-snug">{t.title}</p>
+                  {t.debtContext && (
+                    <p className="text-[11px] font-semibold text-green-600 mt-0.5">{t.debtContext}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    💰 {t.estimatedReturn} · ⏱ {t.estimatedTime}
+                    {t.platform && ` · ${t.platform}`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Trilha de marcos */}
       <Card>

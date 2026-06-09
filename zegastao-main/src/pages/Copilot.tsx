@@ -29,7 +29,7 @@ const SUGGESTIONS = [
 const TABS = [
   { id: 'chat', label: 'Chat' },
   { id: 'documentos', label: 'Documentos' },
-  { id: 'historico', label: 'Histórico' },
+  { id: 'historico', label: 'Persona & Contexto' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
