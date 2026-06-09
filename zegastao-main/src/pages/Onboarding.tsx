@@ -79,7 +79,7 @@ export function Onboarding() {
         });
       }
 
-      setStoreProfile({ ...profile, name, monthlyIncome, skills, investmentGoals: dreams, onboardingDone: true });
+      setStoreProfile({ ...profile, name, monthlyIncome, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false });
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length });
       // Solicitar push em background — não bloquear navegação
       if (user) registerForPushNotifications(user.uid).catch(() => {});

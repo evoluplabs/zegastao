@@ -5,8 +5,8 @@ const BANKS = ['Nubank', 'Itaú', 'Bradesco', 'Santander', 'BB', 'Caixa', 'Inter
 const STATS = [
   { value: 2000, suffix: '+', label: 'usuários ativos' },
   { value: 9, suffix: '', label: 'bancos suportados' },
-  { value: 18, suffix: 'min', label: 'tempo médio de quitação acelerada' },
-  { value: 0, suffix: ' reais', label: 'para começar' },
+  { value: 18, suffix: ' meses', label: 'tempo médio de quitação com o plano Copiloto' },
+  { value: 0, suffix: ' reais', label: 'para criar sua conta' },
 ];
 
 function CountUp({ target, suffix }: { target: number; suffix: string }) {

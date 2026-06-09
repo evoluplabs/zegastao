@@ -209,6 +209,7 @@ export interface Profile {
   monthlyIncome?: number;
   fixedExpenses?: number;
   onboardingDone?: boolean;
+  setupWizardDone?: boolean;
   financialPhase?: FinancialPhase;
   skills?: string[];
   investmentGoals?: string[];

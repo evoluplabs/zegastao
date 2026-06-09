@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, CheckCircle2, Plus, Zap } from 'lucide-react';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
@@ -16,6 +16,8 @@ import { CategoryBreakdown } from '@/components/charts/CategoryBreakdown';
 import { DebtWizard } from '@/components/flows/DebtWizard';
 import { GoalWizard } from '@/components/flows/GoalWizard';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
+import { FinancialSetupWizard } from '@/components/flows/FinancialSetupWizard';
+import { ProfileCompletion } from '@/components/ProfileCompletion';
 import { ShareWinBanner } from '@/components/share/ShareWinBanner';
 import { deriveWins } from '@/lib/wins';
 import { formatBRL } from '@/lib/utils';
@@ -55,10 +57,24 @@ function SkeletonCard({ className }: { className?: string }) {
   );
 }
 
-function EmptyDashboard({ name, onDebt, onTransaction }: { name?: string; onDebt: () => void; onTransaction: () => void }) {
+function EmptyDashboard({
+  name,
+  onDebt,
+  onTransaction,
+  onSetupWizard,
+  debtCount,
+  income,
+}: {
+  name?: string;
+  onDebt: () => void;
+  onTransaction: () => void;
+  onSetupWizard: () => void;
+  debtCount: number;
+  income: number;
+}) {
   return (
-    <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8">
+    <div className="space-y-5">
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 md:p-8">
         <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/5 blur-2xl" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4">
@@ -66,36 +82,59 @@ function EmptyDashboard({ name, onDebt, onTransaction }: { name?: string; onDebt
             Copiloto Financeiro IA
           </div>
           <h1 className="text-2xl font-bold tracking-tight mb-2">
-            Olá{name ? `, ${name}` : ''}! Vamos começar? 👋
+            Olá{name ? `, ${name}` : ''}! Vamos montar seu plano? 👋
           </h1>
-          <p className="text-muted-foreground text-sm max-w-md mb-6">
-            Importe seu extrato bancário ou cadastre suas dívidas — em segundos o Copiloto analisa sua situação e começa a te guiar.
+          <p className="text-muted-foreground text-sm max-w-md mb-5">
+            Para o Copiloto te ajudar de verdade, ele precisa conhecer sua situação. Leva menos de 3 minutos.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild size="lg" className="rounded-xl gap-2">
-              <Link to="/transactions">
-                <Upload className="h-4 w-4" />
-                Importar extrato
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="rounded-xl gap-2" onClick={onDebt}>
-              <Plus className="h-4 w-4" />
-              Adicionar dívida
-            </Button>
-            <Button variant="ghost" size="lg" className="rounded-xl gap-2" onClick={onTransaction}>
-              Lançar transação
-            </Button>
+          <Button size="lg" className="rounded-xl gap-2" onClick={onSetupWizard}>
+            <Sparkles className="h-4 w-4" />
+            Configurar minha situação financeira
+          </Button>
+        </div>
+      </div>
+
+      {/* O que já foi preenchido */}
+      {(debtCount > 0 || income > 0) && (
+        <div className="rounded-xl border bg-card p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Já cadastrado</p>
+          <div className="flex flex-wrap gap-3">
+            {income > 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+                ✓ Renda: <strong>{formatBRL(income)}/mês</strong>
+              </div>
+            )}
+            {debtCount > 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                ✓ {debtCount} dívida{debtCount > 1 ? 's' : ''} cadastrada{debtCount > 1 ? 's' : ''}
+              </div>
+            )}
           </div>
         </div>
+      )}
+
+      {/* Outras ações */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" className="gap-2 rounded-full" asChild>
+          <Link to="/upload">
+            <Upload className="h-3.5 w-3.5" /> Importar extrato
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={onDebt}>
+          <Plus className="h-3.5 w-3.5" /> Adicionar dívida
+        </Button>
+        <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={onTransaction}>
+          <Plus className="h-3.5 w-3.5" /> Lançar transação
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { step: '1', icon: '📤', title: 'Importe seu extrato', desc: 'CSV, Excel ou PDF do seu banco. Funciona com Nubank, Itaú, Bradesco, BB e mais.' },
-          { step: '2', icon: '🤖', title: 'IA categoriza tudo', desc: 'Alimentação, transporte, lazer... o Copiloto organiza automaticamente em segundos.' },
-          { step: '3', icon: '🎯', title: 'Receba seu plano', desc: 'Com base na sua fase financeira, tarefas diárias e insights personalizados.' },
+          { icon: '📤', title: 'Importe seu extrato', desc: 'CSV ou PDF do seu banco. Nubank, Itaú, Bradesco, BB e mais.' },
+          { icon: '🤖', title: 'IA categoriza tudo', desc: 'Alimentação, transporte, lazer — organizado em segundos.' },
+          { icon: '🎯', title: 'Receba seu plano', desc: 'Tarefas diárias e insights personalizados para sua fase.' },
         ].map((item) => (
-          <div key={item.step} className="rounded-xl border bg-card p-5">
+          <div key={item.title} className="rounded-xl border bg-card p-5">
             <div className="text-2xl mb-3">{item.icon}</div>
             <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
@@ -118,6 +157,7 @@ export function Dashboard() {
   const [openDebt, setOpenDebt] = useState(false);
   const [openGoal, setOpenGoal] = useState(false);
   const [openTx, setOpenTx] = useState(false);
+  const [openSetup, setOpenSetup] = useState(false);
 
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
@@ -171,9 +211,17 @@ export function Dashboard() {
   if (transactions.length === 0 && !txLoading) {
     return (
       <>
-        <EmptyDashboard name={profile?.name} onDebt={() => setOpenDebt(true)} onTransaction={() => setOpenTx(true)} />
+        <EmptyDashboard
+          name={profile?.name}
+          onDebt={() => setOpenDebt(true)}
+          onTransaction={() => setOpenTx(true)}
+          onSetupWizard={() => setOpenSetup(true)}
+          debtCount={debts.length}
+          income={income}
+        />
         {openDebt && <DebtWizard onClose={() => setOpenDebt(false)} />}
         {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
+        {openSetup && <FinancialSetupWizard onClose={() => setOpenSetup(false)} />}
       </>
     );
   }
@@ -181,6 +229,15 @@ export function Dashboard() {
   return (
     <>
       <div className="space-y-5">
+        {/* Barra de progresso do perfil */}
+        <ProfileCompletion
+          profile={profile}
+          debts={debts}
+          goals={goals}
+          transactions={transactions}
+          onSetupWizard={() => setOpenSetup(true)}
+        />
+
         {/* Mini-vitória compartilhável (crescimento orgânico) */}
         <ShareWinBanner wins={wins} />
 
@@ -467,6 +524,7 @@ export function Dashboard() {
       {openDebt && <DebtWizard onClose={() => setOpenDebt(false)} />}
       {openGoal && <GoalWizard onClose={() => setOpenGoal(false)} />}
       {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
+      {openSetup && <FinancialSetupWizard onClose={() => setOpenSetup(false)} />}
     </>
   );
 }

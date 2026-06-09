@@ -113,7 +113,7 @@ export function TransactionWizard({ onClose }: Props) {
                       )}
                     >
                       <ArrowDownCircle className="h-4 w-4" />
-                      Saiu
+                      Saiu (despesa)
                     </button>
                     <button
                       onClick={() => setForm({ ...form, type: 'in', category: '' })}
@@ -125,8 +125,43 @@ export function TransactionWizard({ onClose }: Props) {
                       )}
                     >
                       <ArrowUpCircle className="h-4 w-4" />
-                      Entrou
+                      Entrou (renda)
                     </button>
+                  </div>
+
+                  {/* Lançamento rápido */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Lançamento rápido</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(form.type === 'out'
+                        ? [
+                            { label: '🛒 Mercado', cat: 'Alimentação', desc: 'Supermercado' },
+                            { label: '🍽️ Restaurante', cat: 'Alimentação', desc: 'Refeição fora' },
+                            { label: '⛽ Combustível', cat: 'Transporte', desc: 'Gasolina/Álcool' },
+                            { label: '💊 Farmácia', cat: 'Saúde', desc: 'Remédios' },
+                            { label: '🏠 Aluguel', cat: 'Moradia', desc: 'Aluguel mensal' },
+                            { label: '💡 Conta', cat: 'Moradia', desc: 'Luz/Água/Gás' },
+                          ]
+                        : [
+                            { label: '💼 Salário', cat: 'Salário', desc: 'Salário mensal' },
+                            { label: '💰 Freelance', cat: 'Renda extra', desc: 'Trabalho extra' },
+                            { label: '🔄 Transferência', cat: 'Transferência', desc: 'Recebimento' },
+                          ]
+                      ).map((q) => (
+                        <button
+                          key={q.label}
+                          onClick={() => setForm({ ...form, category: q.cat, description: q.desc })}
+                          className={cn(
+                            'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                            form.category === q.cat && form.description === q.desc
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'border-border text-muted-foreground hover:border-primary/50'
+                          )}
+                        >
+                          {q.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">

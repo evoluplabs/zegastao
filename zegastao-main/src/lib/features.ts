@@ -11,10 +11,12 @@ function envFlag(key: string, fallback: boolean): boolean {
 }
 
 export const FEATURES = {
-  // Zé Apostador — central de inteligência de apostas esportivas.
-  // Em STANDBY por padrão: testar o core do Zé Gastão primeiro.
   ZE_APOSTADOR: envFlag('VITE_FEATURE_ZE_APOSTADOR', false),
 } as const;
+
+// URL de checkout no Hotmart — configure via VITE_HOTMART_URL no .env
+export const HOTMART_URL: string =
+  import.meta.env.VITE_HOTMART_URL || 'https://hotmart.com/product/ze-gastao';
 
 export type FeatureName = keyof typeof FEATURES;
 

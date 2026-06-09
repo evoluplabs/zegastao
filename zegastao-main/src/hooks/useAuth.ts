@@ -3,15 +3,16 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signInWithPopup,
   signOut as fbSignOut,
+  updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import type { Profile, Subscription } from '@/types';
 
-// Garante que exista um documento de profile para o usuário.
 async function ensureProfile(uid: string, email: string | null, name: string | null) {
   const ref = doc(db, 'users', uid, 'profile', 'main');
   const snap = await getDoc(ref);
@@ -28,17 +29,11 @@ async function ensureProfile(uid: string, email: string | null, name: string | n
   return snap.data() as Profile;
 }
 
-// Garante o documento de assinatura no schema padrão (free/inactive).
-// O webhook do MercadoPago promove para active ao confirmar pagamento.
 async function ensureSubscription(uid: string) {
   const ref = doc(db, 'users', uid, 'subscription', 'main');
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    const sub: Subscription = {
-      plan: 'free',
-      status: 'inactive',
-      uploadsThisMonth: 0,
-    };
+    const sub: Subscription = { plan: 'free', status: 'inactive', uploadsThisMonth: 0 };
     await setDoc(ref, sub);
   }
 }
@@ -69,8 +64,26 @@ export function useAuthListener() {
 export const authActions = {
   loginEmail: (email: string, password: string) =>
     signInWithEmailAndPassword(auth, email, password),
-  registerEmail: (email: string, password: string) =>
-    createUserWithEmailAndPassword(auth, email, password),
+
+  registerEmail: async (email: string, password: string) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    // Envia verificação de e-mail em background — não bloqueia o fluxo
+    sendEmailVerification(cred.user).catch(() => {});
+    return cred;
+  },
+
+  updateDisplayName: (name: string) => {
+    const user = auth.currentUser;
+    if (user) return updateProfile(user, { displayName: name });
+    return Promise.resolve();
+  },
+
+  resendVerification: () => {
+    const user = auth.currentUser;
+    if (user && !user.emailVerified) return sendEmailVerification(user);
+    return Promise.resolve();
+  },
+
   loginGoogle: () => signInWithPopup(auth, googleProvider),
   logout: () => fbSignOut(auth),
 };

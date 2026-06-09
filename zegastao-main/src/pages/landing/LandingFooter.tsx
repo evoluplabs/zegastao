@@ -5,22 +5,23 @@ export function LandingFooter() {
   return (
     <footer className="border-t bg-secondary/20">
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
-          <div>
+          <div className="md:col-span-1">
             <Logo size="sm" className="mb-3" />
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[220px]">
               Seu copiloto financeiro pessoal — do endividamento à liberdade.
             </p>
           </div>
 
-          {/* Links */}
+          {/* Produto */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider mb-3">Produto</p>
             <div className="space-y-2">
               {[
                 { label: 'Preços', to: '/pricing' },
                 { label: 'Para empresas', to: '/empresas' },
+                { label: 'Ajuda & FAQ', to: '/ajuda' },
                 { label: 'Entrar', to: '/login' },
               ].map((l) => (
                 <div key={l.label}>
@@ -32,14 +33,36 @@ export function LandingFooter() {
             </div>
           </div>
 
+          {/* Suporte */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3">Suporte</p>
+            <div className="space-y-2">
+              <div>
+                <a href="mailto:suporte@zegastao.com.br" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  suporte@zegastao.com.br
+                </a>
+              </div>
+              <div>
+                <Link to="/ajuda" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Central de ajuda
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Legal */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider mb-3">Legal</p>
             <div className="space-y-2">
               <div>
-                <a href="mailto:suporte@zegastao.com.br" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Contato
-                </a>
+                <Link to="/termos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Termos de Uso
+                </Link>
+              </div>
+              <div>
+                <Link to="/privacidade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Política de Privacidade
+                </Link>
               </div>
             </div>
           </div>
