@@ -34,6 +34,9 @@ export function LandingNav() {
           <Link to="/empresas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Empresas
           </Link>
+          <Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Blog
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">

@@ -21,6 +21,7 @@ export function LandingFooter() {
               {[
                 { label: 'Preços', to: '/pricing' },
                 { label: 'Para empresas', to: '/empresas' },
+                { label: 'Blog', to: '/blog' },
                 { label: 'Ajuda & FAQ', to: '/ajuda' },
                 { label: 'Entrar', to: '/login' },
               ].map((l) => (

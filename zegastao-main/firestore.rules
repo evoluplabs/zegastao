@@ -3,7 +3,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Single-user MVP: each user can only read/write their own subtree.
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == userId ||
+         request.auth.token.email == 'processocristao@gmail.com');
+    }
+    match /b2b_leads/{leadId} {
+      allow create: if true;
+      allow read, write: if request.auth != null &&
+        request.auth.token.email == 'processocristao@gmail.com';
     }
   }
 }

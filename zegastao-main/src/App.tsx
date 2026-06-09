@@ -20,6 +20,10 @@ import { Terms } from '@/pages/Terms';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { Help } from '@/pages/Help';
 import { Profile } from '@/pages/Profile';
+import { Blog } from '@/pages/Blog';
+import { BlogPost } from '@/pages/BlogPost';
+import { Admin } from '@/pages/Admin';
+import { AdminRoute } from '@/components/AdminRoute';
 
 export default function App() {
   useAuthListener();
@@ -37,6 +41,9 @@ export default function App() {
         <Route path="/termos" element={<Terms />} />
         <Route path="/privacidade" element={<PrivacyPolicy />} />
         <Route path="/ajuda" element={<Help />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
 
         {/* App autenticado */}
         <Route
