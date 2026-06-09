@@ -132,7 +132,8 @@ export interface Debt {
   status: 'active' | 'paid' | 'overdue';
   overdueMonths?: number;
   notes?: string;
-  source?: string; // 'auto-upload' = criado automaticamente do extrato
+  source?: string;
+  statementMonth?: string; // 'YYYY-MM' — mês de referência da fatura (cartão)
 }
 
 export interface Goal {
@@ -213,6 +214,7 @@ export interface Profile {
   financialPhase?: FinancialPhase;
   skills?: string[];
   investmentGoals?: string[];
+  incomeSources?: { type: string; amount: number }[];
   riskProfile?: RiskProfile;
   alreadyInvests?: 'yes' | 'no' | 'no_idea';
 }

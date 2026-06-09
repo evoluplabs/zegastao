@@ -60,14 +60,22 @@ function UploadMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between">
+      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between"
+        style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <span className="text-xs font-semibold">Extrato importado</span>
         <span className="text-[10px] text-green-500 font-medium">✓ 94 transações</span>
       </div>
       <div className="px-4 py-2">
-        <div className="flex items-center gap-2 py-2 border-b">
+        <div className="flex items-center gap-2 py-2 border-b"
+          style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 150ms forwards' }}>
           <div className="h-1.5 flex-1 rounded-full bg-primary/20 overflow-hidden">
-            <div className="h-full bg-primary rounded-full" style={{ width: '100%', animation: 'shimmer 2s ease-out' }} />
+            <div
+              className="h-full bg-primary rounded-full"
+              style={{
+                width: '0%',
+                animation: 'progress-fill 1.2s ease-out 200ms forwards',
+              }}
+            />
           </div>
           <span className="text-[10px] text-primary font-semibold">Categorizado por IA</span>
         </div>
@@ -75,7 +83,7 @@ function UploadMockup() {
           <div
             key={i}
             className="flex items-center justify-between py-2 border-b last:border-0"
-            style={{ opacity: 0, animation: `chat-appear 0.3s ease-out ${i * 200 + 300}ms forwards` }}
+            style={{ opacity: 0, animation: `chat-appear 0.3s ease-out ${i * 200 + 600}ms forwards` }}
           >
             <div>
               <p className="text-[10px] font-medium">{item.desc}</p>
@@ -91,29 +99,35 @@ function UploadMockup() {
 
 /* ── Projection Mockup ── */
 function ProjectionMockup() {
+  const scenarios = [
+    { label: 'Pagando mínimo', months: '52 meses', extra: 'R$ 6.800 em juros', bad: true },
+    { label: 'Pagando R$ 80 a mais', months: '18 meses', extra: 'Economiza R$ 1.240', bad: false },
+  ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40">
+      <div className="px-4 py-3 border-b bg-secondary/40"
+        style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <p className="text-xs font-semibold">Projeção de quitação</p>
         <p className="text-[10px] text-muted-foreground">Dívida Nubank · R$ 8.200</p>
       </div>
       <div className="p-4 space-y-3">
-        {[
-          { label: 'Pagando mínimo', months: '52 meses', extra: 'R$ 6.800 em juros', bad: true },
-          { label: 'Pagando R$ 80 a mais', months: '18 meses', extra: 'Economiza R$ 1.240', bad: false },
-        ].map((s) => (
-          <div key={s.label} className={`rounded-lg border p-3 ${s.bad ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
+        {scenarios.map((s, i) => (
+          <div key={s.label}
+            className={`rounded-lg border p-3 ${s.bad ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}
+            style={{ opacity: 0, animation: `chat-appear 0.4s ease-out ${i * 200 + 200}ms forwards` }}>
             <p className="text-[10px] font-semibold text-muted-foreground mb-1">{s.label}</p>
             <p className={`text-lg font-extrabold ${s.bad ? 'text-red-600' : 'text-green-600'}`}>{s.months}</p>
             <p className={`text-[10px] font-medium ${s.bad ? 'text-red-500' : 'text-green-600'}`}>{s.extra}</p>
           </div>
         ))}
-        <svg viewBox="0 0 200 60" className="w-full mt-1" xmlns="http://www.w3.org/2000/svg">
-          <polyline points="0,55 40,45 80,34 120,24 160,15 200,8" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="250" strokeDashoffset="250" style={{ animation: 'draw-line 1.5s ease-out 0.5s forwards' }} />
-          <polyline points="0,55 30,52 70,50 110,48 150,47 200,46" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.5" />
-          <circle cx="200" cy="8" r="4" fill="#22c55e" />
-          <text x="150" y="6" fontSize="8" fill="#22c55e" fontWeight="700">QUITADO!</text>
-        </svg>
+        <div style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 700ms forwards' }}>
+          <svg viewBox="0 0 200 60" className="w-full mt-1" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="0,55 30,52 70,50 110,48 150,47 200,46" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.5" />
+            <polyline points="0,55 40,45 80,34 120,24 160,15 200,8" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="250" strokeDashoffset="250" style={{ animation: 'draw-line 1.5s ease-out 900ms forwards' }} />
+            <circle cx="200" cy="8" r="4" fill="#22c55e" style={{ opacity: 0, animation: 'chat-appear 0.3s ease-out 2400ms forwards' }} />
+            <text x="148" y="6" fontSize="8" fill="#22c55e" fontWeight="700" style={{ opacity: 0, animation: 'chat-appear 0.3s ease-out 2500ms forwards' }}>QUITADO!</text>
+          </svg>
+        </div>
       </div>
     </div>
   );
@@ -121,16 +135,22 @@ function ProjectionMockup() {
 
 /* ── Contract Mockup ── */
 function ContractMockup() {
+  const alerts = [
+    { icon: '🚩', text: 'CET de 48% está 2× acima da média do mercado. Negocie ou porte.', type: 'red' },
+    { icon: '💡', text: 'Você pode pedir portabilidade em dez/25 e reduzir juros em ~40%.', type: 'green' },
+  ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between">
+      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between"
+        style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <span className="text-xs font-semibold">Contrato analisado</span>
         <span className="text-[10px] text-red-500 font-semibold">⚠ 2 red flags</span>
       </div>
       <div className="p-4 space-y-2">
-        <div className="rounded-lg bg-secondary/40 p-3 text-[10px] leading-relaxed text-muted-foreground">
+        <div className="rounded-lg bg-secondary/40 p-3 text-[10px] leading-relaxed text-muted-foreground"
+          style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 300ms forwards' }}>
           <p>§ 4.2 — CET:{' '}
-            <span className="bg-red-200 text-red-700 font-semibold px-1 rounded" style={{ animation: 'pulse 2s infinite' }}>
+            <span className="bg-red-200 text-red-700 font-semibold px-1 rounded animate-pulse">
               48,3% a.a.
             </span>
           </p>
@@ -141,11 +161,10 @@ function ContractMockup() {
           </p>
           <p className="mt-1">§ 12.4 — Portabilidade: permitida após 12 parcelas.</p>
         </div>
-        {[
-          { icon: '🚩', text: 'CET de 48% está 2× acima da média do mercado. Negocie ou porte.', type: 'red' },
-          { icon: '💡', text: 'Você pode pedir portabilidade em dez/25 e reduzir juros em ~40%.', type: 'green' },
-        ].map((a, i) => (
-          <div key={i} className={`rounded-lg border px-3 py-2 text-[10px] flex gap-2 items-start ${a.type === 'red' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
+        {alerts.map((a, i) => (
+          <div key={i}
+            className={`rounded-lg border px-3 py-2 text-[10px] flex gap-2 items-start ${a.type === 'red' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}
+            style={{ opacity: 0, animation: `chat-appear 0.4s ease-out ${i * 250 + 700}ms forwards` }}>
             <span>{a.icon}</span>
             <p className={a.type === 'red' ? 'text-red-700' : 'text-green-700'}>{a.text}</p>
           </div>
@@ -191,28 +210,50 @@ function JourneyMockup() {
 
 /* ── Dashboard phase Mockup ── */
 function PhaseMockup() {
+  const stats = [
+    { label: 'Saldo do mês', value: '+R$ 420', color: 'text-green-600' },
+    { label: 'Comprometimento', value: '68%', color: 'text-yellow-600' },
+    { label: 'Score', value: '620/1000', color: 'text-blue-600' },
+    { label: 'Dívidas ativas', value: '2', color: 'text-orange-600' },
+  ];
+  const phases = [
+    { label: 'Fase: Sobrevivência', items: ['Gestão de dívidas', 'Plano de quitação'], locked: ['Investimentos', 'Patrimônio'], color: 'red', badge: true },
+    { label: 'Fase: Crescimento', items: ['Portfolio ativo', 'Renda passiva', 'Liberdade financeira'], locked: [], color: 'green', badge: false },
+  ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between">
+      <div className="px-4 py-3 border-b bg-secondary/40"
+        style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <p className="text-xs font-semibold">Dashboard adaptativo</p>
+        <p className="text-[10px] text-muted-foreground">Muda conforme sua fase financeira</p>
       </div>
       <div className="p-4 space-y-3">
+        {/* Stats */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
-            <p className="text-[9px] font-bold text-red-600 uppercase mb-1">Fase: Sobrevivência</p>
-            <p className="text-[10px] text-muted-foreground">✓ Gestão de dívidas</p>
-            <p className="text-[10px] text-muted-foreground">✓ Plano de quitação</p>
-            <p className="text-[10px] text-muted-foreground line-through opacity-40">Investimentos</p>
-            <p className="text-[10px] text-muted-foreground line-through opacity-40">Patrimônio</p>
-          </div>
-          <div className="rounded-lg border-2 border-green-300 bg-green-50 p-3">
-            <p className="text-[9px] font-bold text-green-600 uppercase mb-1">Fase: Crescimento</p>
-            <p className="text-[10px] text-muted-foreground">✓ Portfolio ativo</p>
-            <p className="text-[10px] text-muted-foreground">✓ Renda passiva</p>
-            <p className="text-[10px] text-muted-foreground">✓ Liberdade financeira</p>
-          </div>
+          {stats.map((s, i) => (
+            <div key={s.label} className="rounded-lg border bg-secondary/30 p-2.5"
+              style={{ opacity: 0, animation: `chat-appear 0.3s ease-out ${i * 100 + 200}ms forwards` }}>
+              <p className="text-[9px] text-muted-foreground">{s.label}</p>
+              <p className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+            </div>
+          ))}
         </div>
-        <p className="text-[10px] text-center text-muted-foreground">O app detecta sua fase e muda automaticamente.</p>
+        {/* Phase cards */}
+        <div className="grid grid-cols-2 gap-2">
+          {phases.map((p, i) => (
+            <div key={p.label}
+              className={`rounded-lg border-2 p-3 ${p.color === 'red' ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}`}
+              style={{ opacity: 0, animation: `chat-appear 0.4s ease-out ${i * 200 + 650}ms forwards` }}>
+              <p className={`text-[9px] font-bold uppercase mb-1 ${p.color === 'red' ? 'text-red-600' : 'text-green-600'}`}>{p.label}</p>
+              {p.items.map((item) => <p key={item} className="text-[10px] text-muted-foreground">✓ {item}</p>)}
+              {p.locked.map((item) => <p key={item} className="text-[10px] text-muted-foreground line-through opacity-40">{item}</p>)}
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-center text-muted-foreground"
+          style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 1100ms forwards' }}>
+          O app detecta sua fase e muda automaticamente.
+        </p>
       </div>
     </div>
   );

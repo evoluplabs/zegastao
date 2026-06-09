@@ -19,6 +19,8 @@ import { TransactionWizard } from '@/components/flows/TransactionWizard';
 import { FinancialSetupWizard } from '@/components/flows/FinancialSetupWizard';
 import { ProfileCompletion } from '@/components/ProfileCompletion';
 import { ShareWinBanner } from '@/components/share/ShareWinBanner';
+import { FinancialDiagnostic } from '@/components/FinancialDiagnostic';
+import { CategoryAnalysis } from '@/components/CategoryAnalysis';
 import { deriveWins } from '@/lib/wins';
 import { formatBRL } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
@@ -238,6 +240,14 @@ export function Dashboard() {
           onSetupWizard={() => setOpenSetup(true)}
         />
 
+        {/* Diagnóstico financeiro */}
+        <FinancialDiagnostic
+          income={income}
+          expenses={expenses}
+          debts={debts}
+          goals={goals}
+        />
+
         {/* Mini-vitória compartilhável (crescimento orgânico) */}
         <ShareWinBanner wins={wins} />
 
@@ -433,27 +443,15 @@ export function Dashboard() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Para onde foi o dinheiro</CardTitle>
+              <CardTitle className="text-sm font-semibold">Análise de gastos</CardTitle>
             </CardHeader>
             <CardContent>
               {byCategory.length > 0 ? (
                 <>
                   <CategoryBreakdown data={byCategory.slice(0, 6)} />
-                  <ul className="mt-3 space-y-2 text-sm">
-                    {byCategory.slice(0, 5).map((c) => (
-                      <li key={c.name} className="flex items-center justify-between">
-                        <span className="text-muted-foreground truncate max-w-[60%]">{c.name}</span>
-                        <div className="text-right">
-                          <span className="font-medium">{formatBRL(c.amount)}</span>
-                          {income > 0 && (
-                            <span className="ml-1.5 text-xs text-muted-foreground">
-                              {((c.amount / income) * 100).toFixed(0)}%
-                            </span>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-4">
+                    <CategoryAnalysis categories={byCategory.slice(0, 6)} income={income} />
+                  </div>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>

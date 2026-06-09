@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingDown, Handshake } from 'lucide-react';
+import { Plus, Trash2, TrendingDown, Handshake, Pencil } from 'lucide-react';
 import { useDebts } from '@/hooks/useDebts';
 import { useNegotiationAlerts } from '@/hooks/useDocuments';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
@@ -10,12 +10,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL } from '@/lib/utils';
+import { DebtEditModal } from '@/components/flows/DebtEditModal';
+import type { Debt } from '@/types';
 
 export function Debts() {
   const { data: debts } = useDebts();
   const alerts = useNegotiationAlerts();
   const [openScript, setOpenScript] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [form, setForm] = useState({ creditor: '', balance: '', payment: '', rate: '' });
 
   // Ranking automático: maior juros primeiro (estratégia avalanche).
@@ -117,7 +120,11 @@ export function Debts() {
       )}
 
       {ranked.map((d, i) => (
-        <Card key={d.id}>
+        <Card
+          key={d.id}
+          className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+          onClick={() => setEditDebt(d)}
+        >
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {d.creditor}
@@ -132,9 +139,14 @@ export function Debts() {
                 </Badge>
               )}
             </CardTitle>
-            <Button variant="ghost" size="icon" onClick={() => deleteUserDoc('debts', d.id)}>
-              <Trash2 className="h-4 w-4 text-muted-foreground" />
-            </Button>
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" onClick={() => setEditDebt(d)}>
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => deleteUserDoc('debts', d.id)}>
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="text-sm">
             <div className="flex justify-between">
@@ -149,14 +161,20 @@ export function Debts() {
               <span className="text-muted-foreground">Juros</span>
               <span>{(d.interestRateMonthly * 100).toFixed(1)}% a.m.</span>
             </div>
-            {d.source === 'auto-upload' && d.notes && (
-              <p className="mt-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-muted-foreground">
-                {d.notes} <span className="text-primary">Toque para editar.</span>
-              </p>
+            {d.statementMonth && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Fatura ref.</span>
+                <span>{d.statementMonth}</span>
+              </div>
+            )}
+            {d.notes && (
+              <p className="mt-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-muted-foreground">{d.notes}</p>
             )}
           </CardContent>
         </Card>
       ))}
+
+      {editDebt && <DebtEditModal debt={editDebt} onClose={() => setEditDebt(null)} />}
     </div>
   );
 }

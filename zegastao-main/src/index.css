@@ -136,6 +136,11 @@
     animation: animate-float 4s ease-in-out infinite;
   }
 
+  @keyframes progress-fill {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+
   @keyframes pulse-badge {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
