@@ -29,10 +29,31 @@ function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   );
 }
 
-const SKILL_OPTIONS = [
-  'Programação', 'Design', 'Redação', 'Idiomas', 'Aulas particulares',
-  'Culinária', 'Marcenaria', 'Elétrica', 'Vendas', 'Marketing',
-  'Fotografia', 'Edição de vídeo', 'Costura', 'Beleza',
+const SKILL_OPTIONS: { category: string; skills: string[] }[] = [
+  {
+    category: 'Digital & Tech',
+    skills: ['Programação', 'Design gráfico', 'Edição de vídeo', 'Fotografia', 'Criação de conteúdo', 'Tráfego pago', 'Marketing digital', 'SEO', 'Gestão de redes sociais', 'Suporte de TI'],
+  },
+  {
+    category: 'Educação & Idiomas',
+    skills: ['Aulas particulares', 'Idiomas', 'Redação', 'Coaching', 'Tutoria on-line'],
+  },
+  {
+    category: 'Serviços Manuais',
+    skills: ['Marcenaria', 'Elétrica', 'Encanamento', 'Pintura residencial', 'Jardinagem', 'Limpeza', 'Montagem de móveis', 'Mecânica', 'Costura e alfaiataria'],
+  },
+  {
+    category: 'Beleza & Bem-estar',
+    skills: ['Beleza (cabelo/unhas/maquiagem)', 'Massagem', 'Personal trainer', 'Nutrição', 'Cuidado de animais (pet sitter)'],
+  },
+  {
+    category: 'Negócios & Vendas',
+    skills: ['Vendas', 'Assistente virtual', 'Consultoria financeira', 'Consultoria empresarial', 'Logística / entregas'],
+  },
+  {
+    category: 'Culinária & Eventos',
+    skills: ['Culinária (marmitas / confeitaria)', 'Bartender / garçom', 'Organização de eventos', 'Artesanato'],
+  },
 ];
 
 const DIFFICULTY_LABEL: Record<string, string> = { easy: 'fácil', medium: 'médio', hard: 'difícil' };
@@ -423,20 +444,27 @@ export function PersonalContext() {
               <p className="text-xs text-muted-foreground">Usamos para sugerir tarefas de renda extra sob medida</p>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {SKILL_OPTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => toggleSkill(s)}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs transition-colors',
-                      skillsSelected.includes(s)
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'hover:bg-accent'
-                    )}
-                  >
-                    {s}
-                  </button>
+              <div className="space-y-3">
+                {SKILL_OPTIONS.map((group) => (
+                  <div key={group.category}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">{group.category}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.skills.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => toggleSkill(s)}
+                          className={cn(
+                            'rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+                            skillsSelected.includes(s)
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'hover:bg-accent'
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </CardContent>

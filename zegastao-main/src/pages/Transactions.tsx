@@ -360,13 +360,14 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
           )}
           <ul className="divide-y">
             {filtered.map((t) => (
-              <li key={t.id} className="flex items-center gap-2 p-3">
+              <li key={t.id} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 p-3">
                 {selectMode && (
                   <button onClick={() => toggleSelect(t.id)} className="shrink-0 text-muted-foreground hover:text-primary">
                     {selected.has(t.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
                   </button>
                 )}
-                <div className="min-w-0 flex-1">
+                {/* Row 1: description + amount + delete */}
+                <div className="min-w-0 flex-1" style={{ minWidth: '120px' }}>
                   <p className="truncate text-sm font-medium">{t.description}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{formatDateBR(t.date)}</span>
@@ -375,15 +376,7 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
                     )}
                   </div>
                 </div>
-                <Select
-                  className="h-8 w-40 text-xs"
-                  value={t.category}
-                  onChange={(e) => changeCategory(t.id, e.target.value)}
-                >
-                  {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-                  <option value="__new__">+ Nova categoria…</option>
-                </Select>
-                <span className={`w-24 text-right text-sm font-semibold ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
+                <span className={`shrink-0 text-sm font-semibold ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
                   {formatBRL(t.amount)}
                 </span>
                 {!selectMode && (
@@ -395,6 +388,17 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
                     <Trash2 className="h-4 w-4" />
                   </button>
                 )}
+                {/* Row 2 on mobile: category selector spans full width */}
+                <div className="w-full sm:w-auto sm:order-none order-last">
+                  <Select
+                    className="h-8 w-full sm:w-40 text-xs"
+                    value={t.category}
+                    onChange={(e) => changeCategory(t.id, e.target.value)}
+                  >
+                    {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <option value="__new__">+ Nova categoria…</option>
+                  </Select>
+                </div>
               </li>
             ))}
           </ul>

@@ -71,9 +71,103 @@ const SKILL_TASKS: Record<string, Omit<IncomeTask, 'id' | 'category' | 'debtCont
   'Costura': [
     { title: 'Ajustes e consertos de roupa', detail: 'Barras, zíperes, ajuste de tamanho. Baixo custo, alta frequência.', platform: 'Boca a boca / OLX', estimatedReturn: 'R$ 20–80 por peça', estimatedReturnValue: 50, estimatedTime: '30min–1h', difficulty: 'easy', skillRequired: 'Costura' },
   ],
+  'Costura e alfaiataria': [
+    { title: 'Ajustes e consertos de roupa', detail: 'Barras, zíperes, ajuste de tamanho. Baixo custo, alta frequência.', platform: 'Boca a boca / OLX', estimatedReturn: 'R$ 20–80 por peça', estimatedReturnValue: 50, estimatedTime: '30min–1h', difficulty: 'easy', skillRequired: 'Costura e alfaiataria' },
+    { title: 'Customização de roupas e peças únicas', detail: 'Venda peças customizadas no Instagram ou Elo7. Margem alta em nichos de moda.', platform: 'Instagram / Elo7', estimatedReturn: 'R$ 80–300 por peça', estimatedReturnValue: 190, estimatedTime: '2–4h', difficulty: 'medium', skillRequired: 'Costura e alfaiataria' },
+  ],
   'Beleza': [
     { title: 'Fazer sobrancelha/depilação em domicílio', detail: 'Atendimento a domicílio cobra 30–50% mais que salão. Alta recorrência.', platform: 'WhatsApp / Instagram', estimatedReturn: 'R$ 40–100 por cliente', estimatedReturnValue: 70, estimatedTime: '30–45min', difficulty: 'easy', skillRequired: 'Beleza' },
     { title: 'Manicure/pedicure em domicílio', detail: 'Crie agenda fixos para fins de semana. 3 clientes já pagam uma parcela.', platform: 'WhatsApp / boca a boca', estimatedReturn: 'R$ 50–120 por cliente', estimatedReturnValue: 85, estimatedTime: '1h por cliente', difficulty: 'easy', skillRequired: 'Beleza' },
+  ],
+  'Beleza (cabelo/unhas/maquiagem)': [
+    { title: 'Atendimento de beleza em domicílio', detail: 'Sobrancelha, unhas, maquiagem. Atendimento em casa cobra 30–50% mais que salão.', platform: 'WhatsApp / Instagram', estimatedReturn: 'R$ 40–150 por cliente', estimatedReturnValue: 95, estimatedTime: '1–2h', difficulty: 'easy', skillRequired: 'Beleza (cabelo/unhas/maquiagem)' },
+    { title: 'Pacote noiva/formanda: maquiagem + penteado', detail: 'Datas comemorativas têm demanda alta. Um pacote em fim de semana cobre uma parcela.', platform: 'Instagram / indicações', estimatedReturn: 'R$ 300–800 por pacote', estimatedReturnValue: 550, estimatedTime: '3–5h', difficulty: 'medium', skillRequired: 'Beleza (cabelo/unhas/maquiagem)' },
+  ],
+  'Design gráfico': [
+    { title: 'Criar artes para redes sociais (pacote mensal)', detail: 'Pequenos negócios precisam de posts semanais. Ofereça pacote de 8 posts por mês.', platform: 'Instagram / GetNinjas', estimatedReturn: 'R$ 250–600', estimatedReturnValue: 425, estimatedTime: '4–6h/mês', difficulty: 'easy', skillRequired: 'Design gráfico' },
+    { title: 'Logo e identidade visual para MEI', detail: 'MEIs em fase inicial precisam de logo. Entregue em 48h com 2 variações.', platform: '99designs / direto', estimatedReturn: 'R$ 150–400', estimatedReturnValue: 275, estimatedTime: '2–3h', difficulty: 'easy', skillRequired: 'Design gráfico' },
+  ],
+  'Criação de conteúdo': [
+    { title: 'Produzir conteúdo mensal para negócio local', detail: 'Crie roteiros, posts e stories para empresas que não têm tempo. Cobre mensalidade.', platform: 'Instagram / direto', estimatedReturn: 'R$ 400–900/mês', estimatedReturnValue: 650, estimatedTime: '6–10h/mês', difficulty: 'medium', skillRequired: 'Criação de conteúdo' },
+    { title: 'Criar e-book ou guia digital para venda', detail: 'Transforme seu conhecimento em produto digital. Venda recorrente sem esforço.', platform: 'Hotmart / Kiwify', estimatedReturn: 'R$ 200–1.000/mês', estimatedReturnValue: 600, estimatedTime: '10–20h de setup', difficulty: 'hard', skillRequired: 'Criação de conteúdo' },
+  ],
+  'Tráfego pago': [
+    { title: 'Gestão de Google Ads/Meta Ads para PME', detail: 'Pequenas empresas precisam de tráfego pago mas não sabem configurar. Cobre mensalidade.', platform: 'LinkedIn / GetNinjas', estimatedReturn: 'R$ 400–900/mês', estimatedReturnValue: 650, estimatedTime: '4–6h setup + 2h/mês', difficulty: 'medium', skillRequired: 'Tráfego pago' },
+  ],
+  'Marketing digital': [
+    { title: 'Gestão de redes sociais para negócio local', detail: 'Pacote mensal: planejamento + criação + publicação 3x por semana.', platform: 'LinkedIn / GetNinjas', estimatedReturn: 'R$ 400–800/mês', estimatedReturnValue: 600, estimatedTime: '5–8h/mês', difficulty: 'easy', skillRequired: 'Marketing digital' },
+    { title: 'Consultoria de presença digital para MEI', detail: 'Oriente MEIs sobre como usar o Instagram para vender. Sessão de 2h.', platform: 'LinkedIn / direto', estimatedReturn: 'R$ 150–350 por sessão', estimatedReturnValue: 250, estimatedTime: '2–3h', difficulty: 'easy', skillRequired: 'Marketing digital' },
+  ],
+  'SEO': [
+    { title: 'Auditoria e otimização de SEO local', detail: 'Google Meu Negócio + otimização básica de site para aparecer na busca local.', platform: 'LinkedIn / Workana', estimatedReturn: 'R$ 300–700', estimatedReturnValue: 500, estimatedTime: '3–5h', difficulty: 'medium', skillRequired: 'SEO' },
+  ],
+  'Gestão de redes sociais': [
+    { title: 'Gestão completa de Instagram para empresa', detail: 'Cuide do feed, stories e mensagens de um negócio local. Contrato mensal.', platform: 'LinkedIn / direto', estimatedReturn: 'R$ 500–1.200/mês', estimatedReturnValue: 850, estimatedTime: '8–12h/mês', difficulty: 'medium', skillRequired: 'Gestão de redes sociais' },
+  ],
+  'Suporte de TI': [
+    { title: 'Suporte técnico em domicílio (formatação/vírus)', detail: 'Alta demanda de pessoas e pequenos negócios com problema de computador.', platform: 'GetNinjas / boca a boca', estimatedReturn: 'R$ 80–200 por visita', estimatedReturnValue: 140, estimatedTime: '1–2h', difficulty: 'easy', skillRequired: 'Suporte de TI' },
+  ],
+  'Coaching': [
+    { title: 'Sessão individual de coaching de carreira/vida', detail: 'Ofereça 1 sessão de diagnóstico gratuita e feche pacotes de 4–8 sessões.', platform: 'LinkedIn / Hotmart', estimatedReturn: 'R$ 150–400 por sessão', estimatedReturnValue: 275, estimatedTime: '1–2h por sessão', difficulty: 'medium', skillRequired: 'Coaching' },
+  ],
+  'Tutoria on-line': [
+    { title: 'Tutoria online para concursos e vestibulares', detail: 'Alta demanda em plataformas online. Pacotes de aulas semanais.', platform: 'Superprof / Preply', estimatedReturn: 'R$ 50–100/h', estimatedReturnValue: 75, estimatedTime: '1h/aula', difficulty: 'easy', skillRequired: 'Tutoria on-line' },
+  ],
+  'Encanamento': [
+    { title: 'Pequenos reparos hidráulicos residenciais', detail: 'Torneiras, caixas d\'água, entupimentos. Alta frequência no bairro.', platform: 'GetNinjas / Parafuso / boca a boca', estimatedReturn: 'R$ 80–250 por serviço', estimatedReturnValue: 165, estimatedTime: '1–2h', difficulty: 'easy', skillRequired: 'Encanamento' },
+  ],
+  'Pintura residencial': [
+    { title: 'Pintura de cômodos e acabamentos', detail: 'Repintura de paredes por cômodo. Valor por metro quadrado ou cômodo fechado.', platform: 'GetNinjas / boca a boca', estimatedReturn: 'R$ 200–600 por cômodo', estimatedReturnValue: 400, estimatedTime: '4–8h', difficulty: 'medium', skillRequired: 'Pintura residencial' },
+  ],
+  'Jardinagem': [
+    { title: 'Manutenção de jardim/quintal semanal', detail: 'Clientes fixos semanais garantem renda recorrente. 3–4 clientes já valem o dia.', platform: 'GetNinjas / boca a boca', estimatedReturn: 'R$ 80–200 por visita', estimatedReturnValue: 140, estimatedTime: '2–3h', difficulty: 'easy', skillRequired: 'Jardinagem' },
+  ],
+  'Limpeza': [
+    { title: 'Faxina residencial por diária', detail: 'Alta demanda constante. Plataformas facilitam encontrar clientes rapidamente.', platform: 'GetNinjas / Parafuso', estimatedReturn: 'R$ 120–250 por diária', estimatedReturnValue: 185, estimatedTime: '4–6h', difficulty: 'easy', skillRequired: 'Limpeza' },
+  ],
+  'Montagem de móveis': [
+    { title: 'Montar móveis (entregas IKEA/Madeiranit)', detail: 'Alta demanda em cidades com IKEA ou lojas de flat-pack. Pague por visita.', platform: 'GetNinjas / OLX', estimatedReturn: 'R$ 100–250 por serviço', estimatedReturnValue: 175, estimatedTime: '2–3h', difficulty: 'easy', skillRequired: 'Montagem de móveis' },
+  ],
+  'Mecânica': [
+    { title: 'Revisão e pequenos reparos automotivos', detail: 'Troca de óleo, pastilhas de freio, fluidos. Atendimento no local ou em casa.', platform: 'GetNinjas / boca a boca', estimatedReturn: 'R$ 100–350 por serviço', estimatedReturnValue: 225, estimatedTime: '1–3h', difficulty: 'medium', skillRequired: 'Mecânica' },
+  ],
+  'Massagem': [
+    { title: 'Massagem relaxante em domicílio', detail: 'Leve a mesa de massagem e atenda clientes em casa. Alta margem.', platform: 'WhatsApp / GetNinjas', estimatedReturn: 'R$ 100–250 por sessão', estimatedReturnValue: 175, estimatedTime: '1h por sessão', difficulty: 'easy', skillRequired: 'Massagem' },
+  ],
+  'Personal trainer': [
+    { title: 'Personal trainer presencial (parque ou condomínio)', detail: 'Treine clientes em parques públicos ou condomínios. Mensalidade recorrente.', platform: 'Instagram / boca a boca', estimatedReturn: 'R$ 600–1.500/mês', estimatedReturnValue: 1050, estimatedTime: '3×/semana 1h', difficulty: 'easy', skillRequired: 'Personal trainer' },
+    { title: 'Personal trainer online (vídeo-aula)', detail: 'Planos personalizados por mês. Maior escala com menor deslocamento.', platform: 'Instagram / WhatsApp', estimatedReturn: 'R$ 200–600/mês por aluno', estimatedReturnValue: 400, estimatedTime: '2h setup + acompanhamento', difficulty: 'easy', skillRequired: 'Personal trainer' },
+  ],
+  'Nutrição': [
+    { title: 'Consultoria nutricional online', detail: 'Plano alimentar + acompanhamento mensal. Alta demanda por saúde e emagrecimento.', platform: 'WhatsApp / Calendly', estimatedReturn: 'R$ 200–600/pacote', estimatedReturnValue: 400, estimatedTime: '2–3h setup + 30min/semana', difficulty: 'medium', skillRequired: 'Nutrição' },
+  ],
+  'Cuidado de animais (pet sitter)': [
+    { title: 'Pet sitter / hospedagem de animais', detail: 'Cuide de animais enquanto o dono viaja. Alta demanda em feriados.', platform: 'DogHero / boca a boca', estimatedReturn: 'R$ 60–150 por dia', estimatedReturnValue: 105, estimatedTime: 'Tempo livre', difficulty: 'easy', skillRequired: 'Cuidado de animais (pet sitter)' },
+  ],
+  'Assistente virtual': [
+    { title: 'Assistência virtual para empreendedor', detail: 'E-mails, agendamentos, pesquisas, planilhas. Contrato mensal de horas.', platform: 'Workana / LinkedIn', estimatedReturn: 'R$ 400–900/mês', estimatedReturnValue: 650, estimatedTime: '20–40h/mês', difficulty: 'easy', skillRequired: 'Assistente virtual' },
+  ],
+  'Consultoria financeira': [
+    { title: 'Organização financeira pessoal para clientes', detail: 'Monte o planejamento financeiro de outra pessoa — planilha + sessão de orientação.', platform: 'LinkedIn / indicações', estimatedReturn: 'R$ 200–500 por cliente', estimatedReturnValue: 350, estimatedTime: '3–5h', difficulty: 'medium', skillRequired: 'Consultoria financeira' },
+  ],
+  'Consultoria empresarial': [
+    { title: 'Diagnóstico e plano de ação para MEI/ME', detail: 'Identifique gargalos e monte um plano simples. Cobrado por projeto.', platform: 'LinkedIn / Sebrae', estimatedReturn: 'R$ 500–1.500', estimatedReturnValue: 1000, estimatedTime: '8–15h', difficulty: 'hard', skillRequired: 'Consultoria empresarial' },
+  ],
+  'Logística / entregas': [
+    { title: 'Entregas com carro/moto em plataforma', detail: 'iFood, Rappi, Lalamove. 1 turno por semana já gera renda complementar relevante.', platform: 'iFood / Rappi / Lalamove', estimatedReturn: 'R$ 100–250/turno', estimatedReturnValue: 175, estimatedTime: '4–6h por turno', difficulty: 'easy', skillRequired: 'Logística / entregas' },
+  ],
+  'Culinária (marmitas / confeitaria)': [
+    { title: 'Vender marmitas saudáveis na vizinhança', detail: 'Foco em 10–20 clientes fixos. Entrega semanal. Baixo custo de entrada.', platform: 'WhatsApp / Canais vizinhança', estimatedReturn: 'R$ 400–1.200/mês', estimatedReturnValue: 800, estimatedTime: '4–6h/semana', difficulty: 'medium', skillRequired: 'Culinária (marmitas / confeitaria)' },
+    { title: 'Bolos e doces por encomenda', detail: 'Confeitaria sob encomenda com entrega local. Alta margem em datas festivas.', platform: 'Instagram / WhatsApp', estimatedReturn: 'R$ 100–400 por encomenda', estimatedReturnValue: 250, estimatedTime: '3–5h', difficulty: 'easy', skillRequired: 'Culinária (marmitas / confeitaria)' },
+  ],
+  'Bartender / garçom': [
+    { title: 'Trabalho em eventos e festas particulares', detail: 'Bares temporários em festas corporativas e casamentos. Alta diária.', platform: 'Plataformas de eventos / boca a boca', estimatedReturn: 'R$ 200–500 por evento', estimatedReturnValue: 350, estimatedTime: '6–8h por evento', difficulty: 'easy', skillRequired: 'Bartender / garçom' },
+  ],
+  'Organização de eventos': [
+    { title: 'Coordenar festa de aniversário ou confraternização', detail: 'Pequenos eventos de 20–50 pessoas. Cobre fornecedores, decoração e logística.', platform: 'Instagram / indicações', estimatedReturn: 'R$ 500–1.500', estimatedReturnValue: 1000, estimatedTime: '10–20h', difficulty: 'medium', skillRequired: 'Organização de eventos' },
+  ],
+  'Artesanato': [
+    { title: 'Vender produtos artesanais no Elo7', detail: 'Bijuterias, quadros, decoração. Plataforma consolidada com público segmentado.', platform: 'Elo7 / Instagram', estimatedReturn: 'R$ 100–500/mês', estimatedReturnValue: 300, estimatedTime: 'Variável', difficulty: 'easy', skillRequired: 'Artesanato' },
   ],
 };
 

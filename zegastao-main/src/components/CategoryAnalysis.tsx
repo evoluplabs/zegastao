@@ -12,20 +12,20 @@ interface Props {
   income: number;
 }
 
-const BENCHMARKS: Record<string, { ideal: number; label: string }> = {
-  'Moradia': { ideal: 35, label: 'ideal' },
-  'Alimentação': { ideal: 25, label: 'ideal' },
-  'Mercado': { ideal: 20, label: 'ideal' },
-  'Transporte': { ideal: 15, label: 'ideal' },
-  'Transporte app': { ideal: 5, label: 'ideal' },
-  'Combustível': { ideal: 10, label: 'ideal' },
-  'Saúde': { ideal: 10, label: 'ideal' },
-  'Farmácia': { ideal: 5, label: 'ideal' },
-  'Lazer': { ideal: 10, label: 'ideal' },
-  'Educação': { ideal: 10, label: 'ideal' },
-  'Streaming': { ideal: 3, label: 'ideal' },
-  'Delivery': { ideal: 8, label: 'ideal' },
-  'Restaurantes': { ideal: 8, label: 'ideal' },
+const BENCHMARKS: Record<string, { ideal: number; label: string; tip?: string }> = {
+  'Moradia': { ideal: 35, label: 'ideal', tip: 'Considere um cômodo para alugar, dividir o imóvel ou renegociar o aluguel.' },
+  'Alimentação': { ideal: 25, label: 'ideal', tip: 'Planeje as refeições da semana e faça uma lista antes do mercado para evitar compras por impulso.' },
+  'Mercado': { ideal: 20, label: 'ideal', tip: 'Compare preços em 2 supermercados e priorize marcas próprias — economia média de 20%.' },
+  'Transporte': { ideal: 15, label: 'ideal', tip: 'Combine transporte público + app somente quando necessário. Caronas solidárias economizam até 60%.' },
+  'Transporte app': { ideal: 5, label: 'ideal', tip: 'Limite corridas por app a situações essenciais. Use o transporte público no dia a dia.' },
+  'Combustível': { ideal: 10, label: 'ideal', tip: 'Evite acelerar bruscamente, calibre pneus mensalmente e compare preços nos postos da rota.' },
+  'Saúde': { ideal: 10, label: 'ideal', tip: 'Verifique se o plano de saúde da empresa é mais barato que o particular.' },
+  'Farmácia': { ideal: 5, label: 'ideal', tip: 'Peça ao médico a versão genérica dos medicamentos — até 80% mais barato.' },
+  'Lazer': { ideal: 10, label: 'ideal', tip: 'Substitua 1 saída cara por mês por lazer gratuito (parques, eventos, cinema com ingresso-meia).' },
+  'Educação': { ideal: 10, label: 'ideal', tip: 'Plataformas como Coursera, Alura e YouTube têm conteúdo gratuito de qualidade.' },
+  'Streaming': { ideal: 3, label: 'ideal', tip: 'Compartilhe planos familiares ou cancele serviços que usa menos de 2x por semana.' },
+  'Delivery': { ideal: 8, label: 'ideal', tip: 'Limite a 2 pedidos por semana e aproveite promoções de quarta — economiza ~R$200/mês.' },
+  'Restaurantes': { ideal: 8, label: 'ideal', tip: 'Prefira o almoço executivo ao invés do jantar à la carte — até 50% mais barato.' },
 };
 
 function pctColor(actual: number, ideal: number): string {
@@ -103,11 +103,18 @@ export function CategoryAnalysis({ categories, income }: Props) {
                 )}
               </div>
               {c.bench && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {c.pct > c.bench.ideal * 1.1
-                    ? `${(c.pct - c.bench.ideal).toFixed(0)}% acima do ${c.bench.label} (${c.bench.ideal}%)`
-                    : `Ideal: até ${c.bench.ideal}% da renda`}
-                </p>
+                <div className="mt-0.5">
+                  <p className="text-[10px] text-muted-foreground">
+                    {c.pct > c.bench.ideal * 1.1
+                      ? `${(c.pct - c.bench.ideal).toFixed(0)}% acima do ${c.bench.label} (${c.bench.ideal}%)`
+                      : `Ideal: até ${c.bench.ideal}% da renda`}
+                  </p>
+                  {c.pct > c.bench.ideal * 1.1 && c.bench.tip && (
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5 leading-snug">
+                      💡 {c.bench.tip}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           );

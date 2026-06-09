@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap } from 'lucide-react';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
@@ -17,12 +17,12 @@ import { DebtWizard } from '@/components/flows/DebtWizard';
 import { GoalWizard } from '@/components/flows/GoalWizard';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
 import { FinancialSetupWizard } from '@/components/flows/FinancialSetupWizard';
-import { ProfileCompletion } from '@/components/ProfileCompletion';
+import { ProfileCompletionRing } from '@/components/ProfileCompletionRing';
 import { ShareWinBanner } from '@/components/share/ShareWinBanner';
 import { FinancialDiagnostic } from '@/components/FinancialDiagnostic';
 import { CategoryAnalysis } from '@/components/CategoryAnalysis';
 import { deriveWins } from '@/lib/wins';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, currentMonthStart } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -59,97 +59,10 @@ function SkeletonCard({ className }: { className?: string }) {
   );
 }
 
-function EmptyDashboard({
-  name,
-  onDebt,
-  onTransaction,
-  onSetupWizard,
-  debtCount,
-  income,
-}: {
-  name?: string;
-  onDebt: () => void;
-  onTransaction: () => void;
-  onSetupWizard: () => void;
-  debtCount: number;
-  income: number;
-}) {
-  return (
-    <div className="space-y-5">
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 md:p-8">
-        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/5 blur-2xl" />
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4">
-            <Sparkles className="h-3 w-3" />
-            Copiloto Financeiro IA
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight mb-2">
-            Olá{name ? `, ${name}` : ''}! Vamos montar seu plano? 👋
-          </h1>
-          <p className="text-muted-foreground text-sm max-w-md mb-5">
-            Para o Copiloto te ajudar de verdade, ele precisa conhecer sua situação. Leva menos de 3 minutos.
-          </p>
-          <Button size="lg" className="rounded-xl gap-2" onClick={onSetupWizard}>
-            <Sparkles className="h-4 w-4" />
-            Configurar minha situação financeira
-          </Button>
-        </div>
-      </div>
-
-      {/* O que já foi preenchido */}
-      {(debtCount > 0 || income > 0) && (
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Já cadastrado</p>
-          <div className="flex flex-wrap gap-3">
-            {income > 0 && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
-                ✓ Renda: <strong>{formatBRL(income)}/mês</strong>
-              </div>
-            )}
-            {debtCount > 0 && (
-              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
-                ✓ {debtCount} dívida{debtCount > 1 ? 's' : ''} cadastrada{debtCount > 1 ? 's' : ''}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Outras ações */}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="gap-2 rounded-full" asChild>
-          <Link to="/upload">
-            <Upload className="h-3.5 w-3.5" /> Importar extrato
-          </Link>
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={onDebt}>
-          <Plus className="h-3.5 w-3.5" /> Adicionar dívida
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={onTransaction}>
-          <Plus className="h-3.5 w-3.5" /> Lançar transação
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { icon: '📤', title: 'Importe seu extrato', desc: 'CSV ou PDF do seu banco. Nubank, Itaú, Bradesco, BB e mais.' },
-          { icon: '🤖', title: 'IA categoriza tudo', desc: 'Alimentação, transporte, lazer — organizado em segundos.' },
-          { icon: '🎯', title: 'Receba seu plano', desc: 'Tarefas diárias e insights personalizados para sua fase.' },
-        ].map((item) => (
-          <div key={item.title} className="rounded-xl border bg-card p-5">
-            <div className="text-2xl mb-3">{item.icon}</div>
-            <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function Dashboard() {
   const profile = useStore((s) => s.profile);
-  const { data: transactions, loading: txLoading } = useTransactions(true);
+  // Load ALL transactions (not month-filtered) — month filter applied locally below
+  const { data: allTransactions, loading: txLoading } = useTransactions(false);
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
   const { data: rules } = useRules();
@@ -164,10 +77,18 @@ export function Dashboard() {
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
 
+  const monthStart = currentMonthStart();
+
+  // Transactions for current month (for balance/expenses)
+  const currentMonthTx = useMemo(
+    () => allTransactions.filter((t) => t.date >= monthStart),
+    [allTransactions, monthStart]
+  );
+
   const { expenses, byCategory, debtPayments } = useMemo(() => {
     let expenses = 0;
     const map: Record<string, number> = {};
-    for (const t of transactions) {
+    for (const t of currentMonthTx) {
       if (t.amount < 0) {
         const abs = Math.abs(t.amount);
         expenses += abs;
@@ -179,29 +100,33 @@ export function Dashboard() {
       .sort((a, b) => b.amount - a.amount);
     const debtPayments = debts.reduce((s, d) => s + (d.monthlyPayment || 0), 0);
     return { expenses, byCategory, debtPayments };
-  }, [transactions, debts]);
+  }, [currentMonthTx, debts]);
+
+  // Use fixed expenses from profile if no transaction data yet for this month
+  const effectiveExpenses = expenses > 0 ? expenses : (profile?.fixedExpenses || 0);
 
   const balance = income - expenses;
   const redirectedThisMonth = rules.reduce((s, r) => s + (r.monthRedirected || 0), 0);
 
-  // Dívida de maior juro (destaque no dashboard)
   const topDebt = [...debts]
     .filter((d) => d.status === 'active')
     .sort((a, b) => b.interestRateMonthly - a.interestRateMonthly)[0];
 
-  // Meta mais próxima de 100%
   const topGoal = [...goals]
     .filter((g) => g.status === 'active')
     .sort((a, b) => (b.currentAmount / (b.targetAmount || 1)) - (a.currentAmount / (a.targetAmount || 1)))[0];
 
-  // Mini-vitórias compartilháveis (alavanca de crescimento orgânico)
   const wins = deriveWins({ balance, topGoal, redirectedThisMonth });
+
+  const hasAnyData = income > 0 || debts.length > 0 || allTransactions.length > 0 || goals.length > 0;
+  const hasCurrentMonthTx = currentMonthTx.length > 0;
+  const hasAnyTx = allTransactions.length > 0;
 
   if (txLoading) {
     return (
       <div className="space-y-4">
         <SkeletonCard />
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <SkeletonCard />
           <SkeletonCard />
         </div>
@@ -210,19 +135,31 @@ export function Dashboard() {
     );
   }
 
-  if (transactions.length === 0 && !txLoading) {
+  // Show setup prompt only if truly no data at all
+  if (!hasAnyData && !txLoading) {
     return (
       <>
-        <EmptyDashboard
-          name={profile?.name}
-          onDebt={() => setOpenDebt(true)}
-          onTransaction={() => setOpenTx(true)}
-          onSetupWizard={() => setOpenSetup(true)}
-          debtCount={debts.length}
-          income={income}
-        />
-        {openDebt && <DebtWizard onClose={() => setOpenDebt(false)} />}
-        {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 md:p-8">
+            <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/5 blur-2xl" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4">
+                <Sparkles className="h-3 w-3" />
+                Copiloto Financeiro IA
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight mb-2">
+                Olá{profile?.name ? `, ${profile.name}` : ''}! Vamos montar seu plano? 👋
+              </h1>
+              <p className="text-muted-foreground text-sm max-w-md mb-5">
+                Para o Copiloto te ajudar de verdade, ele precisa conhecer sua situação. Leva menos de 3 minutos.
+              </p>
+              <Button size="lg" className="rounded-xl gap-2" onClick={() => setOpenSetup(true)}>
+                <Sparkles className="h-4 w-4" />
+                Configurar minha situação financeira
+              </Button>
+            </div>
+          </div>
+        </div>
         {openSetup && <FinancialSetupWizard onClose={() => setOpenSetup(false)} />}
       </>
     );
@@ -230,46 +167,61 @@ export function Dashboard() {
 
   return (
     <>
-      <div className="space-y-5">
-        {/* Barra de progresso do perfil */}
-        <ProfileCompletion
+      <div className="space-y-4">
+
+        {/* 1. Anel de progresso do perfil */}
+        <ProfileCompletionRing
           profile={profile}
           debts={debts}
           goals={goals}
-          transactions={transactions}
+          transactions={allTransactions}
           onSetupWizard={() => setOpenSetup(true)}
         />
 
-        {/* Diagnóstico financeiro */}
+        {/* 2. Diagnóstico financeiro — hero da página */}
         <FinancialDiagnostic
           income={income}
-          expenses={expenses}
+          expenses={effectiveExpenses}
           debts={debts}
           goals={goals}
         />
 
-        {/* Mini-vitória compartilhável (crescimento orgânico) */}
-        <ShareWinBanner wins={wins} />
-
-        {/* Hero: Fase + Saldo */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="md:col-span-2 rounded-2xl border bg-card p-6">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Saldo estimado este mês</p>
+        {/* 3. Hero: Saldo + Fase */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="sm:col-span-2 rounded-2xl border bg-card p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
+              {hasCurrentMonthTx ? 'Saldo este mês' : 'Estimativa do mês'}
+            </p>
             <p className={cn(
               'text-4xl font-bold tracking-tight',
-              balance >= 0 ? 'text-success' : 'text-destructive'
+              income === 0 ? 'text-muted-foreground' : balance >= 0 ? 'text-success' : 'text-destructive'
             )}>
-              {formatBRL(balance)}
+              {income === 0 ? '—' : formatBRL(balance)}
             </p>
-            <div className="mt-3 flex gap-4 text-sm">
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
               <span className="text-muted-foreground">
-                Renda <span className="font-semibold text-success">{formatBRL(income)}</span>
+                Renda <span className="font-semibold text-success">{income > 0 ? formatBRL(income) : '—'}</span>
               </span>
               <span className="text-muted-foreground">
-                Gastos <span className="font-semibold text-destructive">{formatBRL(expenses)}</span>
+                Gastos <span className="font-semibold">{effectiveExpenses > 0 ? formatBRL(effectiveExpenses) : '—'}</span>
               </span>
+              {debtPayments > 0 && (
+                <span className="text-muted-foreground">
+                  Parcelas <span className="font-semibold text-amber-600">{formatBRL(debtPayments)}</span>
+                </span>
+              )}
             </div>
-            {balance < 0 && (
+            {!hasCurrentMonthTx && hasAnyTx && (
+              <p className="mt-2 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-1.5">
+                Transações de meses anteriores encontradas. Importe o extrato atual para ver o saldo deste mês.
+              </p>
+            )}
+            {!hasCurrentMonthTx && !hasAnyTx && income > 0 && (
+              <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                Importe seu extrato bancário para ver gastos reais deste mês.
+              </p>
+            )}
+            {hasCurrentMonthTx && balance < 0 && (
               <div className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 Você gastou mais do que ganhou. O Copiloto pode ajudar a reverter isso.
@@ -278,42 +230,72 @@ export function Dashboard() {
           </div>
 
           {phase ? (
-            <div className={cn('rounded-2xl border p-5 flex flex-col justify-between', PHASE_COLORS[phase])}>
+            <div className={cn('rounded-2xl border p-4 flex flex-col justify-between', PHASE_COLORS[phase])}>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-2">Sua fase atual</p>
-                <p className="text-xl font-bold">{PHASE_LABELS[phase]}</p>
+                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-1">Sua fase</p>
+                <p className="text-lg font-bold">{PHASE_LABELS[phase]}</p>
                 <p className="text-xs mt-1 opacity-70 leading-relaxed">{PHASE_DESCRIPTIONS[phase]}</p>
               </div>
-              <Link to="/journey" className="mt-4 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100 transition-opacity">
-                Ver trilha completa <ArrowRight className="h-3 w-3" />
+              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100">
+                Ver trilha <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card p-5 flex items-center justify-center text-center">
-              <p className="text-sm text-muted-foreground">Fase calculada pelo copiloto à meia-noite</p>
+            <div className="rounded-2xl border bg-card p-4 flex flex-col items-start justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Fase financeira</p>
+                <p className="text-sm font-semibold">Calculando…</p>
+                <p className="text-xs text-muted-foreground mt-1">Análise gerada à meia-noite</p>
+              </div>
+              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                Ver jornada <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Mini-vitória */}
+        <ShareWinBanner wins={wins} />
+
+        {/* 4. Quick Actions */}
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => setOpenDebt(true)}>
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenDebt(true)}>
             <Plus className="h-3.5 w-3.5" /> Dívida
           </Button>
-          <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => setOpenGoal(true)}>
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenGoal(true)}>
             <Plus className="h-3.5 w-3.5" /> Meta
           </Button>
-          <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => setOpenTx(true)}>
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenTx(true)}>
             <Plus className="h-3.5 w-3.5" /> Transação
           </Button>
-          <Button size="sm" variant="outline" className="gap-2 rounded-full" asChild>
-            <Link to="/transactions">
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" asChild>
+            <Link to="/upload">
               <Upload className="h-3.5 w-3.5" /> Importar extrato
             </Link>
           </Button>
         </div>
 
-        {/* Tarefas de hoje */}
+        {/* 5. CTA de importação quando não tem transações */}
+        {!hasAnyTx && income > 0 && (
+          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Upload className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Desbloqueie a análise completa</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Importe o extrato do seu banco para ver gastos reais, análise por categoria e insights personalizados.
+              </p>
+            </div>
+            <Button size="sm" className="gap-1.5 shrink-0" asChild>
+              <Link to="/upload">
+                <Upload className="h-3.5 w-3.5" /> Importar extrato
+              </Link>
+            </Button>
+          </div>
+        )}
+
+        {/* 6. Tarefas de hoje */}
         {tasks.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -321,14 +303,14 @@ export function Dashboard() {
                 <Zap className="h-4 w-4 text-amber-500" />
                 Ações de hoje
               </h2>
-              <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
                 ver todas →
               </Link>
             </div>
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {tasks.slice(0, 2).map((t, i) => (
-                <div key={i} className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm">
-                  <span className="text-xl">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
+                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
+                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm leading-snug">{t.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -342,37 +324,39 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Dívida + Meta em destaque */}
-        <div className="grid gap-4 md:grid-cols-2">
+        {/* 7. Dívida + Meta */}
+        <div className="grid gap-3 sm:grid-cols-2">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold">Dívida prioritária</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                <TrendingDown className="h-4 w-4 text-destructive" /> Dívida prioritária
+              </CardTitle>
               <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setOpenDebt(true)}>
-                <Plus className="h-3.5 w-3.5" /> Adicionar
+                <Plus className="h-3.5 w-3.5" /> Nova
               </Button>
             </CardHeader>
             <CardContent>
               {topDebt ? (
                 <div className="space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <p className="font-semibold">{topDebt.creditor}</p>
-                    <span className="text-xs text-destructive font-medium">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-semibold truncate">{topDebt.creditor}</p>
+                    <span className="text-xs text-destructive font-semibold shrink-0">
                       {(topDebt.interestRateMonthly * 100).toFixed(1)}% a.m.
                     </span>
                   </div>
                   <p className="text-2xl font-bold">{formatBRL(topDebt.totalBalance)}</p>
-                  <Link
-                    to="/financas?tab=debts"
-                    className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
-                  >
-                    Ver todas as dívidas <ArrowRight className="h-3 w-3" />
+                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full rounded-full bg-destructive/60 w-full" />
+                  </div>
+                  <Link to="/financas?tab=debts" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                    Ver todas <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
               ) : (
                 <div>
                   <p className="text-sm text-muted-foreground mb-3">Nenhuma dívida cadastrada.</p>
                   <Button size="sm" variant="outline" className="gap-1" onClick={() => setOpenDebt(true)}>
-                    <Plus className="h-3.5 w-3.5" /> Cadastrar dívida
+                    <Plus className="h-3.5 w-3.5" /> Cadastrar
                   </Button>
                 </div>
               )}
@@ -381,16 +365,18 @@ export function Dashboard() {
 
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold">Meta mais próxima</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-primary" /> Meta mais próxima
+              </CardTitle>
               <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setOpenGoal(true)}>
-                <Plus className="h-3.5 w-3.5" /> Criar
+                <Plus className="h-3.5 w-3.5" /> Nova
               </Button>
             </CardHeader>
             <CardContent>
               {topGoal ? (
                 <div className="space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <p className="font-semibold truncate max-w-[65%]">{topGoal.name}</p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-semibold truncate">{topGoal.name}</p>
                     <span className="text-xs text-muted-foreground shrink-0">
                       {Math.min(100, (topGoal.currentAmount / (topGoal.targetAmount || 1)) * 100).toFixed(0)}%
                     </span>
@@ -405,11 +391,8 @@ export function Dashboard() {
                     <span>{formatBRL(topGoal.currentAmount)}</span>
                     <span>{formatBRL(topGoal.targetAmount)}</span>
                   </div>
-                  <Link
-                    to="/financas?tab=goals"
-                    className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
-                  >
-                    Ver todas as metas <ArrowRight className="h-3 w-3" />
+                  <Link to="/financas?tab=goals" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                    Ver todas <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
               ) : (
@@ -424,86 +407,90 @@ export function Dashboard() {
           </Card>
         </div>
 
-        {/* Fluxo + Categorias */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Fluxo do mês</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FlowChart
-                data={[
-                  { label: 'Renda', value: income, color: '#10b981' },
-                  { label: 'Gastos', value: expenses, color: '#ef4444' },
-                  { label: 'Dívidas', value: debtPayments, color: '#f59e0b' },
-                ]}
-              />
-            </CardContent>
-          </Card>
+        {/* 8. Análise de gastos (só com transações) */}
+        {(byCategory.length > 0 || hasCurrentMonthTx) && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Fluxo do mês</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FlowChart
+                  data={[
+                    { label: 'Renda', value: income, color: '#10b981' },
+                    { label: 'Gastos', value: expenses, color: '#ef4444' },
+                    { label: 'Parcelas', value: debtPayments, color: '#f59e0b' },
+                  ]}
+                />
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Análise de gastos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {byCategory.length > 0 ? (
-                <>
-                  <CategoryBreakdown data={byCategory.slice(0, 6)} />
-                  <div className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Análise por categoria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {byCategory.length > 0 ? (
+                  <div className="space-y-3">
+                    <CategoryBreakdown data={byCategory.slice(0, 5)} />
                     <CategoryAnalysis categories={byCategory.slice(0, 6)} income={income} />
                   </div>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Regras automáticas */}
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Regras automáticas
-            </CardTitle>
-            <Link to="/financas?tab=rules" className="text-xs text-muted-foreground hover:text-foreground">
-              gerenciar →
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-success">{formatBRL(redirectedThisMonth)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              redirecionados automaticamente · {rules.filter((r) => r.isActive).length} regra(s) ativa(s)
-            </p>
-            {rules.length === 0 && (
-              <Link to="/financas?tab=rules" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-                Criar minha primeira regra <ArrowRight className="h-3 w-3" />
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Insights do copiloto */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Insights do copiloto
-            </h2>
-            <Badge variant="outline" className="text-xs">Atualiza à meia-noite</Badge>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
-          {insights.length === 0 ? (
-            <div className="rounded-xl border bg-card/50 p-6 text-center">
-              <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Seus insights personalizados aparecem aqui após o primeiro processamento noturno.
+        )}
+
+        {/* Aviso quando tem transações antigas mas não deste mês */}
+        {hasAnyTx && !hasCurrentMonthTx && (
+          <div className="rounded-xl border bg-secondary/40 px-4 py-3 flex items-start gap-3 text-xs">
+            <span className="text-lg shrink-0">📅</span>
+            <div>
+              <p className="font-medium">Transações de meses anteriores encontradas</p>
+              <p className="text-muted-foreground mt-0.5">
+                Você tem {allTransactions.length} transação{allTransactions.length !== 1 ? 'ões' : ''} no histórico.{' '}
+                <Link to="/upload" className="text-primary underline">Importe o extrato de junho</Link> para ver o mês atual.
               </p>
             </div>
-          ) : (
+          </div>
+        )}
+
+        {/* 9. Regras automáticas */}
+        {rules.length > 0 && (
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Regras automáticas
+              </CardTitle>
+              <Link to="/financas?tab=rules" className="text-xs text-muted-foreground hover:text-foreground">
+                gerenciar →
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-success">{formatBRL(redirectedThisMonth)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                redirecionados automaticamente · {rules.filter((r) => r.isActive).length} regra(s) ativa(s)
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 10. Insights do copiloto */}
+        {insights.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Insights do copiloto
+              </h2>
+              <Badge variant="outline" className="text-xs">Atualiza à meia-noite</Badge>
+            </div>
             <div className="space-y-3">
               {insights.map((ins, i) => (
-                <div key={i} className="group rounded-xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-sm">
+                <div key={i} className="rounded-xl border bg-card p-4 hover:border-primary/20 transition-all">
                   <div className="flex items-start gap-3">
                     {ins.emoji && <span className="text-xl shrink-0">{ins.emoji}</span>}
                     <div>
@@ -514,8 +501,18 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Insights empty state */}
+        {insights.length === 0 && hasAnyTx && (
+          <div className="rounded-xl border bg-card/50 p-6 text-center">
+            <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Insights personalizados aparecem após o primeiro processamento noturno.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Wizards */}
