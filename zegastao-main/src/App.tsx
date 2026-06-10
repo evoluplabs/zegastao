@@ -1,9 +1,68 @@
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Routes, Route } from 'react-router-dom';
 import { useAuthListener } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ToastProvider } from '@/components/ui/Toast';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CookieConsent } from '@/components/CookieConsent';
+import { X, Download } from 'lucide-react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+function PWAInstallBanner() {
+  const [show, setShow] = useState(false);
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      promptRef.current = e as BeforeInstallPromptEvent;
+      // Show banner after 30s of use
+      const timer = setTimeout(() => {
+        const dismissed = localStorage.getItem('pwa-banner-dismissed');
+        if (!dismissed) setShow(true);
+      }, 30000);
+      return () => clearTimeout(timer);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  function dismiss() {
+    setShow(false);
+    localStorage.setItem('pwa-banner-dismissed', '1');
+  }
+
+  async function install() {
+    if (!promptRef.current) return;
+    await promptRef.current.prompt();
+    const { outcome } = await promptRef.current.userChoice;
+    if (outcome === 'accepted') setShow(false);
+  }
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-4 sm:w-80">
+      <div className="flex items-center gap-3 rounded-2xl border bg-card shadow-lg px-4 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">Z</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">Instale o Zé Gastão</p>
+          <p className="text-xs text-muted-foreground">Acesso rápido na tela inicial</p>
+        </div>
+        <button onClick={install} className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1">
+          <Download className="h-3 w-3" /> Instalar
+        </button>
+        <button onClick={dismiss} className="shrink-0 rounded-lg p-1.5 hover:bg-accent transition-colors">
+          <X className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </div>
+    </div>
+  );
+}
 import { Login } from '@/pages/Login';
 import { Onboarding } from '@/pages/Onboarding';
 import { Dashboard } from '@/pages/Dashboard';
@@ -31,6 +90,7 @@ export default function App() {
 
   return (
     <ToastProvider>
+      <PWAInstallBanner />
       <Routes>
         {/* Páginas públicas */}
         <Route path="/" element={<Landing />} />

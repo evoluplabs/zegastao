@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { InstallmentTracker } from '@/components/InstallmentTracker';
 import type { Debt } from '@/types';
 
 const DEBT_TYPES = [
@@ -32,7 +33,7 @@ interface Props {
 }
 
 export function DebtEditModal({ debt, onClose }: Props) {
-  const [tab, setTab] = useState<'detail' | 'edit'>('detail');
+  const [tab, setTab] = useState<'detail' | 'parcelas' | 'edit'>('detail');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -82,6 +83,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
   async function save() {
     setSaving(true);
     try {
+      const newRemaining = parseInt(form.remainingInstallments) || 0;
       const patch: Partial<Debt> = {
         creditor: form.creditor,
         type: form.type,
@@ -89,9 +91,11 @@ export function DebtEditModal({ debt, onClose }: Props) {
         monthlyPayment: parseFloat(form.monthlyPayment.replace(',', '.')) || 0,
         interestRateMonthly: (parseFloat(form.interestRateMonthly.replace(',', '.')) || 0) / 100,
         dueDay: parseInt(form.dueDay) || 10,
-        remainingInstallments: parseInt(form.remainingInstallments) || 0,
+        remainingInstallments: newRemaining,
         status: form.status as Debt['status'],
         notes: form.notes || undefined,
+        // Define totalInstallments na primeira edição (se não existia)
+        totalInstallments: debt.totalInstallments || ((debt.paidInstallments || 0) + newRemaining) || newRemaining,
       };
       if (isCard && form.statementMonth) patch.statementMonth = form.statementMonth;
       if (isInformal) patch.informalUrgency = form.informalUrgency as Debt['informalUrgency'];
@@ -135,7 +139,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
 
         {/* Tabs */}
         <div className="flex border-b">
-          {(['detail', 'edit'] as const).map((t) => (
+          {(['detail', 'parcelas', 'edit'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -144,7 +148,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 tab === t ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {t === 'detail' ? 'Detalhes' : 'Editar'}
+              {t === 'detail' ? 'Detalhes' : t === 'parcelas' ? 'Parcelas' : 'Editar'}
             </button>
           ))}
         </div>
@@ -235,6 +239,10 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 )}
               </div>
             </>
+          )}
+
+          {tab === 'parcelas' && (
+            <InstallmentTracker debt={debt} />
           )}
 
           {tab === 'edit' && (

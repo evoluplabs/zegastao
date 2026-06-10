@@ -93,8 +93,10 @@ export function UploadPage() {
     if (!user) return;
 
     if (!isPaid) {
+      // Free tier: check total uploads (not just this month)
       const count = await countUploadsThisMonth(user.uid);
-      if (count >= limits.uploadsPerMonth) {
+      const uploadLimit = limits.uploadsTotal ?? limits.uploadsPerMonth;
+      if (count >= uploadLimit) {
         setShowUpgrade(true);
         track(Events.UPGRADE_MODAL_SHOWN, { reason: 'upload_limit' });
         return;
@@ -157,7 +159,7 @@ export function UploadPage() {
           <div className="flex items-center gap-2 text-sm">
             <Lock className="h-4 w-4 text-amber-500 shrink-0" />
             <span className="text-amber-700 dark:text-amber-400">
-              Plano gratuito: {limits.uploadsPerMonth} uploads por mês
+              Plano gratuito: {limits.uploadsTotal ?? limits.uploadsPerMonth} upload para testar
             </span>
           </div>
           <Button
@@ -351,6 +353,15 @@ export function UploadPage() {
                     {result.totalTransactions ?? 0} transações importadas de {result.filename}.
                   </p>
                 </div>
+
+                {/* CTA para copilot com contexto pré-preenchido */}
+                <button
+                  onClick={() => navigate(`/copilot?prompt=${encodeURIComponent(`Analisei meu extrato do ${bankKey ? bankKey : 'banco'}. O que isso revela sobre meus gastos e como posso melhorar?`)}`)}
+                  className="w-full rounded-xl border-2 border-primary/30 bg-primary/5 px-4 py-3 text-left hover:bg-primary/10 transition-colors"
+                >
+                  <p className="text-sm font-semibold text-primary">Perguntar ao Copiloto sobre este extrato →</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Ele já tem o contexto das suas transações importadas</p>
+                </button>
 
                 <Button className="w-full gap-2" onClick={() => navigate('/transactions')}>
                   <FileText className="h-4 w-4" /> Ver minhas transações

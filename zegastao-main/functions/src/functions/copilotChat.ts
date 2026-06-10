@@ -16,35 +16,39 @@ interface ChatMessage {
   content: string;
 }
 
-const PLAN_DAILY_LIMITS: Record<string, number> = {
-  free: 10,
-  copiloto_monthly: 50,
-  copiloto_annual: 50,
-};
+const FREE_LIFETIME_LIMIT = 5;
 
 async function checkAndIncrementRateLimit(
   db: ReturnType<typeof getFirestore>,
   userId: string
-): Promise<{ allowed: boolean; remaining: number; dailyLimit: number }> {
+): Promise<{ allowed: boolean; remaining: number; lifetimeLimit: number; isPaid: boolean }> {
   const subDoc = await db.collection('users').doc(userId).collection('subscription').doc('main').get();
   const plan = subDoc.exists ? (subDoc.data()!.plan as string) : 'free';
-  const dailyLimit = PLAN_DAILY_LIMITS[plan] ?? PLAN_DAILY_LIMITS.free;
 
+  // Usuários pagos: sem limite
+  if (plan !== 'free') {
+    return { allowed: true, remaining: Infinity, lifetimeLimit: Infinity, isPaid: true };
+  }
+
+  // Usuários free: 5 mensagens vitalícias (sem reset)
   const usageRef = db.collection('users').doc(userId).collection('usage').doc('chat');
-  const today = new Date().toISOString().slice(0, 10);
 
   return db.runTransaction(async (tx) => {
     const usageDoc = await tx.get(usageRef);
-    const data = usageDoc.exists ? usageDoc.data()! : { dailyCount: 0, lastResetDate: '' };
-    const isNewDay = data.lastResetDate !== today;
-    const count: number = isNewDay ? 0 : (data.dailyCount as number);
+    const data = usageDoc.exists ? usageDoc.data()! : {};
+    const lifetimeCount: number = (data.lifetimeCount as number) || 0;
 
-    if (count >= dailyLimit) {
-      return { allowed: false, remaining: 0, dailyLimit };
+    if (lifetimeCount >= FREE_LIFETIME_LIMIT) {
+      return { allowed: false, remaining: 0, lifetimeLimit: FREE_LIFETIME_LIMIT, isPaid: false };
     }
 
-    tx.set(usageRef, { dailyCount: count + 1, lastResetDate: today });
-    return { allowed: true, remaining: dailyLimit - count - 1, dailyLimit };
+    tx.set(usageRef, { lifetimeCount: lifetimeCount + 1 }, { merge: true });
+    return {
+      allowed: true,
+      remaining: FREE_LIFETIME_LIMIT - lifetimeCount - 1,
+      lifetimeLimit: FREE_LIFETIME_LIMIT,
+      isPaid: false,
+    };
   });
 }
 
@@ -64,7 +68,7 @@ export const copilotChat = onCall(
     if (!rateCheck.allowed) {
       throw new HttpsError(
         'resource-exhausted',
-        `Limite diário de ${rateCheck.dailyLimit} mensagens atingido. Volte amanhã ou assine o plano Copiloto.`
+        `Você usou suas ${rateCheck.lifetimeLimit} mensagens gratuitas. Para conversar sem limite, assine o plano Copiloto — R$19,90/mês ou R$14,90/mês no anual.`
       );
     }
 
@@ -120,7 +124,8 @@ ${contextSnapshot}`,
       response: text,
       impulse,
       remainingMessages: rateCheck.remaining,
-      dailyLimit: rateCheck.dailyLimit,
+      lifetimeLimit: rateCheck.lifetimeLimit,
+      isPaid: rateCheck.isPaid,
       usage: response.usage,
     };
   }

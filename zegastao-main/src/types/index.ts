@@ -135,6 +135,11 @@ export interface Debt {
   source?: string;
   statementMonth?: string; // 'YYYY-MM' — mês de referência da fatura (cartão)
   informalUrgency?: 'whenever' | 'monthly' | 'urgent'; // para dívidas familiares/amigos
+  // Rastreamento de parcelas mês a mês
+  totalInstallments?: number;    // parcelas totais originais
+  paidInstallments?: number;     // parcelas já pagas (acumulado)
+  lastPaymentMonth?: string;     // 'YYYY-MM' do último pagamento registrado
+  amortizationType?: 'price' | 'sac';
 }
 
 export interface Goal {
@@ -236,6 +241,8 @@ export interface Profile {
   extraIncomeSources?: ExtraIncomeSource[];
   riskProfile?: RiskProfile;
   alreadyInvests?: 'yes' | 'no' | 'no_idea';
+  organizationId?: string;  // ID da empresa (B2B)
+  isEmployee?: boolean;     // vinculado via convite corporativo
 }
 
 export interface Milestone {
@@ -423,7 +430,9 @@ export type PlanId = 'free' | 'copiloto_monthly' | 'copiloto_annual';
 
 export interface PlanLimits {
   chatMessagesPerDay: number;
+  chatMessagesLifetime: number; // 5 para free (vitalício sem reset), Infinity para pago
   uploadsPerMonth: number;
+  uploadsTotal: number;         // total de uploads (1 para free, Infinity para pago)
   contractAnalysis: boolean;
   pushNotifications: boolean;
   dailyInsights: boolean;
@@ -431,22 +440,28 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
-    chatMessagesPerDay: 10,
-    uploadsPerMonth: 2,
+    chatMessagesPerDay: Infinity,   // não usado no free (usa lifetimeCount)
+    chatMessagesLifetime: 5,
+    uploadsPerMonth: Infinity,      // não usado no free (usa uploadsTotal)
+    uploadsTotal: 1,
     contractAnalysis: false,
     pushNotifications: false,
     dailyInsights: false,
   },
   copiloto_monthly: {
-    chatMessagesPerDay: 50,
+    chatMessagesPerDay: Infinity,
+    chatMessagesLifetime: Infinity,
     uploadsPerMonth: Infinity,
+    uploadsTotal: Infinity,
     contractAnalysis: true,
     pushNotifications: true,
     dailyInsights: true,
   },
   copiloto_annual: {
-    chatMessagesPerDay: 50,
+    chatMessagesPerDay: Infinity,
+    chatMessagesLifetime: Infinity,
     uploadsPerMonth: Infinity,
+    uploadsTotal: Infinity,
     contractAnalysis: true,
     pushNotifications: true,
     dailyInsights: true,

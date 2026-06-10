@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingDown, Handshake, Pencil, Zap } from 'lucide-react';
+import { Plus, Trash2, TrendingDown, Handshake, Pencil, Zap, CheckCircle2 } from 'lucide-react';
+import { doc, writeBatch, collection } from 'firebase/firestore';
+import { db, auth } from '@/firebase';
 import { useDebts } from '@/hooks/useDebts';
 import { useNegotiationAlerts } from '@/hooks/useDocuments';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
+import { calcAmortization } from '@/lib/amortization';
 import { useToast } from '@/components/ui/Toast';
 import { NEGOTIATION_SCRIPTS } from '@/lib/negotiation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +27,51 @@ export function Debts() {
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [simulateDebt, setSimulateDebt] = useState<Debt | null>(null);
   const [form, setForm] = useState({ creditor: '', balance: '', payment: '', rate: '' });
+  const [payingId, setPayingId] = useState<string | null>(null);
+
+  function currentMonth() { return new Date().toISOString().slice(0, 7); }
+
+  async function quickPayInstallment(e: React.MouseEvent, d: Debt) {
+    e.stopPropagation();
+    const uid = auth.currentUser?.uid;
+    if (!uid || payingId || !d.remainingInstallments || !d.interestRateMonthly) return;
+
+    const schedule = calcAmortization(d.totalBalance, d.interestRateMonthly, d.remainingInstallments).originalSchedule;
+    const inst = schedule[0];
+    if (!inst) return;
+
+    setPayingId(d.id);
+    try {
+      const batch = writeBatch(db);
+      batch.set(doc(collection(db, 'users', uid, 'debts', d.id, 'payments')), {
+        month: currentMonth(),
+        paidAt: new Date(),
+        installmentNumber: (d.paidInstallments || 0) + 1,
+        amount: inst.payment,
+        principal: inst.principal,
+        interest: inst.interest,
+        balanceAfter: Math.max(0, d.totalBalance - inst.principal),
+        type: 'regular',
+      });
+      const newBal = Math.max(0, d.totalBalance - inst.principal);
+      const newRem = Math.max(0, (d.remainingInstallments || 0) - 1);
+      const patch: Record<string, unknown> = {
+        totalBalance: newBal,
+        remainingInstallments: newRem,
+        paidInstallments: (d.paidInstallments || 0) + 1,
+        lastPaymentMonth: currentMonth(),
+        totalInstallments: d.totalInstallments || ((d.paidInstallments || 0) + (d.remainingInstallments || 0)),
+      };
+      if (newRem === 0) patch.status = 'paid';
+      batch.update(doc(db, 'users', uid, 'debts', d.id), patch);
+      await batch.commit();
+      toast('Parcela registrada!');
+    } catch {
+      toast('Erro ao registrar', 'error');
+    } finally {
+      setPayingId(null);
+    }
+  }
 
   // Ranking automático: maior juros primeiro (estratégia avalanche).
   const ranked = [...debts]
@@ -180,9 +228,48 @@ export function Debts() {
             {d.notes && (
               <p className="mt-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-muted-foreground">{d.notes}</p>
             )}
+
+            {/* Barra de progresso de parcelas */}
+            {(d.remainingInstallments > 0 || (d.paidInstallments ?? 0) > 0) && (() => {
+              const paid = d.paidInstallments || 0;
+              const total = d.totalInstallments || (paid + d.remainingInstallments) || d.remainingInstallments;
+              const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
+              return (
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Parcela {paid + 1} de {total}</span>
+                    <span>{pct}% pago</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Botão "Paguei" */}
+            {d.status === 'active' && d.remainingInstallments > 0 && d.interestRateMonthly > 0 && (
+              <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
+                {d.lastPaymentMonth === currentMonth() ? (
+                  <div className="flex items-center gap-1.5 rounded-lg bg-success/5 border border-success/20 px-3 py-1.5 text-xs font-medium text-success">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Parcela deste mês registrada
+                  </div>
+                ) : (
+                  <button
+                    disabled={payingId === d.id}
+                    onClick={(e) => quickPayInstallment(e, d)}
+                    className="flex items-center gap-1.5 w-full justify-center rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {payingId === d.id ? 'Registrando…' : 'Paguei a parcela deste mês'}
+                  </button>
+                )}
+              </div>
+            )}
+
             <button
               onClick={(e) => { e.stopPropagation(); setSimulateDebt(d); }}
-              className="mt-3 flex items-center gap-1.5 w-full justify-center rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors"
+              className="mt-2 flex items-center gap-1.5 w-full justify-center rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors"
             >
               <Zap className="h-3.5 w-3.5" /> E se eu pagar a mais?
             </button>

@@ -4,18 +4,22 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface UpgradeModalProps {
-  reason: 'chat_limit' | 'upload_limit' | 'contract' | 'generic';
+  reason: 'chat_limit' | 'chat_lifetime' | 'upload_limit' | 'contract' | 'generic';
   onClose: () => void;
 }
 
 const REASONS: Record<UpgradeModalProps['reason'], { title: string; desc: string }> = {
+  chat_lifetime: {
+    title: 'Suas 5 mensagens gratuitas foram usadas',
+    desc: 'Assine o Copiloto para conversar sem limite sobre suas finanças.',
+  },
   chat_limit: {
     title: 'Você usou todas as mensagens de hoje',
-    desc: 'No plano gratuito você tem 10 mensagens por dia. Assine o Copiloto para 50 mensagens.',
+    desc: 'No plano gratuito você tem mensagens limitadas. Assine o Copiloto para acesso ilimitado.',
   },
   upload_limit: {
     title: 'Limite de uploads atingido',
-    desc: 'No plano gratuito você pode importar 2 extratos por mês. Assine para uploads ilimitados.',
+    desc: 'No plano gratuito você pode importar 1 extrato. Assine para uploads ilimitados.',
   },
   contract: {
     title: 'Análise de contratos é premium',
@@ -28,13 +32,16 @@ const REASONS: Record<UpgradeModalProps['reason'], { title: string; desc: string
 };
 
 const FEATURES = [
-  '50 mensagens por dia com o copiloto',
+  'Mensagens ilimitadas com o copiloto',
   'Uploads ilimitados de extratos',
-  'Insights Sonnet diários',
+  'Insights diários personalizados',
   'Análise de contratos PDF',
   'Notificações de alertas',
   'Suporte prioritário',
 ];
+
+// Preview de resposta do copilot (para o modal de chat_lifetime)
+const CHAT_PREVIEW = `"Com base nas suas dívidas, recomendo pagar primeiro o cartão de crédito (juros mais altos). Pagando R$200 a mais por mês, você quita 2 meses antes e economiza ~R$800 em juros. Quer que eu monte o plano semana a semana?"`;
 
 export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
   const { title, desc } = REASONS[reason];
@@ -58,6 +65,20 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
           <h2 className="text-lg font-bold mb-1">{title}</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
         </div>
+
+        {reason === 'chat_lifetime' && (
+          <div className="px-6 pb-4">
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+              <p className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-2">O copiloto responderia:</p>
+              <p className="text-sm text-foreground leading-relaxed italic">{CHAT_PREVIEW}</p>
+              <div className="mt-2 h-6 rounded bg-secondary/60 relative overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-[10px] text-muted-foreground font-medium">continua no plano pago…</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="px-6 pb-4">
           <div className="rounded-xl border bg-primary/5 border-primary/20 p-4">

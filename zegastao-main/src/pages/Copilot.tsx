@@ -4,13 +4,14 @@ import { httpsCallable } from 'firebase/functions';
 import { Send, Zap, Bot, User, Lock, Timer } from 'lucide-react';
 import { functions } from '@/firebase';
 import { Button } from '@/components/ui/button';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { Documents } from './Documents';
 import { PersonalContext } from './PersonalContext';
 import { cn } from '@/lib/utils';
 
 const chat = httpsCallable<
   { message: string; history: ChatMessage[] },
-  { response: string; impulse?: boolean; remainingMessages?: number; dailyLimit?: number }
+  { response: string; impulse?: boolean; remainingMessages?: number; lifetimeLimit?: number; isPaid?: boolean }
 >(functions, 'copilotChat');
 
 interface ChatMessage {
@@ -72,8 +73,10 @@ function ChatView() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [dailyLimit, setDailyLimit] = useState<number>(10);
+  const [lifetimeLimit, setLifetimeLimit] = useState<number>(5);
+  const [isPaid, setIsPaid] = useState(false);
   const [limitHit, setLimitHit] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [challenge, setChallenge] = useState<ImpulseChallenge | null>(() => getActiveChallenge());
   const [challengeAccepted, setChallengeAccepted] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -111,21 +114,23 @@ function ChatView() {
       const res = await chat({ message: text, history: messages });
       const data = res.data;
       if (data.remainingMessages !== undefined) setRemaining(data.remainingMessages);
-      if (data.dailyLimit !== undefined) setDailyLimit(data.dailyLimit);
+      if (data.lifetimeLimit !== undefined) setLifetimeLimit(data.lifetimeLimit);
+      if (data.isPaid !== undefined) setIsPaid(data.isPaid);
       setMessages([
         ...next,
         { role: 'assistant', content: data.response, impulse: data.impulse },
       ]);
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message || '';
-      if (msg.includes('resource-exhausted') || msg.includes('Limite')) {
+      if (msg.includes('resource-exhausted') || msg.includes('Limite') || msg.includes('mensagens gratuitas')) {
         setLimitHit(true);
         setRemaining(0);
+        setShowUpgrade(true);
         setMessages([
           ...next,
           {
             role: 'assistant',
-            content: `Você atingiu o limite de ${dailyLimit} mensagens hoje. Volte amanhã ou assine o plano Copiloto para 50 mensagens por dia. 🚀`,
+            content: `Você usou suas ${lifetimeLimit} mensagens gratuitas. Assine o Copiloto para conversar sem limite. 🚀`,
           },
         ]);
       } else {
@@ -140,19 +145,21 @@ function ChatView() {
     }
   }
 
-  const usedMessages = remaining !== null ? dailyLimit - remaining : null;
-  const limitPct = usedMessages !== null ? (usedMessages / dailyLimit) * 100 : 0;
+  const usedMessages = remaining !== null ? lifetimeLimit - remaining : null;
+  const limitPct = usedMessages !== null && lifetimeLimit > 0 ? Math.min(100, (usedMessages / lifetimeLimit) * 100) : 0;
 
   return (
     <div className="flex h-[calc(100vh-12rem)] flex-col gap-0">
-      {/* Contador */}
-      {remaining !== null && (
+      {showUpgrade && <UpgradeModal reason="chat_lifetime" onClose={() => setShowUpgrade(false)} />}
+
+      {/* Contador — apenas para free */}
+      {remaining !== null && !isPaid && lifetimeLimit < Infinity && (
         <div className="flex items-center justify-end gap-2 pb-3">
           <span className={cn(
             'text-xs font-medium',
-            remaining <= 2 ? 'text-destructive' : remaining <= 5 ? 'text-amber-500' : 'text-muted-foreground'
+            remaining <= 1 ? 'text-destructive' : remaining <= 3 ? 'text-amber-500' : 'text-muted-foreground'
           )}>
-            {remaining} mensagens restantes hoje
+            {usedMessages} de {lifetimeLimit} mensagens gratuitas usadas
           </span>
           <div className="h-1 w-20 rounded-full bg-secondary overflow-hidden">
             <div
@@ -276,11 +283,15 @@ function ChatView() {
         {limitHit ? (
           <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
             <Lock className="h-4 w-4 shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              Limite diário atingido.{' '}
-              <a href="/pricing" className="underline font-medium">Assine o Copiloto</a>
-              {' '}para 50 mensagens/dia.
+            <p className="text-sm text-amber-700 dark:text-amber-400 flex-1">
+              Suas {lifetimeLimit} mensagens gratuitas foram usadas.
             </p>
+            <button
+              onClick={() => setShowUpgrade(true)}
+              className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Assinar
+            </button>
           </div>
         ) : (
           <form

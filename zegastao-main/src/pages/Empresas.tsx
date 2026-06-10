@@ -1,7 +1,14 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, TrendingUp, Users, Shield, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Building2, TrendingUp, Users, Shield, CheckCircle2, ArrowLeft, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+
+const B2B_PLANS = [
+  { size: 'Até 10 colaboradores', price: 'R$ 149', perPerson: 'R$ 14,90/pessoa', highlight: false },
+  { size: 'Até 50 colaboradores', price: 'R$ 499', perPerson: '~R$ 9,98/pessoa', highlight: true },
+  { size: 'Até 200 colaboradores', price: 'R$ 999', perPerson: '~R$ 4,99/pessoa', highlight: false },
+  { size: '+200 colaboradores', price: 'Consulte', perPerson: 'Proposta personalizada', highlight: false },
+];
 
 const BENEFITS = [
   {
@@ -149,6 +156,46 @@ export function Empresas() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing B2B */}
+      <section className="border-b">
+        <div className="mx-auto max-w-4xl px-4 py-14">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-2">Preços transparentes</h2>
+            <p className="text-sm text-muted-foreground">Sem taxas ocultas. Sem contrato de longo prazo.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {B2B_PLANS.map((p) => (
+              <div
+                key={p.size}
+                className={`rounded-2xl border p-5 flex flex-col gap-3 ${p.highlight ? 'border-2 border-primary relative' : ''}`}
+              >
+                {p.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground">
+                      <Zap className="h-3 w-3" /> Mais popular
+                    </span>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground font-medium">{p.size}</p>
+                <p className="text-2xl font-extrabold">{p.price}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+                <p className="text-xs text-primary font-medium">{p.perPerson}</p>
+                <Button
+                  size="sm"
+                  variant={p.highlight ? 'default' : 'outline'}
+                  className="w-full mt-auto"
+                  onClick={() => document.getElementById('form')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Solicitar proposta
+                </Button>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            Todos os planos incluem: acesso completo para todos os colaboradores, relatórios anonimizados mensais e suporte dedicado ao RH.
+          </p>
         </div>
       </section>
 

@@ -14,23 +14,23 @@ const createCheckout = httpsCallable<
 >(functions, 'createMPCheckout');
 
 const FREE_FEATURES = [
-  { label: '10 mensagens/dia com o Copiloto', ok: true },
-  { label: '2 uploads de extrato por mês', ok: true },
-  { label: 'Dashboard + Dívidas + Metas', ok: true },
+  { label: '5 conversas com o Copiloto (sem renovação)', ok: true },
+  { label: '1 upload de extrato para testar', ok: true },
+  { label: 'Dashboard + Dívidas + Metas ilimitadas', ok: true },
   { label: 'Categorização automática com IA', ok: true },
+  { label: 'Mensagens ilimitadas com o Copiloto', ok: false },
   { label: 'Análise de contratos PDF', ok: false },
-  { label: 'Insights diários Sonnet', ok: false },
-  { label: 'Notificações push', ok: false },
-  { label: 'Uploads ilimitados', ok: false },
+  { label: 'Insights diários personalizados', ok: false },
+  { label: 'Uploads ilimitados de extratos', ok: false },
 ];
 
 const PAID_FEATURES = [
-  { label: '50 mensagens/dia com o Copiloto', ok: true },
+  { label: 'Mensagens ilimitadas com o Copiloto', ok: true },
   { label: 'Uploads ilimitados de extratos', ok: true },
-  { label: 'Tudo do plano gratuito', ok: true },
+  { label: 'Dashboard + Dívidas + Metas ilimitadas', ok: true },
   { label: 'Categorização automática com IA', ok: true },
   { label: 'Análise de contratos PDF', ok: true },
-  { label: 'Insights diários Sonnet', ok: true },
+  { label: 'Insights diários personalizados', ok: true },
   { label: 'Notificações push de alertas', ok: true },
   { label: 'Suporte prioritário', ok: true },
 ];
@@ -220,6 +220,27 @@ export function Pricing() {
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Acesso vitalício — waitlist */}
+        <div className="max-w-2xl mx-auto mt-10">
+          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background px-3 py-1 text-xs font-medium text-primary mb-3">
+              <Sparkles className="h-3 w-3" />
+              Em breve — primeiros 100 usuários
+            </div>
+            <h3 className="text-xl font-bold mb-2">Acesso Vitalício — R$ 149</h3>
+            <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+              Pague uma vez, use para sempre. Sem mensalidade, sem renovação. Lista de espera aberta agora.
+            </p>
+            <Button variant="outline" className="gap-2" asChild>
+              <a href="mailto:contato@zegastao.com.br?subject=Quero acesso vitalício" target="_blank" rel="noopener noreferrer">
+                <Zap className="h-4 w-4" />
+                Entrar na lista de espera
+              </a>
+            </Button>
+            <p className="text-xs text-muted-foreground mt-3">Sem compromisso — avisamos quando abrir.</p>
           </div>
         </div>
       </div>
