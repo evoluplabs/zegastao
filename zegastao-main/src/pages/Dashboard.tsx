@@ -24,6 +24,7 @@ import { CategoryAnalysis } from '@/components/CategoryAnalysis';
 import { WeeklyChallenge } from '@/components/WeeklyChallenge';
 import { FinancialSimulator } from '@/components/FinancialSimulator';
 import { RecurringExpenses } from '@/components/RecurringExpenses';
+import { SetupChecklist } from '@/components/SetupChecklist';
 import { deriveWins } from '@/lib/wins';
 import { formatBRL, currentMonthStart } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
@@ -217,7 +218,15 @@ export function Dashboard() {
     <>
       <div className="space-y-4">
 
-        {/* 1. Anel de progresso do perfil */}
+        {/* 1. Checklist de ativação (aparece até o usuário completar os 5 passos) */}
+        <SetupChecklist
+          hasIncome={income > 0}
+          hasDebts={debts.filter((d) => d.status === 'active').length > 0}
+          hasUpload={allTransactions.length > 0}
+          hasGoals={goals.filter((g) => g.status === 'active').length > 0}
+        />
+
+        {/* 2. Anel de progresso do perfil */}
         <ProfileCompletionRing
           profile={profile}
           debts={debts}

@@ -1,18 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Clock, ArrowRight } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog';
+import { getCoverConfig } from '@/lib/blogCoverImage';
 import { cn } from '@/lib/utils';
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Dívidas': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  'Orçamento': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  'Renda Extra': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  'Poupança': 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-  'Direitos': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  'Psicologia Financeira': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
-  'Ferramentas': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
-  'Especiais': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-};
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+}
 
 interface Props {
   post: BlogPost;
@@ -20,40 +14,65 @@ interface Props {
 }
 
 export function BlogCard({ post, featured }: Props) {
-  const colorCls = CATEGORY_COLORS[post.category] || 'bg-secondary text-secondary-foreground';
+  const cover = getCoverConfig(post.category);
+
+  if (featured) {
+    // Featured: horizontal layout with large cover on left
+    return (
+      <Link
+        to={`/blog/${post.slug}`}
+        className="group flex flex-col sm:flex-row rounded-2xl overflow-hidden border bg-card hover:shadow-lg transition-all duration-200"
+      >
+        <div className={cn('relative sm:w-2/5 flex items-center justify-center p-8 min-h-[140px]', cover.gradient)}>
+          <span className="text-5xl">{cover.iconEmoji}</span>
+          <div className="absolute bottom-3 left-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-white/80 bg-black/20 px-2 py-0.5 rounded-full">
+              {post.category}
+            </span>
+          </div>
+        </div>
+        <div className="flex-1 p-5 flex flex-col gap-2.5">
+          <h2 className="font-bold text-lg leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2">
+            {post.title}
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 flex-1">
+            {post.description}
+          </p>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-auto">
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {post.readMinutes} min</span>
+            <span>{formatDate(post.publishedAt)}</span>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <Link
       to={`/blog/${post.slug}`}
-      className={cn(
-        'group flex flex-col rounded-2xl border bg-card hover:shadow-md transition-all duration-200 overflow-hidden',
-        featured ? 'md:flex-row' : ''
-      )}
+      className="group flex flex-col rounded-2xl overflow-hidden border bg-card hover:shadow-lg transition-all duration-200"
     >
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        <div className="flex items-center gap-2">
-          <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-full', colorCls)}>
+      {/* Cover */}
+      <div className={cn('relative flex items-center justify-center py-6', cover.gradient)}>
+        <span className="text-4xl">{cover.iconEmoji}</span>
+        <div className="absolute bottom-2 left-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-white/80 bg-black/20 px-2 py-0.5 rounded-full">
             {post.category}
           </span>
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            {post.readMinutes} min
-          </span>
         </div>
+      </div>
 
-        <h2 className={cn(
-          'font-bold text-foreground leading-snug group-hover:text-primary transition-colors',
-          featured ? 'text-xl' : 'text-base'
-        )}>
+      {/* Content */}
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <h2 className="font-bold text-sm leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2">
           {post.title}
         </h2>
-
-        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
           {post.description}
         </p>
-
-        <div className="mt-auto pt-2 flex items-center gap-1 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-          Ler artigo <ArrowRight className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {post.readMinutes} min</span>
+          <span>{formatDate(post.publishedAt)}</span>
         </div>
       </div>
     </Link>

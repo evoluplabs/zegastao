@@ -1,6 +1,7 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
 import { useAuthListener } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ToastProvider } from '@/components/ui/Toast';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CookieConsent } from '@/components/CookieConsent';
 import { Login } from '@/pages/Login';
@@ -29,7 +30,7 @@ export default function App() {
   useAuthListener();
 
   return (
-    <>
+    <ToastProvider>
       <Routes>
         {/* Páginas públicas */}
         <Route path="/" element={<Landing />} />
@@ -73,6 +74,6 @@ export default function App() {
         </Route>
       </Routes>
       <CookieConsent />
-    </>
+    </ToastProvider>
   );
 }

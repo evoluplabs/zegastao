@@ -3,6 +3,7 @@ import { Plus, Trash2, TrendingDown, Handshake, Pencil } from 'lucide-react';
 import { useDebts } from '@/hooks/useDebts';
 import { useNegotiationAlerts } from '@/hooks/useDocuments';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
+import { useToast } from '@/components/ui/Toast';
 import { NEGOTIATION_SCRIPTS } from '@/lib/negotiation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import type { Debt } from '@/types';
 
 export function Debts() {
   const { data: debts } = useDebts();
+  const { toast } = useToast();
   const alerts = useNegotiationAlerts();
   const [openScript, setOpenScript] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -43,6 +45,12 @@ export function Debts() {
     });
     setForm({ creditor: '', balance: '', payment: '', rate: '' });
     setOpen(false);
+    toast('Dívida cadastrada!');
+  }
+
+  async function remove(id: string) {
+    await deleteUserDoc('debts', id);
+    toast('Dívida removida', 'info');
   }
 
   return (
@@ -143,7 +151,7 @@ export function Debts() {
               <Button variant="ghost" size="icon" onClick={() => setEditDebt(d)}>
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => deleteUserDoc('debts', d.id)}>
+              <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>

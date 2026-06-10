@@ -144,7 +144,7 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
 
   const metrics: Metric[] = [
     {
-      label: 'Quanto da renda já tá comprometida',
+      label: 'Comprometimento',
       tooltip: 'Soma de todos os seus gastos fixos + parcelas de dívidas dividido pela renda. Ideal: abaixo de 70%. Acima de 90% é zona de perigo.',
       value: income > 0 ? `${comprometimento.toFixed(0)}%` : '—',
       sub: comprometimento < 70
@@ -156,7 +156,7 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
       icon: comprometimento < 70 ? <TrendingDown className="h-4 w-4 text-green-600" /> : <TrendingUp className="h-4 w-4 text-red-500" />,
     },
     {
-      label: 'O que sobra por mês',
+      label: 'Sobra/mês',
       tooltip: 'Renda menos todos os gastos e parcelas. Se positivo, é o que você tem para guardar ou investir.',
       value: formatBRL(disponivel),
       sub: disponivel >= 0 ? 'Sobra após gastos e parcelas' : 'Tá gastando mais do que ganha — hora de agir',
@@ -164,7 +164,7 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
       icon: disponivel >= 0 ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-500" />,
     },
     {
-      label: 'Tempo pra sair das dívidas',
+      label: 'Tempo p/ quitar',
       tooltip: 'Estimativa de quanto tempo levaria para quitar todas as dívidas ativas pagando no ritmo atual, começando pela de maior juros.',
       value: prazo === null ? 'Sem dívidas 🎉' : prazo === 0 ? 'Calcule suas parcelas' : `${prazo} meses`,
       sub: prazo === null
@@ -176,7 +176,7 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
       icon: <Minus className="h-4 w-4" />,
     },
     {
-      label: 'Dívidas ativas',
+      label: 'Dívidas',
       tooltip: 'Número de dívidas que ainda estão sendo pagas. Quanto menos, melhor para sua saúde financeira.',
       value: activeDebts.length === 0 ? 'Nenhuma 🎉' : `${activeDebts.length} dívida${activeDebts.length > 1 ? 's' : ''}`,
       sub: activeDebts.length === 0
@@ -230,17 +230,20 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
           </button>
         </div>
 
-        <div className="flex items-start gap-5 flex-wrap sm:flex-nowrap">
-          <ScoreGauge score={score} />
-          <div className="flex-1 w-full grid grid-cols-2 gap-2">
+        {/* Mobile: gauge centrado + grid embaixo. Desktop: lado a lado */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:gap-5">
+          <div className="flex justify-center mb-3 sm:mb-0 sm:shrink-0">
+            <ScoreGauge score={score} />
+          </div>
+          <div className="grid grid-cols-2 gap-2 flex-1">
             {metrics.map((m) => (
-              <div key={m.label} className={`rounded-xl border p-3 ${statusColor(m.status)}`}>
+              <div key={m.label} className={`rounded-xl border p-2.5 ${statusColor(m.status)}`}>
                 <div className="flex items-center gap-1 mb-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide opacity-70 leading-tight">{m.label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide opacity-70 leading-tight truncate">{m.label}</p>
                   <InfoTooltip text={m.tooltip} />
                 </div>
-                <p className="text-sm font-bold leading-tight">{m.value}</p>
-                <p className="text-[10px] mt-0.5 leading-snug">{m.sub}</p>
+                <p className="text-base font-bold leading-tight">{m.value}</p>
+                <p className="text-[10px] mt-0.5 leading-snug line-clamp-2">{m.sub}</p>
               </div>
             ))}
           </div>

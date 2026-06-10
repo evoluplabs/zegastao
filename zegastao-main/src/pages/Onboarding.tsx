@@ -11,10 +11,31 @@ import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 
-const SKILL_OPTIONS = [
-  'Programação', 'Design', 'Redação', 'Idiomas', 'Aulas particulares',
-  'Culinária', 'Marcenaria', 'Elétrica', 'Vendas', 'Marketing',
-  'Fotografia', 'Edição de vídeo', 'Costura', 'Beleza',
+const SKILL_CATEGORIES = [
+  {
+    label: 'Digital & Tecnologia',
+    skills: ['Programação', 'Design gráfico', 'Criação de conteúdo', 'Edição de vídeo', 'Fotografia', 'Tráfego pago', 'Marketing digital', 'SEO', 'Gestão de redes sociais', 'Suporte de TI'],
+  },
+  {
+    label: 'Educação & Idiomas',
+    skills: ['Aulas particulares', 'Idiomas', 'Tutoria on-line', 'Coaching', 'Redação'],
+  },
+  {
+    label: 'Serviços Manuais',
+    skills: ['Marcenaria', 'Elétrica', 'Encanamento', 'Pintura residencial', 'Jardinagem', 'Limpeza', 'Montagem de móveis', 'Mecânica', 'Artesanato'],
+  },
+  {
+    label: 'Beleza & Bem-estar',
+    skills: ['Beleza', 'Costura e alfaiataria', 'Massagem', 'Personal trainer', 'Pet sitter'],
+  },
+  {
+    label: 'Negócios & Vendas',
+    skills: ['Vendas', 'Marketing', 'Assistente virtual', 'Consultoria financeira', 'Logística/entregas'],
+  },
+  {
+    label: 'Culinária & Eventos',
+    skills: ['Culinária', 'Marmitas/confeitaria', 'Bartender/garçom', 'Organização de eventos'],
+  },
 ];
 
 const DREAM_OPTIONS = [
@@ -29,6 +50,7 @@ const INVEST_OPTIONS = [
   { id: 'no_idea', label: 'Não sei nem por onde começar' },
   { id: 'no', label: 'Ainda não invisto' },
   { id: 'yes', label: 'Sim, já invisto' },
+  { id: 'skip', label: 'Pular por agora' },
 ] as const;
 
 // Onboarding essencial: sem dados o app não tem utilidade.
@@ -42,7 +64,7 @@ export function Onboarding() {
   const [debt, setDebt] = useState({ name: '', balance: '', payment: '', rate: '' });
   const [skills, setSkills] = useState<string[]>([]);
   const [dreams, setDreams] = useState<string[]>([]);
-  const [invest, setInvest] = useState<'yes' | 'no' | 'no_idea'>('no_idea');
+  const [invest, setInvest] = useState<'yes' | 'no' | 'no_idea' | 'skip'>('no_idea');
   const [busy, setBusy] = useState(false);
 
   if (!authLoading && !user) return <Navigate to="/login" replace />;
@@ -60,7 +82,7 @@ export function Onboarding() {
         monthlyIncome,
         skills,
         investmentGoals: dreams,
-        alreadyInvests: invest,
+        alreadyInvests: invest === 'skip' ? 'no_idea' : invest,
         riskProfile: 'conservative',
         onboardingDone: true,
       });
@@ -190,6 +212,13 @@ export function Onboarding() {
                 <Label>Juros ao mês (%)</Label>
                 <Input inputMode="decimal" value={debt.rate} onChange={(e) => setDebt({ ...debt, rate: e.target.value })} placeholder="Ex: 12" />
               </div>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-2.5">
+                <span className="text-lg">📤</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-primary">Tem extrato do banco?</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Importe depois e o app detecta suas dívidas automaticamente.</p>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Pular</Button>
                 <Button className="flex-1" onClick={() => setStep(2)}>Continuar</Button>
@@ -200,22 +229,32 @@ export function Onboarding() {
           {step === 2 && (
             <>
               <p className="text-sm text-muted-foreground">
-                Usamos isso para sugerir tarefas de renda extra sob medida.
+                Usamos isso para sugerir renda extra sob medida. Selecione pelo menos 1.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {SKILL_OPTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => toggle(skills, setSkills, s)}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-sm transition-colors',
-                      skills.includes(s) ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent'
-                    )}
-                  >
-                    {s}
-                  </button>
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {SKILL_CATEGORIES.map((cat) => (
+                  <div key={cat.label}>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">{cat.label}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cat.skills.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => toggle(skills, setSkills, s)}
+                          className={cn(
+                            'rounded-full border px-2.5 py-1 text-xs transition-colors',
+                            skills.includes(s) ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent'
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
+              {skills.length > 0 && (
+                <p className="text-xs text-primary font-medium">{skills.length} selecionada{skills.length > 1 ? 's' : ''}</p>
+              )}
               <Button className="w-full" onClick={() => setStep(3)} disabled={skills.length === 0}>
                 Continuar
               </Button>

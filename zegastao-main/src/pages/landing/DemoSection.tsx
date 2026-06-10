@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bot, Upload, TrendingUp, FileText, Trophy, LayoutDashboard } from 'lucide-react';
 
 /* ── Chat Mockup ── */
@@ -176,6 +176,12 @@ function ContractMockup() {
 
 /* ── Journey Mockup ── */
 function JourneyMockup() {
+  const [progWidth, setProgWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setProgWidth(20), 100);
+    return () => clearTimeout(t);
+  }, []);
+
   const milestones = [
     { emoji: '🌱', label: 'Primeiro mês no azul', done: true },
     { emoji: '💥', label: 'Dívida mais cara quitada', done: true },
@@ -185,21 +191,26 @@ function JourneyMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40">
+      <div className="px-4 py-3 border-b bg-secondary/40"
+        style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <p className="text-xs font-semibold">Jornada Financeira</p>
         <p className="text-[10px] text-muted-foreground">2 de 10 marcos conquistados</p>
       </div>
       <div className="p-4">
         <div className="h-1.5 rounded-full bg-secondary mb-4 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full" style={{ width: '20%', transition: 'width 1s ease' }} />
+          <div
+            className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full"
+            style={{ width: `${progWidth}%`, transition: 'width 1.2s ease-out' }}
+          />
         </div>
         <div className="space-y-2">
           {milestones.map((m, i) => (
-            <div key={i} className={`flex items-center gap-3 rounded-lg p-2 ${m.done ? 'bg-primary/8' : 'opacity-50'}`}
-              style={{ opacity: m.done ? 1 : 0.5, animation: `chat-appear 0.3s ease-out ${i * 150}ms both` }}>
+            <div key={i}
+              className={`flex items-center gap-3 rounded-lg p-2 ${m.done ? 'bg-primary/5' : ''}`}
+              style={{ opacity: 0, animation: `chat-appear 0.3s ease-out ${i * 180 + 300}ms forwards` }}>
               <span className="text-lg">{m.emoji}</span>
-              <p className="text-[11px] font-medium flex-1">{m.label}</p>
-              {m.done && <span className="text-green-500 text-xs">✓</span>}
+              <p className={`text-[11px] font-medium flex-1 ${!m.done ? 'text-muted-foreground' : ''}`}>{m.label}</p>
+              {m.done ? <span className="text-green-500 text-xs font-bold">✓</span> : <span className="text-[10px] text-muted-foreground/50">···</span>}
             </div>
           ))}
         </div>
@@ -210,6 +221,12 @@ function JourneyMockup() {
 
 /* ── Dashboard phase Mockup ── */
 function PhaseMockup() {
+  const [showValues, setShowValues] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowValues(true), 600);
+    return () => clearTimeout(t);
+  }, []);
+
   const stats = [
     { label: 'Saldo do mês', value: '+R$ 420', color: 'text-green-600' },
     { label: 'Comprometimento', value: '68%', color: 'text-yellow-600' },
@@ -233,8 +250,11 @@ function PhaseMockup() {
           {stats.map((s, i) => (
             <div key={s.label} className="rounded-lg border bg-secondary/30 p-2.5"
               style={{ opacity: 0, animation: `chat-appear 0.3s ease-out ${i * 100 + 200}ms forwards` }}>
-              <p className="text-[9px] text-muted-foreground">{s.label}</p>
-              <p className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+              <div className="flex items-center gap-1 mb-0.5">
+                <p className="text-[9px] text-muted-foreground">{s.label}</p>
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+              </div>
+              <p className={`text-sm font-bold transition-all duration-500 ${s.color} ${showValues ? 'opacity-100' : 'opacity-0'}`}>{s.value}</p>
             </div>
           ))}
         </div>

@@ -9,6 +9,7 @@ import {
   impulseGuidance,
   saveImpulseToHistory,
 } from '../services/personal-context';
+import { buildContextFallback } from '../services/context-fallback';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -72,9 +73,10 @@ export const copilotChat = onCall(
       .collection('users').doc(userId)
       .collection('insights').doc('latest').get();
 
-    const contextSnapshot = insightsDoc.exists
+    // New users won't have insights yet — build a minimal fallback context from raw data
+    const contextSnapshot = insightsDoc.exists && insightsDoc.data()!.contextSnapshot
       ? insightsDoc.data()!.contextSnapshot
-      : 'Contexto ainda não disponível. O job noturno ainda não rodou.';
+      : await buildContextFallback(userId, db);
 
     // Modo impulso: detecta padrão de vontade de compra.
     const impulse = isImpulse(message);

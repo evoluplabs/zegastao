@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  User, Crown, LogOut, HelpCircle, Moon, Sun, Shield,
-  ChevronRight, Brain, Zap, AlertCircle, PenLine, Trophy,
-  MessageSquarePlus, FileText,
+  Crown, LogOut, HelpCircle, Shield,
+  ChevronRight, Brain, Zap, Trophy,
+  MessageSquarePlus, FileText, Pencil,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { authActions } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useDebts } from '@/hooks/useDebts';
 import { useGoals } from '@/hooks/useGoals';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL } from '@/lib/utils';
 import { PHASE_LABELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { PersonalContext } from './PersonalContext';
+import { FinancialSetupWizard } from '@/components/flows/FinancialSetupWizard';
 
 function Avatar({ name }: { name?: string }) {
   const initials = name
@@ -88,6 +88,7 @@ export function Profile() {
   const { data: goals } = useGoals();
   const navigate = useNavigate();
   const [showContext, setShowContext] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   const activeDebts = debts.filter((d) => d.status === 'active');
   const activeGoals = goals.filter((g) => g.status === 'active');
@@ -145,9 +146,18 @@ export function Profile() {
       </div>
 
       {/* Resumo financeiro */}
-      {income > 0 && (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Situação financeira</p>
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+          >
+            <Pencil className="h-3 w-3" /> Editar
+          </button>
+        </div>
         <div className="grid grid-cols-3 gap-2">
-          <StatPill label="Renda" value={formatBRL(income)} color="text-success" />
+          <StatPill label="Renda" value={income > 0 ? formatBRL(income) : '—'} color="text-success" />
           <StatPill
             label="Dívidas"
             value={activeDebts.length === 0 ? 'Nenhuma 🎉' : formatBRL(totalDebt)}
@@ -159,7 +169,9 @@ export function Profile() {
             color="text-primary"
           />
         </div>
-      )}
+      </div>
+
+      {showWizard && <FinancialSetupWizard onClose={() => setShowWizard(false)} />}
 
       {/* Plano */}
       {!isPaid && (

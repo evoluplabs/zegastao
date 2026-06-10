@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Target } from 'lucide-react';
 import { useGoals } from '@/hooks/useGoals';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
+import { useToast } from '@/components/ui/Toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { estimateGoalDate } from '@/lib/projection';
 
 export function Goals() {
   const { data: goals } = useGoals();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', target: '', current: '', monthly: '' });
 
@@ -28,6 +30,12 @@ export function Goals() {
     });
     setForm({ name: '', target: '', current: '', monthly: '' });
     setOpen(false);
+    toast('Meta criada!');
+  }
+
+  async function remove(id: string) {
+    await deleteUserDoc('goals', id);
+    toast('Meta removida', 'info');
   }
 
   return (
@@ -65,6 +73,19 @@ export function Goals() {
         </Card>
       )}
 
+      {goals.length === 0 && !open && (
+        <div className="rounded-2xl border border-dashed bg-card/50 p-8 text-center space-y-3">
+          <Target className="h-10 w-10 mx-auto text-muted-foreground/40" />
+          <p className="font-medium">Nenhuma meta ainda</p>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Defina um objetivo financeiro — quitar uma dívida, criar reserva, ou juntar para algo especial.
+          </p>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" /> Criar primeira meta
+          </Button>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         {goals.map((g) => {
           const pct = Math.min(100, (g.currentAmount / (g.targetAmount || 1)) * 100);
@@ -81,7 +102,7 @@ export function Goals() {
                     </span>
                   )}
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => deleteUserDoc('goals', g.id)}>
+                <Button variant="ghost" size="icon" onClick={() => remove(g.id)}>
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </CardHeader>

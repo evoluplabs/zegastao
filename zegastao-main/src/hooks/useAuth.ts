@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -8,7 +8,7 @@ import {
   signOut as fbSignOut,
   updateProfile,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import type { Profile, Subscription } from '@/types';
@@ -40,15 +40,25 @@ async function ensureSubscription(uid: string) {
 
 export function useAuthListener() {
   const { setUser, setProfile, setAuthLoading } = useStore();
+  const profileUnsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      // Cancel any previous profile listener when auth state changes
+      if (profileUnsubRef.current) {
+        profileUnsubRef.current();
+        profileUnsubRef.current = null;
+      }
       if (user) {
         try {
-          const profile = await ensureProfile(user.uid, user.email, user.displayName);
+          await ensureProfile(user.uid, user.email, user.displayName);
           await ensureSubscription(user.uid);
-          setProfile(profile);
+          // Real-time listener so phase/insights updates from nightly job appear instantly
+          const profileRef = doc(db, 'users', user.uid, 'profile', 'main');
+          profileUnsubRef.current = onSnapshot(profileRef, (snap) => {
+            if (snap.exists()) setProfile(snap.data() as Profile);
+          });
         } catch {
           setProfile(null);
         }
@@ -57,7 +67,10 @@ export function useAuthListener() {
       }
       setAuthLoading(false);
     });
-    return unsub;
+    return () => {
+      unsub();
+      if (profileUnsubRef.current) profileUnsubRef.current();
+    };
   }, [setUser, setProfile, setAuthLoading]);
 }
 
