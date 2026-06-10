@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingDown, Handshake, Pencil } from 'lucide-react';
+import { Plus, Trash2, TrendingDown, Handshake, Pencil, Zap } from 'lucide-react';
 import { useDebts } from '@/hooks/useDebts';
 import { useNegotiationAlerts } from '@/hooks/useDocuments';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL } from '@/lib/utils';
 import { DebtEditModal } from '@/components/flows/DebtEditModal';
+import { DebtSimulator } from '@/components/DebtSimulator';
 import type { Debt } from '@/types';
 
 export function Debts() {
@@ -21,6 +22,7 @@ export function Debts() {
   const [openScript, setOpenScript] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
+  const [simulateDebt, setSimulateDebt] = useState<Debt | null>(null);
   const [form, setForm] = useState({ creditor: '', balance: '', payment: '', rate: '' });
 
   // Ranking automático: maior juros primeiro (estratégia avalanche).
@@ -178,11 +180,18 @@ export function Debts() {
             {d.notes && (
               <p className="mt-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-muted-foreground">{d.notes}</p>
             )}
+            <button
+              onClick={(e) => { e.stopPropagation(); setSimulateDebt(d); }}
+              className="mt-3 flex items-center gap-1.5 w-full justify-center rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors"
+            >
+              <Zap className="h-3.5 w-3.5" /> E se eu pagar a mais?
+            </button>
           </CardContent>
         </Card>
       ))}
 
       {editDebt && <DebtEditModal debt={editDebt} onClose={() => setEditDebt(null)} />}
+      {simulateDebt && <DebtSimulator debt={simulateDebt} onClose={() => setSimulateDebt(null)} />}
     </div>
   );
 }

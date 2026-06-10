@@ -14,21 +14,36 @@ export function Goals() {
   const { data: goals } = useGoals();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', target: '', current: '', monthly: '' });
+  const [form, setForm] = useState({ name: '', target: '', current: '', monthly: '', date: '' });
+
+  // Quando o usuário define uma data (ex: viagem em julho), calcula o aporte mensal necessário
+  const monthsUntil = (() => {
+    if (!form.date) return 0;
+    const target = new Date(form.date + 'T12:00:00');
+    const now = new Date();
+    return Math.max(1, (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth()));
+  })();
+  const suggestedMonthly = (() => {
+    const target = parseFloat(form.target.replace(',', '.')) || 0;
+    const current = parseFloat(form.current.replace(',', '.')) || 0;
+    if (!form.date || target <= current || monthsUntil <= 0) return 0;
+    return (target - current) / monthsUntil;
+  })();
 
   async function save() {
     const target = parseFloat(form.target.replace(',', '.')) || 0;
     if (!form.name || target <= 0) return;
     await addUserDoc('goals', {
       name: form.name,
-      type: 'Outros',
+      type: form.date ? 'event_goal' : 'Outros',
       targetAmount: target,
       currentAmount: parseFloat(form.current.replace(',', '.')) || 0,
+      ...(form.date ? { targetDate: form.date } : {}),
       priority: 1,
       status: 'active',
-      monthlyContribution: parseFloat(form.monthly.replace(',', '.')) || 0,
+      monthlyContribution: parseFloat(form.monthly.replace(',', '.')) || (suggestedMonthly > 0 ? Math.ceil(suggestedMonthly) : 0),
     });
-    setForm({ name: '', target: '', current: '', monthly: '' });
+    setForm({ name: '', target: '', current: '', monthly: '', date: '' });
     setOpen(false);
     toast('Meta criada!');
   }
@@ -67,6 +82,15 @@ export function Goals() {
                 <Label>Aporte/mês</Label>
                 <Input inputMode="decimal" value={form.monthly} onChange={(e) => setForm({ ...form, monthly: e.target.value })} />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Tem data? (viagem, festa, evento — opcional)</Label>
+              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              {suggestedMonthly > 0 && (
+                <p className="text-xs text-primary font-medium pt-1">
+                  💡 Para chegar lá em {monthsUntil} {monthsUntil > 1 ? 'meses' : 'mês'}, guarde {formatBRL(Math.ceil(suggestedMonthly))}/mês
+                </p>
+              )}
             </div>
             <Button onClick={save} className="w-full">Salvar meta</Button>
           </CardContent>
@@ -117,6 +141,11 @@ export function Goals() {
                 <p className="mt-2 text-xs text-muted-foreground">
                   {pct.toFixed(0)}% concluído{eta ? ` · previsão: ${eta}` : ''}
                 </p>
+                {g.targetDate && (
+                  <p className="mt-1 text-xs font-medium text-primary">
+                    📅 Evento em {new Date(g.targetDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
               </CardContent>
             </Card>
           );

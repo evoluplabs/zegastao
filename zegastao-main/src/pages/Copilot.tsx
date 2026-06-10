@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
-import { Send, Zap, Bot, User, Lock } from 'lucide-react';
+import { Send, Zap, Bot, User, Lock, Timer } from 'lucide-react';
 import { functions } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Documents } from './Documents';
@@ -32,6 +32,24 @@ const TABS = [
   { id: 'historico', label: 'Persona & Contexto' },
 ] as const;
 
+// Desafio 48h: quando o copilot detecta impulso de compra, o usuário pode se
+// comprometer a esperar 2 dias. Persistido em localStorage.
+const IMPULSE_KEY = 'ze-impulse-challenge';
+
+interface ImpulseChallenge {
+  text: string;
+  ts: number;
+}
+
+function getActiveChallenge(): ImpulseChallenge | null {
+  try {
+    const raw = localStorage.getItem(IMPULSE_KEY);
+    return raw ? (JSON.parse(raw) as ImpulseChallenge) : null;
+  } catch {
+    return null;
+  }
+}
+
 type TabId = typeof TABS[number]['id'];
 
 function TypingIndicator() {
@@ -56,8 +74,28 @@ function ChatView() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [dailyLimit, setDailyLimit] = useState<number>(10);
   const [limitHit, setLimitHit] = useState(false);
+  const [challenge, setChallenge] = useState<ImpulseChallenge | null>(() => getActiveChallenge());
+  const [challengeAccepted, setChallengeAccepted] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const challengeExpired = challenge !== null && Date.now() - challenge.ts >= 48 * 60 * 60 * 1000;
+
+  function acceptChallenge(text: string) {
+    const c: ImpulseChallenge = { text, ts: Date.now() };
+    localStorage.setItem(IMPULSE_KEY, JSON.stringify(c));
+    setChallenge(c);
+    setChallengeAccepted(true);
+  }
+
+  function resolveChallenge(outcome: 'resisted' | 'bought') {
+    localStorage.removeItem(IMPULSE_KEY);
+    setChallenge(null);
+    const msg = outcome === 'resisted'
+      ? `Sobre aquele impulso de compra ("${challenge?.text}"): esperei as 48 horas e resisti! 💪`
+      : `Sobre aquele impulso de compra ("${challenge?.text}"): acabei comprando. 💸`;
+    send(msg);
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -128,6 +166,33 @@ function ChatView() {
         </div>
       )}
 
+      {/* Desafio 48h vencido: hora de decidir */}
+      {challengeExpired && (
+        <div className="mb-3 rounded-xl border border-amber-400/50 bg-amber-50 dark:bg-amber-500/5 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Timer className="h-4 w-4 text-amber-600" />
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Passaram as 48 horas!</p>
+          </div>
+          <p className="text-xs text-amber-700/80 dark:text-amber-400/70">
+            Lembra daquele impulso: "{challenge?.text}"? E aí, como foi?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => resolveChallenge('resisted')}
+              className="flex-1 rounded-lg bg-green-600 text-white px-3 py-2 text-xs font-semibold hover:bg-green-700 transition-colors"
+            >
+              Resisti 💪
+            </button>
+            <button
+              onClick={() => resolveChallenge('bought')}
+              className="flex-1 rounded-lg border border-amber-400/50 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100/50 transition-colors"
+            >
+              Acabei comprando
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mensagens */}
       <div className="flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
         {messages.length === 0 && (
@@ -184,6 +249,20 @@ function ChatView() {
                 </div>
               )}
               {m.content}
+              {/* Desafio 48h: oferecido na última resposta de impulso, se não houver desafio ativo */}
+              {m.impulse && i === messages.length - 1 && !challenge && !challengeAccepted && (
+                <button
+                  onClick={() => acceptChallenge(messages[i - 1]?.content?.slice(0, 80) || 'compra por impulso')}
+                  className="mt-3 flex items-center gap-1.5 rounded-lg border border-amber-400/50 bg-amber-100/50 dark:bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-200/50 dark:hover:bg-amber-500/20 transition-colors"
+                >
+                  <Timer className="h-3.5 w-3.5" /> Topo esperar 48h antes de decidir
+                </button>
+              )}
+              {m.impulse && i === messages.length - 1 && challengeAccepted && (
+                <p className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  ⏳ Desafio aceito! Volto a te perguntar em 48 horas.
+                </p>
+              )}
             </div>
           </div>
         ))}

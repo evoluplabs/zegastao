@@ -25,6 +25,8 @@ import { WeeklyChallenge } from '@/components/WeeklyChallenge';
 import { FinancialSimulator } from '@/components/FinancialSimulator';
 import { RecurringExpenses } from '@/components/RecurringExpenses';
 import { SetupChecklist } from '@/components/SetupChecklist';
+import { SpendingAlert } from '@/components/SpendingAlert';
+import { MonthlyReport, shouldShowMonthlyReport } from '@/components/MonthlyReport';
 import { deriveWins } from '@/lib/wins';
 import { formatBRL, currentMonthStart } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
@@ -78,6 +80,7 @@ export function Dashboard() {
   const [openTx, setOpenTx] = useState(false);
   const [openSetup, setOpenSetup] = useState(false);
   const [openSimulator, setOpenSimulator] = useState(false);
+  const [showMonthlyReport, setShowMonthlyReport] = useState(() => shouldShowMonthlyReport());
 
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
@@ -234,6 +237,9 @@ export function Dashboard() {
           transactions={allTransactions}
           onSetupWizard={() => setOpenSetup(true)}
         />
+
+        {/* Alerta de gastos não-essenciais acima de 30% da renda */}
+        <SpendingAlert income={income} byCategory={byCategory} />
 
         {/* 2. Diagnóstico financeiro — hero da página */}
         <FinancialDiagnostic
@@ -615,6 +621,17 @@ export function Dashboard() {
           expenses={effectiveExpenses}
           debts={debts}
           onClose={() => setOpenSimulator(false)}
+        />
+      )}
+
+      {/* Relatório mensal compartilhável — primeira semana do mês, se houver dados do mês anterior */}
+      {showMonthlyReport && prevMonthTx.length > 0 && (
+        <MonthlyReport
+          transactions={prevMonthTx}
+          goals={goals}
+          monthLabel={new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
+            .toLocaleDateString('pt-BR', { month: 'long' })}
+          onClose={() => setShowMonthlyReport(false)}
         />
       )}
     </>

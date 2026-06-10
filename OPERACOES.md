@@ -307,6 +307,32 @@ Não adicione deps desnecessárias."
 
 ---
 
+## 11b. INTEGRAÇÃO WHATSAPP (Fase 1 — código pronto)
+
+A Cloud Function `whatsappWebhook` já está implementada e exportada
+(`functions/src/functions/whatsappWebhook.ts`). Ela responde automaticamente
+mensagens recebidas com orientação contextual (dívidas, extrato, renda extra)
+e captura leads na collection `whatsapp_messages`.
+
+### Setup no Twilio (gratuito para testes — Sandbox)
+1. Criar conta em twilio.com (gratuita)
+2. Console → Messaging → Try it out → **WhatsApp Sandbox**
+3. Em "When a message comes in", colar a URL da função:
+   `https://southamerica-east1-[PROJECT_ID].cloudfunctions.net/whatsappWebhook`
+4. Método: POST
+5. Testar: enviar "oi" para o número do sandbox
+
+### Para produção (número próprio)
+- Opção A — **Twilio WhatsApp Business API**: ~US$0,005/msg, requer aprovação Meta (1-2 semanas)
+- Opção B — **Z-API** (brasileiro): R$49/mês, sem aprovação Meta, conecta seu número via QR code
+- Recomendação: começar com Twilio Sandbox para validar demanda; migrar para Z-API se >50 conversas/semana
+
+### Fase 2 (futura)
+- Receber foto de boleto/extrato pelo WhatsApp → processar no backend
+- Notificações proativas: "Sua fatura vence amanhã"
+
+---
+
 ## 12. GESTÃO DE CRISE
 
 ### App Fora do Ar
