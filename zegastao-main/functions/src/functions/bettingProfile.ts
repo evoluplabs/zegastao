@@ -139,6 +139,38 @@ export const bettingProfile = onCall(
       return { success: true, betId: betRef.id };
     }
 
+    // ---- Ação: atualizar resultado de aposta pendente (feedback loop) ----
+    if (action === 'update_bet_result') {
+      const { betId, outcome, profit } = request.data;
+      if (!betId || (outcome !== 'hit' && outcome !== 'miss')) {
+        throw new HttpsError('invalid-argument', 'betId e outcome (hit|miss) são obrigatórios.');
+      }
+
+      const betRef = db.collection('users').doc(userId).collection('betting_history').doc(betId);
+      const betDoc = await betRef.get();
+      if (!betDoc.exists) throw new HttpsError('not-found', 'Aposta não encontrada.');
+
+      const bet = betDoc.data()!;
+      const realizedProfit = typeof profit === 'number' ? profit : 0;
+
+      await betRef.update({ outcome, profit: realizedProfit });
+
+      // Atualizar total ganho no perfil
+      const profileRef = db.collection('users').doc(userId).collection('betting_profile').doc('main');
+      const profileDoc = await profileRef.get();
+      if (profileDoc.exists) {
+        const data = profileDoc.data()!;
+        await profileRef.update({ totalWon: (data.totalWon || 0) + realizedProfit });
+      }
+
+      // Propagar feedback para a análise de origem
+      if (bet.analysisId) {
+        await db.collection('betting_analyses').doc(bet.analysisId).update({ userFeedback: outcome }).catch(() => {});
+      }
+
+      return { success: true };
+    }
+
     throw new HttpsError('invalid-argument', `Ação desconhecida: ${action}`);
   }
 );

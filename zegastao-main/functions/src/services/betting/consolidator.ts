@@ -18,6 +18,11 @@ export interface BettingAnalysis {
     h2h: string;
     oddsValue: string;
     strategy: StrategyOutput;
+    injury?: string;         // InjuryAgent
+    stats?: string;          // StatsAgent
+    matchContext?: string;   // MatchContextAgent
+    historyInsight?: string; // BetHistoryAgent
+    risk?: string;           // RiskManagerAgent
   };
 
   // Recomendação final
@@ -51,19 +56,34 @@ export async function consolidate(params: {
   availableMarkets: ValueMarket[];
   weeklyBudget: number;
   weeklyStaked: number;
+  injurySummary?: string;
+  statsSummary?: string;
+  matchContextSummary?: string;
+  historySummary?: string;
+  riskSummary?: string;
+  finalStake?: number;
 }): Promise<BettingAnalysis> {
   const {
     homeTeam, awayTeam, league, date,
     formAnalysis, h2hAnalysis, oddsValueSummary,
     strategy, availableMarkets, weeklyBudget, weeklyStaked,
+    injurySummary, statsSummary, matchContextSummary, historySummary, riskSummary,
+    finalStake,
   } = params;
 
-  const stake = suggestedStake(
-    strategy.confidenceScore / 100,
-    strategy.primaryOdd || 1.5,
-    weeklyBudget,
-    weeklyStaked
-  );
+  // Stake final: o RiskManager tem prioridade; cai para o Kelly direto se ausente
+  const stake = typeof finalStake === 'number'
+    ? finalStake
+    : suggestedStake(strategy.confidenceScore / 100, strategy.primaryOdd || 1.5, weeklyBudget, weeklyStaked);
+
+  // Seções extras só entram no prompt se o agente correspondente produziu dados
+  const extraSections = [
+    injurySummary ? `\nDESFALQUES:\n${injurySummary}` : '',
+    statsSummary ? `\nESTATÍSTICAS:\n${statsSummary}` : '',
+    matchContextSummary ? `\nCONTEXTO DA PARTIDA:\n${matchContextSummary}` : '',
+    historySummary ? `\nHISTÓRICO DO USUÁRIO:\n${historySummary}` : '',
+    riskSummary ? `\nGESTÃO DE RISCO:\n${riskSummary}` : '',
+  ].join('');
 
   const prompt = `Você é o Zé Apostador, analista de apostas esportivas especialista em value betting.
 Produza uma análise final do jogo ${homeTeam} vs ${awayTeam} (${league}, ${date}).
@@ -78,6 +98,7 @@ ${h2hAnalysis}
 
 VALUE DAS ODDS:
 ${oddsValueSummary}
+${extraSections}
 
 ESTRATÉGIA RECOMENDADA:
 Mercado: ${strategy.primaryMarket} | Seleção: ${strategy.primarySelection} | Odd: ${strategy.primaryOdd}
@@ -86,7 +107,7 @@ Raciocínio: ${strategy.reasoning}
 
 Gere uma análise narrativa em português (3-4 parágrafos, máx 350 palavras) que:
 1. Contextualize o confronto e o momento dos times
-2. Explique POR QUÊ a recomendação faz sentido (cruzando todos os dados)
+2. Explique POR QUÊ a recomendação faz sentido (cruzando todos os dados, incluindo desfalques, contexto da partida e o histórico do usuário quando disponíveis)
 3. Mencione os riscos e o que poderia invalidar a análise
 4. Finalize com a recomendação clara
 
@@ -111,6 +132,11 @@ Seja honesto sobre incertezas. Não prometa resultados.`;
       h2h: h2hAnalysis,
       oddsValue: oddsValueSummary,
       strategy,
+      injury: injurySummary,
+      stats: statsSummary,
+      matchContext: matchContextSummary,
+      historyInsight: historySummary,
+      risk: riskSummary,
     },
     finalAnalysis,
     confidenceScore: strategy.confidenceScore,

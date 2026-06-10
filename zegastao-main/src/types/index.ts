@@ -50,6 +50,11 @@ export interface BettingAnalysis {
     h2h: string;
     oddsValue: string;
     strategy: StrategyOutput;
+    injury?: string;         // InjuryAgent
+    stats?: string;          // StatsAgent
+    matchContext?: string;   // MatchContextAgent
+    historyInsight?: string; // BetHistoryAgent
+    risk?: string;           // RiskManagerAgent
   };
   finalAnalysis: string;
   confidenceScore: number;
@@ -64,6 +69,25 @@ export interface BettingAnalysis {
   betType: 'simples' | 'multipla';
   availableMarkets: ValueMarket[];
   disclaimer: string;
+}
+
+// Resultado do modo "objetivo": vários jogos analisados de uma vez com
+// alocação de orçamento entre eles.
+export interface BudgetAllocationItem {
+  matchId: string;
+  homeTeam: string;
+  awayTeam: string;
+  suggestedStake: number;
+  allocationReason: string;
+  skip: boolean;
+}
+
+export interface BettingObjectiveResult {
+  analyses: Array<BettingAnalysis & { matchId: string; kickoff: string }>;
+  budgetAllocation: BudgetAllocationItem[];
+  totalSuggested: number;
+  remainingBudget: number;
+  sessionBudget: number;
 }
 
 export interface BettingHistory {

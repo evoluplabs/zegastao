@@ -1,13 +1,111 @@
 // HTTP Callable: recebe pedido de análise de jogo e orquestra os agentes.
+// Dois modos: 'single' (uma partida, fluxo manual) e 'objective' (vários jogos
+// encontrados por liga + data, com alocação de orçamento).
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, Firestore } from 'firebase-admin/firestore';
 import { orchestrate } from '../services/betting/orchestrator';
+import { BettingAnalysis } from '../services/betting/consolidator';
+import { findFixturesForObjective, getLeagueId, getSportKey } from '../services/betting/fixtures-finder';
 
 // Feature flag: quando false, a function recusa qualquer chamada.
 // Espelha VITE_FEATURE_ZE_APOSTADOR no frontend.
 const ZE_APOSTADOR_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
 
 const BLOCKED_PHASES = ['survival', 'reorganizing'];
+
+interface ProfileGuards {
+  weeklyBudget: number;
+  weeklyStaked: number;
+  financialPhase?: string;
+}
+
+// Validações comuns aos dois modos: fase financeira, perfil e auto-exclusão.
+async function loadAndGuardProfile(db: Firestore, userId: string): Promise<ProfileGuards> {
+  const insightsDoc = await db
+    .collection('users').doc(userId)
+    .collection('insights').doc('latest').get();
+
+  let financialPhase: string | undefined;
+  if (insightsDoc.exists) {
+    financialPhase = insightsDoc.data()?.phase as string | undefined;
+    if (financialPhase && BLOCKED_PHASES.includes(financialPhase)) {
+      throw new HttpsError(
+        'permission-denied',
+        'O Zé Apostador está disponível apenas quando você estabilizar suas finanças. Continue na sua jornada!'
+      );
+    }
+  }
+
+  const bettingProfileDoc = await db
+    .collection('users').doc(userId)
+    .collection('betting_profile').doc('main').get();
+
+  if (!bettingProfileDoc.exists || !bettingProfileDoc.data()?.acceptedRiskDisclaimer) {
+    throw new HttpsError('failed-precondition', 'Configure seu perfil de apostas antes de continuar.');
+  }
+
+  const profile = bettingProfileDoc.data()!;
+
+  if (profile.selfExclusionUntil && profile.selfExclusionUntil.toDate() > new Date()) {
+    throw new HttpsError(
+      'permission-denied',
+      `Você está em pausa voluntária até ${profile.selfExclusionUntil.toDate().toLocaleDateString('pt-BR')}.`
+    );
+  }
+
+  return {
+    weeklyBudget: profile.weeklyBudget || 20,
+    weeklyStaked: profile.weeklyStaked || 0,
+    financialPhase,
+  };
+}
+
+interface BudgetAllocationItem {
+  matchId: string;
+  homeTeam: string;
+  awayTeam: string;
+  suggestedStake: number;
+  allocationReason: string;
+  skip: boolean;
+}
+
+// Distribui o orçamento da sessão proporcionalmente à confiança das análises.
+// Jogos com confiança < 50 são descartados.
+function allocateBudget(
+  analyses: Array<BettingAnalysis & { matchId: string }>,
+  sessionBudget: number
+): { allocation: BudgetAllocationItem[]; totalSuggested: number } {
+  const QUALIFYING = 50;
+  const qualifying = analyses.filter((a) => a.confidenceScore >= QUALIFYING);
+  const totalConfidence = qualifying.reduce((sum, a) => sum + a.confidenceScore, 0);
+
+  let totalSuggested = 0;
+  const allocation: BudgetAllocationItem[] = analyses.map((a) => {
+    if (a.confidenceScore < QUALIFYING || totalConfidence === 0) {
+      return {
+        matchId: a.matchId,
+        homeTeam: a.homeTeam,
+        awayTeam: a.awayTeam,
+        suggestedStake: 0,
+        allocationReason: 'Confiança insuficiente — sem alocação recomendada.',
+        skip: true,
+      };
+    }
+    const share = a.confidenceScore / totalConfidence;
+    const stake = parseFloat((share * sessionBudget).toFixed(2));
+    totalSuggested += stake;
+    return {
+      matchId: a.matchId,
+      homeTeam: a.homeTeam,
+      awayTeam: a.awayTeam,
+      suggestedStake: stake,
+      allocationReason: `Confiança ${a.confidenceScore}% — ${Math.round(share * 100)}% do orçamento da sessão.`,
+      skip: false,
+    };
+  });
+
+  return { allocation, totalSuggested: parseFloat(totalSuggested.toFixed(2)) };
+}
 
 export const betAnalysis = onCall(
   { region: 'southamerica-east1', enforceAppCheck: false },
@@ -19,6 +117,92 @@ export const betAnalysis = onCall(
     const userId = request.auth?.uid;
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
+    const db = getFirestore();
+    const mode: string = request.data?.mode || 'single';
+
+    // ===== Modo OBJETIVO: vários jogos por liga + data =====
+    if (mode === 'objective') {
+      const {
+        leagueSportKeys,
+        date,
+        teamPreferences,
+        sessionBudget,
+      } = request.data as {
+        leagueSportKeys: string[];
+        date: string;
+        teamPreferences?: string[];
+        sessionBudget: number;
+      };
+
+      if (!Array.isArray(leagueSportKeys) || leagueSportKeys.length === 0) {
+        throw new HttpsError('invalid-argument', 'Selecione ao menos um campeonato.');
+      }
+      const targetDate = date || new Date().toISOString().slice(0, 10);
+      const budget = typeof sessionBudget === 'number' && sessionBudget > 0 ? sessionBudget : 20;
+
+      const { weeklyBudget, weeklyStaked, financialPhase } = await loadAndGuardProfile(db, userId);
+
+      const fixtures = await findFixturesForObjective(leagueSportKeys, targetDate, teamPreferences);
+      if (fixtures.length === 0) {
+        throw new HttpsError(
+          'not-found',
+          'Nenhum jogo encontrado para os campeonatos e a data escolhidos. Tente outra data ou outros campeonatos.'
+        );
+      }
+
+      const analyses: Array<BettingAnalysis & { matchId: string; kickoff: string }> = [];
+
+      // Sequencial para não estourar rate limit das APIs gratuitas
+      for (const fixture of fixtures) {
+        const sportKey = getSportKey(fixture.leagueId) || leagueSportKeys[0];
+        try {
+          const analysis = await orchestrate({
+            homeTeam: fixture.homeTeam,
+            awayTeam: fixture.awayTeam,
+            homeTeamId: fixture.homeTeamId,
+            awayTeamId: fixture.awayTeamId,
+            league: fixture.leagueName,
+            leagueSportKey: sportKey,
+            date: targetDate,
+            weeklyBudget,
+            weeklyStaked,
+            leagueId: fixture.leagueId,
+            userId,
+            db,
+            financialPhase,
+          });
+
+          const analysisRef = db.collection('betting_analyses').doc();
+          await analysisRef.set({
+            userId,
+            ...analysis,
+            kickoff: fixture.kickoff,
+            createdAt: Timestamp.now(),
+            userFeedback: null,
+          });
+
+          analyses.push({ ...analysis, matchId: analysisRef.id, kickoff: fixture.kickoff });
+        } catch {
+          // Pula partidas que falharem na análise — não derruba o objetivo inteiro
+        }
+      }
+
+      if (analyses.length === 0) {
+        throw new HttpsError('internal', 'Não foi possível analisar os jogos encontrados. Tente novamente.');
+      }
+
+      const { allocation, totalSuggested } = allocateBudget(analyses, budget);
+
+      return {
+        analyses,
+        budgetAllocation: allocation,
+        totalSuggested,
+        remainingBudget: parseFloat(Math.max(0, budget - totalSuggested).toFixed(2)),
+        sessionBudget: budget,
+      };
+    }
+
+    // ===== Modo SINGLE: uma partida (fluxo manual) =====
     const {
       homeTeam, awayTeam,
       homeTeamId, awayTeamId,
@@ -29,62 +213,25 @@ export const betAnalysis = onCall(
       throw new HttpsError('invalid-argument', 'Times são obrigatórios');
     }
 
-    const db = getFirestore();
+    const { weeklyBudget, weeklyStaked, financialPhase } = await loadAndGuardProfile(db, userId);
 
-    // Verificar fase financeira
-    const insightsDoc = await db
-      .collection('users').doc(userId)
-      .collection('insights').doc('latest').get();
-
-    if (insightsDoc.exists) {
-      const phase = insightsDoc.data()?.phase as string | undefined;
-      if (phase && BLOCKED_PHASES.includes(phase)) {
-        throw new HttpsError(
-          'permission-denied',
-          'O Zé Apostador está disponível apenas quando você estabilizar suas finanças. Continue na sua jornada!'
-        );
-      }
-    }
-
-    // Verificar perfil de apostas configurado
-    const bettingProfileDoc = await db
-      .collection('users').doc(userId)
-      .collection('betting_profile').doc('main').get();
-
-    if (!bettingProfileDoc.exists || !bettingProfileDoc.data()?.acceptedRiskDisclaimer) {
-      throw new HttpsError(
-        'failed-precondition',
-        'Configure seu perfil de apostas antes de continuar.'
-      );
-    }
-
-    const profile = bettingProfileDoc.data()!;
-
-    // Verificar auto-exclusão
-    if (profile.selfExclusionUntil && profile.selfExclusionUntil.toDate() > new Date()) {
-      throw new HttpsError(
-        'permission-denied',
-        `Você está em pausa voluntária até ${profile.selfExclusionUntil.toDate().toLocaleDateString('pt-BR')}.`
-      );
-    }
-
-    const weeklyBudget: number = profile.weeklyBudget || 20;
-    const weeklyStaked: number = profile.weeklyStaked || 0;
-
-    // Orquestrar análise
+    const sportKey = leagueSportKey || 'soccer_brazil_serie_a';
     const analysis = await orchestrate({
       homeTeam,
       awayTeam,
       homeTeamId: homeTeamId || 0,
       awayTeamId: awayTeamId || 0,
       league: league || 'Desconhecida',
-      leagueSportKey: leagueSportKey || 'soccer_brazil_serie_a',
+      leagueSportKey: sportKey,
       date: date || new Date().toISOString().slice(0, 10),
       weeklyBudget,
       weeklyStaked,
+      leagueId: getLeagueId(sportKey) ?? undefined,
+      userId,
+      db,
+      financialPhase,
     });
 
-    // Salvar análise no Firestore
     const analysisRef = db.collection('betting_analyses').doc();
     await analysisRef.set({
       userId,
@@ -93,7 +240,6 @@ export const betAnalysis = onCall(
       userFeedback: null,
     });
 
-    // Alerta de perda semanal
     const lostPct = weeklyStaked / weeklyBudget;
     const weeklyLossAlert = lostPct >= 0.5;
 
