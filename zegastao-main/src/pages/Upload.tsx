@@ -35,6 +35,20 @@ async function countUploadsThisMonth(userId: string): Promise<number> {
   }).length;
 }
 
+async function checkDuplicate(userId: string, filename: string, fileSize: number): Promise<boolean> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'users', userId, 'uploads'),
+      orderBy('uploadedAt', 'desc'),
+      limit(30)
+    )
+  );
+  return snap.docs.some((d) => {
+    const data = d.data();
+    return data.filename === filename && data.fileSize === fileSize && data.status === 'done';
+  });
+}
+
 type Step = 'type' | 'bank' | 'how' | 'send';
 
 const STEP_ORDER: Step[] = ['type', 'bank', 'how', 'send'];
@@ -64,6 +78,7 @@ export function UploadPage() {
   const [result, setResult] = useState<Upload | null>(null);
   const [error, setError] = useState('');
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
 
   const stepIndex = STEP_ORDER.indexOf(step);
 
@@ -86,9 +101,10 @@ export function UploadPage() {
     setBankKey(null);
   }
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, skipDuplicateCheck = false) {
     setError('');
     setResult(null);
+    setDuplicateWarning(false);
     const user = auth.currentUser;
     if (!user) return;
 
@@ -109,12 +125,22 @@ export function UploadPage() {
       return;
     }
 
+    // Verificação de duplicata por nome + tamanho
+    if (!skipDuplicateCheck) {
+      const isDupe = await checkDuplicate(user.uid, file.name, file.size);
+      if (isDupe) {
+        setDuplicateWarning(true);
+        return;
+      }
+    }
+
     const uploadId = `${Date.now()}`;
     setStatus('uploading');
 
     const uploadDocRef = doc(db, 'users', user.uid, 'uploads', uploadId);
     await setDoc(uploadDocRef, {
       filename: file.name,
+      fileSize: file.size,
       fileType: ext,
       bank: bankKey || 'generico',
       statementType: docType || 'checking',
@@ -274,7 +300,38 @@ export function UploadPage() {
               </p>
             </div>
 
-            {!result && (
+            {/* Aviso de duplicata */}
+            {duplicateWarning && (
+              <div className="rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-500/5 p-4 space-y-3">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                  Esse arquivo já foi importado
+                </p>
+                <p className="text-xs text-amber-700/80 dark:text-amber-400/70">
+                  Identificamos um arquivo com o mesmo nome e tamanho já processado. Importar de novo pode criar transações duplicadas.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-amber-400/40 text-amber-700 dark:text-amber-400"
+                    onClick={() => { setDuplicateWarning(false); }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setDuplicateWarning(false);
+                      inputRef.current?.click();
+                    }}
+                  >
+                    Importar mesmo assim
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!result && !duplicateWarning && (
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
@@ -310,7 +367,7 @@ export function UploadPage() {
                   type="file"
                   accept=".pdf,.csv,.xlsx,.xls,.txt"
                   className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0], true)}
                 />
               </div>
             )}

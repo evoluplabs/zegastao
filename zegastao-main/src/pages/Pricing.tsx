@@ -58,7 +58,7 @@ export function Pricing() {
   const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState(false);
   const user = useStore((s) => s.user);
-  const { plan } = useSubscription();
+  const { plan, sub } = useSubscription();
 
   async function handleCheckout(planId: 'copiloto_monthly' | 'copiloto_annual') {
     if (!user) { window.location.href = '/login'; return; }
@@ -84,6 +84,24 @@ export function Pricing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
       <div className="mx-auto max-w-5xl px-4 py-12">
+        {/* Subscriber banner */}
+        {plan !== 'free' && plan && (
+          <div className="mb-8 rounded-2xl border border-green-300 bg-green-50 px-6 py-5">
+            <p className="font-semibold text-green-800 text-base">
+              ✅ Você já é assinante do plano {plan}
+            </p>
+            <p className="text-sm text-green-700 mt-1">
+              Acesso ativo{sub.currentPeriodEnd ? ` até ${sub.currentPeriodEnd.toDate().toLocaleDateString('pt-BR')}` : ''} — gerencie no seu perfil.
+            </p>
+            <Link
+              to="/dashboard"
+              className="mt-3 inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
+            >
+              Ver meu painel
+            </Link>
+          </div>
+        )}
+
         {/* Back */}
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
           <ArrowLeft className="h-4 w-4" />

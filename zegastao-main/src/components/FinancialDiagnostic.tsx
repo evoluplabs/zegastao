@@ -11,6 +11,9 @@ interface Props {
   debts: Debt[];
   goals: Goal[];
   compact?: boolean;
+  // Quando true, expenses já inclui os pagamentos de dívidas (vindos de transações reais).
+  // Evita double-counting: não soma debtPayments ao comprometimento.
+  hasRealTransactions?: boolean;
 }
 
 interface Metric {
@@ -121,13 +124,16 @@ function DetailModal({ metrics, score, income, debtPayments, expenses, onClose }
   );
 }
 
-export function FinancialDiagnostic({ income, expenses, debts, goals, compact = false }: Props) {
+export function FinancialDiagnostic({ income, expenses, debts, goals, compact = false, hasRealTransactions = false }: Props) {
   const [showDetail, setShowDetail] = useState(false);
 
   const activeDebts    = debts.filter((d) => d.status === 'active');
   const debtPayments   = activeDebts.reduce((s, d) => s + (d.monthlyPayment || 0), 0);
-  const comprometimento = income > 0 ? ((expenses + debtPayments) / income) * 100 : 0;
-  const disponivel      = income - expenses - debtPayments;
+  // Quando há transações reais, os pagamentos de dívidas já estão em `expenses`.
+  // Somar debtPayments novamente geraria double-counting.
+  const totalExpenses   = hasRealTransactions ? expenses : expenses + debtPayments;
+  const comprometimento = income > 0 ? (totalExpenses / income) * 100 : 0;
+  const disponivel      = income - totalExpenses;
   const positiveBalance = disponivel >= 0;
   const hasGoal         = goals.some((g) => g.status === 'active');
 

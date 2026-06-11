@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CalendarClock } from 'lucide-react';
 import { useDebts } from '@/hooks/useDebts';
 import { useGoals } from '@/hooks/useGoals';
@@ -30,6 +31,24 @@ export function Projection() {
 
   // ---- Comparador de cenários (por dívida) ----
   const activeDebts = debts.filter((d) => d.totalBalance > 0);
+
+  if (!activeDebts.length) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4 p-8">
+        <div className="text-5xl">🎉</div>
+        <h2 className="text-xl font-bold">Sem dívidas ativas!</h2>
+        <p className="text-muted-foreground max-w-sm">
+          Você não tem dívidas para projetar. Isso é excelente — foque agora em construir sua reserva e investir.
+        </p>
+        <Link
+          to="/goals"
+          className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          Ver minhas metas →
+        </Link>
+      </div>
+    );
+  }
   const [debtId, setDebtId] = useState('');
   const [scExtra, setScExtra] = useState('200');
   const [scDiscount, setScDiscount] = useState('20');

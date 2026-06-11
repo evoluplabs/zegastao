@@ -114,7 +114,7 @@ Gere uma análise narrativa em português (3-4 parágrafos, máx 350 palavras) q
 Seja honesto sobre incertezas. Não prometa resultados.`;
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 600,
     messages: [{ role: 'user', content: prompt }],
     system: 'Você é um analista de apostas esportivas experiente e honesto. Responde em português brasileiro.',

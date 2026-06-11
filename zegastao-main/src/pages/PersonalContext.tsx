@@ -120,6 +120,12 @@ function PersonaCard() {
   async function generateNow() {
     setGenerating(true);
     setGenError(null);
+
+    const timeout = setTimeout(() => {
+      setGenerating(false);
+      setGenError('A geração demorou demais. Tente novamente.');
+    }, 60_000);
+
     try {
       const fn = httpsCallable(functions, 'generateInsightsNow');
       await fn({});
@@ -129,6 +135,7 @@ function PersonaCard() {
       const msg = raw.includes(': ') ? raw.split(': ').slice(1).join(': ') : raw;
       setGenError(msg);
     } finally {
+      clearTimeout(timeout);
       setGenerating(false);
     }
   }

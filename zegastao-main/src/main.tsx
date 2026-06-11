@@ -14,7 +14,13 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.MODE,
     tracesSampleRate: 0.2,
-    replaysOnErrorSampleRate: 1.0,
+    replaysOnErrorSampleRate: 0.05,
+    beforeSend(event) {
+      // Não captura dados de autenticação
+      if (event.request?.cookies) delete event.request.cookies;
+      if (event.request?.headers?.['Authorization']) delete event.request.headers['Authorization'];
+      return event;
+    },
   });
 }
 

@@ -260,6 +260,7 @@ export function Dashboard() {
           expenses={effectiveExpenses}
           debts={debts}
           goals={goals}
+          hasRealTransactions={hasCurrentMonthTx}
         />
 
         {/* 3. Hero: Saldo + Fase */}
@@ -551,7 +552,10 @@ export function Dashboard() {
                     data={[
                       { label: 'Renda', value: income, color: '#10b981' },
                       { label: 'Gastos', value: expenses, color: '#ef4444' },
-                      { label: 'Parcelas', value: debtPayments, color: '#f59e0b' },
+                      // Parcelas já estão em "Gastos" quando há transações reais — não dobrar
+                      ...(!hasCurrentMonthTx && debtPayments > 0
+                        ? [{ label: 'Parcelas', value: debtPayments, color: '#f59e0b' }]
+                        : []),
                     ]}
                   />
                 </CardContent>

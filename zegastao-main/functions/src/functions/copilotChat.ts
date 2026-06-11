@@ -34,9 +34,21 @@ async function checkAndIncrementRateLimit(
   const subDoc = await db.collection('users').doc(userId).collection('subscription').doc('main').get();
   const plan = subDoc.exists ? (subDoc.data()!.plan as string) : 'free';
 
-  // Usuários pagos: sem limite
+  // Usuários pagos: cap diário de segurança de 200 msgs/dia (evita custo explosivo por abuso)
   if (plan !== 'free') {
-    return { allowed: true, remaining: Infinity, lifetimeLimit: Infinity, isPaid: true };
+    const usageDailyRef = db.collection('users').doc(userId).collection('usage').doc('chat_daily');
+    return db.runTransaction(async (tx) => {
+      const dailyDoc = await tx.get(usageDailyRef);
+      const today = new Date().toISOString().slice(0, 10);
+      const data = dailyDoc.exists ? dailyDoc.data()! : {};
+      const count = data.date === today ? (data.count as number || 0) : 0;
+      const PAID_DAILY_CAP = 200;
+      if (count >= PAID_DAILY_CAP) {
+        return { allowed: false, remaining: 0, lifetimeLimit: PAID_DAILY_CAP, isPaid: true };
+      }
+      tx.set(usageDailyRef, { date: today, count: count + 1 }, { merge: true });
+      return { allowed: true, remaining: PAID_DAILY_CAP - count - 1, lifetimeLimit: PAID_DAILY_CAP, isPaid: true };
+    });
   }
 
   // Usuários free: 5 mensagens vitalícias (sem reset)
@@ -77,10 +89,10 @@ export const copilotChat = onCall(
 
     const rateCheck = await checkAndIncrementRateLimit(db, userId);
     if (!rateCheck.allowed) {
-      throw new HttpsError(
-        'resource-exhausted',
-        `Você usou suas ${rateCheck.lifetimeLimit} mensagens gratuitas. Para conversar sem limite, assine o plano Copiloto — R$19,90/mês ou R$14,90/mês no anual.`
-      );
+      const msg = rateCheck.isPaid
+        ? `Limite diário de ${rateCheck.lifetimeLimit} mensagens atingido. O limite será renovado amanhã.`
+        : `Você usou suas ${rateCheck.lifetimeLimit} mensagens gratuitas. Para conversar sem limite, assine o plano Copiloto — R$19,90/mês ou R$14,90/mês no anual.`;
+      throw new HttpsError('resource-exhausted', msg);
     }
 
     // Contexto comprimido vem do cache (gerado pelo job noturno) — não recalcula.

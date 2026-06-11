@@ -134,8 +134,13 @@ export function Journey() {
 
   async function dismissCelebration() {
     if (!celebrating || !user) return;
-    await updateUserDoc('journey_milestones', celebrating.id, { celebrationShown: true });
-    setCelebrating(null);
+    try {
+      await updateUserDoc('journey_milestones', celebrating.id, { celebrationShown: true });
+    } catch {
+      // Ignora erro de rede — fecha o modal mesmo assim
+    } finally {
+      setCelebrating(null);
+    }
   }
 
   return (

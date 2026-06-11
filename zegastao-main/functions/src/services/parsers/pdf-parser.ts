@@ -128,7 +128,7 @@ async function parsePDFWithClaude(buffer: Buffer): Promise<ParsedTransaction[]> 
   try {
     response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 2000,
       messages: [{
         role: 'user',
         content: [

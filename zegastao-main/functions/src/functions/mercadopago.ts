@@ -1,4 +1,5 @@
 // MercadoPago: criação de preferência de pagamento e webhook de assinatura.
+import crypto from 'crypto';
 import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
@@ -68,16 +69,31 @@ export const handleMPWebhook = onRequest(
   async (req, res) => {
     if (req.method !== 'POST') { res.status(405).send('Method Not Allowed'); return; }
 
-    const xSecret = req.headers['x-signature'] || '';
-    if (MP_WEBHOOK_SECRET && xSecret !== MP_WEBHOOK_SECRET) {
-      res.status(401).send('Unauthorized');
-      return;
+    const body = req.body as { type?: string; data?: { id?: string } };
+    const paymentId = body.data?.id;
+
+    // Validação HMAC-SHA256 da assinatura do MercadoPago (formato: ts=TIMESTAMP,v1=HASH)
+    const xSignature = req.headers['x-signature'] as string || '';
+    if (MP_WEBHOOK_SECRET && xSignature) {
+      const parts: Record<string, string> = {};
+      xSignature.split(',').forEach(part => {
+        const [key, val] = part.split('=');
+        if (key && val) parts[key.trim()] = val.trim();
+      });
+      const ts = parts['ts'];
+      const v1 = parts['v1'];
+      if (ts && v1) {
+        const manifest = `id:${paymentId};request-id:${req.headers['x-request-id'] || ''};ts:${ts};`;
+        const expected = crypto.createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex');
+        if (expected !== v1) {
+          res.status(401).send('Unauthorized');
+          return;
+        }
+      }
     }
 
-    const body = req.body as { type?: string; data?: { id?: string } };
     if (body.type !== 'payment') { res.status(200).send('ok'); return; }
 
-    const paymentId = body.data?.id;
     if (!paymentId) { res.status(200).send('ok'); return; }
 
     try {
@@ -108,6 +124,15 @@ export const handleMPWebhook = onRequest(
         currentPeriodEnd: Timestamp.fromDate(periodEnd),
         activatedAt: Timestamp.now(),
         uploadsThisMonth: 0,
+      });
+
+      await db.collection('admin_logs').add({
+        event: 'subscription_activated',
+        userId,
+        plan,
+        paymentId,
+        timestamp: new Date(),
+        source: 'mp_webhook',
       });
 
       res.status(200).send('ok');
