@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /financas
+Disallow: /transactions
+Disallow: /copilot
+Disallow: /journey
+Disallow: /profile
+Disallow: /upload
+Disallow: /admin
+
+Sitemap: https://zegastao.com.br/sitemap.xml
