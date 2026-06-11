@@ -124,7 +124,9 @@ function PersonaCard() {
       const fn = httpsCallable(functions, 'generateInsightsNow');
       await fn({});
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao gerar análise.';
+      // FirebaseFunctionsError.message pode vir como "functions/code: texto" — pega só o texto
+      const raw = err instanceof Error ? err.message : 'Erro ao gerar análise.';
+      const msg = raw.includes(': ') ? raw.split(': ').slice(1).join(': ') : raw;
       setGenError(msg);
     } finally {
       setGenerating(false);

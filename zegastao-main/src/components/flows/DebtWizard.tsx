@@ -23,6 +23,7 @@ export function DebtWizard({ onClose }: Props) {
     balance: '',
     payment: '',
     rate: '',
+    cardMode: 'parcelado' as 'parcelado' | 'fatura',
   });
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -42,6 +43,7 @@ export function DebtWizard({ onClose }: Props) {
       interestRateMonthly: (parseFloat(form.rate.replace(',', '.')) || 0) / 100,
       dueDay: 10,
       status: 'active',
+      ...(form.type === 'Cartão de crédito' ? { cardMode: form.cardMode } : {}),
     });
     setSaving(false);
     setDone(true);
@@ -127,6 +129,33 @@ export function DebtWizard({ onClose }: Props) {
                       ))}
                     </div>
                   </div>
+
+                  {form.type === 'Cartão de crédito' && (
+                    <div className="space-y-1.5">
+                      <Label>Como você usa esse cartão?</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { id: 'parcelado', label: '📦 Parcelado', sub: 'Rastreia parcelas fixas' },
+                          { id: 'fatura', label: '💳 Fatura integral', sub: 'Pago todo mês no vencimento' },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, cardMode: opt.id })}
+                            className={cn(
+                              'rounded-xl border p-3 text-left text-xs transition-all',
+                              form.cardMode === opt.id
+                                ? 'border-primary bg-primary/5 font-medium'
+                                : 'hover:border-primary/30 hover:bg-accent'
+                            )}
+                          >
+                            <span className="block font-semibold">{opt.label}</span>
+                            <span className="text-muted-foreground">{opt.sub}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
