@@ -108,14 +108,14 @@ export function HeroSection() {
             </p>
 
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5">
-              Seu copiloto do{' '}
-              <span className="text-shimmer">vermelho à liberdade.</span>
+              Do controle das dívidas à{' '}
+              <span className="text-shimmer">liberdade financeira.</span>
             </h1>
 
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-              O Zé Gastão analisa suas dívidas, monta um plano personalizado e te diz{' '}
-              <strong className="text-foreground">exatamente o que fazer todo mês</strong>{' '}
-              — sem planilha, sem vergonha, sem enrolação.
+              O Zé Gastão organiza suas dívidas, detecta deduções do IR, simula sua independência financeira e{' '}
+              <strong className="text-foreground">age por você todo mês com IA</strong>{' '}
+              — sem planilha, sem contador caro, sem enrolação.
             </p>
 
             <div className="flex flex-col sm:flex-row items-start gap-3 mb-8">

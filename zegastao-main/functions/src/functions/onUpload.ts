@@ -142,6 +142,13 @@ export const onStatementUpload = onObjectFinalized(
             source: 'upload',
             uploadId,
             createdAt: new Date(),
+            // Parcelamento inteligente
+            ...(tx.isInstallment ? {
+              isInstallment: true,
+              installmentCurrent: tx.installmentCurrent,
+              installmentTotal: tx.installmentTotal,
+              installmentGroup: tx.installmentGroup,
+            } : {}),
           });
         });
         await batch.commit();

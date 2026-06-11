@@ -83,7 +83,9 @@ import { Profile } from '@/pages/Profile';
 import { Blog } from '@/pages/Blog';
 import { BlogPost } from '@/pages/BlogPost';
 import { Admin } from '@/pages/Admin';
+import { ImpostoRenda } from '@/pages/ImpostoRenda';
 import { AdminRoute } from '@/components/AdminRoute';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function App() {
   useAuthListener();
@@ -93,18 +95,18 @@ export default function App() {
       <PWAInstallBanner />
       <Routes>
         {/* Páginas públicas */}
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
         <Route path="/welcome" element={<Navigate to="/" replace />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/empresas" element={<Empresas />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/termos" element={<Terms />} />
-        <Route path="/privacidade" element={<PrivacyPolicy />} />
-        <Route path="/ajuda" element={<Help />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:slug" element={<BlogPost />} />
-        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        <Route path="/pricing" element={<ErrorBoundary><Pricing /></ErrorBoundary>} />
+        <Route path="/empresas" element={<ErrorBoundary><Empresas /></ErrorBoundary>} />
+        <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+        <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
+        <Route path="/termos" element={<ErrorBoundary><Terms /></ErrorBoundary>} />
+        <Route path="/privacidade" element={<ErrorBoundary><PrivacyPolicy /></ErrorBoundary>} />
+        <Route path="/ajuda" element={<ErrorBoundary><Help /></ErrorBoundary>} />
+        <Route path="/blog" element={<ErrorBoundary><Blog /></ErrorBoundary>} />
+        <Route path="/blog/:slug" element={<ErrorBoundary><BlogPost /></ErrorBoundary>} />
+        <Route path="/admin" element={<AdminRoute><ErrorBoundary><Admin /></ErrorBoundary></AdminRoute>} />
 
         {/* App autenticado */}
         <Route
@@ -114,11 +116,11 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/financas" element={<Financas />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/copilot" element={<Copilot />} />
-          <Route path="/journey" element={<Journey />} />
+          <Route path="/dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+          <Route path="/financas" element={<ErrorBoundary><Financas /></ErrorBoundary>} />
+          <Route path="/transactions" element={<ErrorBoundary><Transactions /></ErrorBoundary>} />
+          <Route path="/copilot" element={<ErrorBoundary><Copilot /></ErrorBoundary>} />
+          <Route path="/journey" element={<ErrorBoundary><Journey /></ErrorBoundary>} />
 
           {/* Rotas legadas → redirects para nova arquitetura */}
           <Route path="/debts" element={<Navigate to="/financas?tab=debts" replace />} />
@@ -128,9 +130,10 @@ export default function App() {
           <Route path="/projection" element={<Navigate to="/financas?tab=projection" replace />} />
           <Route path="/documents" element={<Navigate to="/copilot?tab=documentos" replace />} />
           <Route path="/context" element={<Navigate to="/copilot?tab=historico" replace />} />
-          <Route path="/upload" element={<UploadPage />} />
-          <Route path="/profile" element={<Profile />} />
-          {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<Betting />} />}
+          <Route path="/upload" element={<ErrorBoundary><UploadPage /></ErrorBoundary>} />
+          <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
+          <Route path="/ir" element={<ErrorBoundary><ImpostoRenda /></ErrorBoundary>} />
+          {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<ErrorBoundary><Betting /></ErrorBoundary>} />}
         </Route>
       </Routes>
       <CookieConsent />

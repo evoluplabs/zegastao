@@ -3,6 +3,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { ParsedTransaction } from '../../types';
 import { parseBRAmount, parseBRDate } from './bank-detector';
+import { detectInstallment } from './installment-detector';
 
 const DATE_KEYS = ['data', 'date', 'data lancamento', 'data movimento', 'dt'];
 const DESC_KEYS = ['descricao', 'descrição', 'description', 'historico', 'histórico', 'lancamento', 'lançamento', 'memo', 'estabelecimento', 'title'];
@@ -69,11 +70,13 @@ function rowsToTransactions(rows: Record<string, string>[]): ParsedTransaction[]
     }
     if (amount === null || isNaN(amount)) continue;
 
+    const installment = detectInstallment(description);
     out.push({
       date,
       description,
       amount,
       type: amount >= 0 ? 'in' : 'out',
+      ...(installment ?? {}),
     });
   }
   return out;

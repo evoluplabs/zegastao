@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
-import { FileText, Upload as UploadIcon, Download, AlertTriangle, Lightbulb, Handshake, Loader2 } from 'lucide-react';
+import { FileText, Upload as UploadIcon, Download, AlertTriangle, Lightbulb, Handshake, Loader2, Camera } from 'lucide-react';
 import { storage, db, auth } from '@/firebase';
 import { useContracts, useDocuments } from '@/hooks/useDocuments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ const STATUS_LABEL: Record<Contract['status'], string> = {
 
 export function Documents() {
   const contractRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
   const { data: contracts } = useContracts();
   const { data: documents } = useDocuments();
@@ -80,13 +81,22 @@ export function Documents() {
         {uploading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <Card className="cursor-pointer hover:bg-accent/50" onClick={() => contractRef.current?.click()}>
           <CardContent className="flex items-center gap-3 py-5">
             <UploadIcon className="h-6 w-6 text-primary" />
             <div>
-              <p className="text-sm font-medium">Analisar um contrato</p>
-              <p className="text-xs text-muted-foreground">PDF de empréstimo, financiamento, cartão…</p>
+              <p className="text-sm font-medium">Analisar contrato (PDF)</p>
+              <p className="text-xs text-muted-foreground">Empréstimo, financiamento, cartão…</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-accent/50" onClick={() => cameraRef.current?.click()}>
+          <CardContent className="flex items-center gap-3 py-5">
+            <Camera className="h-6 w-6 text-orange-500" />
+            <div>
+              <p className="text-sm font-medium">Fotografar contrato</p>
+              <p className="text-xs text-muted-foreground">Tire uma foto com a câmera — a IA analisa</p>
             </div>
           </CardContent>
         </Card>
@@ -94,13 +104,16 @@ export function Documents() {
           <CardContent className="flex items-center gap-3 py-5">
             <FileText className="h-6 w-6 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Guardar um documento</p>
+              <p className="text-sm font-medium">Guardar documento</p>
               <p className="text-xs text-muted-foreground">Comprovantes, recibos, qualquer arquivo</p>
             </div>
           </CardContent>
         </Card>
       </div>
       <input ref={contractRef} type="file" accept=".pdf" className="hidden"
+        onChange={(e) => e.target.files?.[0] && uploadContract(e.target.files[0])} />
+      {/* capture="environment" abre câmera traseira no mobile */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
         onChange={(e) => e.target.files?.[0] && uploadContract(e.target.files[0])} />
       <input ref={docRef} type="file" className="hidden"
         onChange={(e) => e.target.files?.[0] && uploadDocument(e.target.files[0])} />

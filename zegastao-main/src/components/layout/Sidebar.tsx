@@ -8,6 +8,7 @@ import {
   Trophy,
   Dices,
   Gift,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -27,6 +28,10 @@ export function Sidebar() {
   // Em modo de teste (VITE_FEATURE_ZE_APOSTADOR=true), mostra para qualquer fase.
   const showBetting =
     FEATURES.ZE_APOSTADOR && (import.meta.env.DEV || !phase || !BLOCKED_BETTING_PHASES.includes(phase));
+
+  // IR Season: Janeiro a Abril
+  const irMonth = new Date().getMonth() + 1;
+  const isIRSeason = irMonth >= 1 && irMonth <= 4;
 
   const NAV = [
     { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
@@ -61,6 +66,29 @@ export function Sidebar() {
             {label}
           </NavLink>
         ))}
+
+        {/* IR: sempre disponível, destaque em temporada Jan-Abr */}
+        <NavLink
+          to="/ir"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : isIRSeason
+                  ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-500/10'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )
+          }
+        >
+          <FileSpreadsheet className="h-4 w-4 shrink-0" />
+          <span>Imposto de Renda</span>
+          {isIRSeason && (
+            <span className="ml-auto rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 leading-none">
+              Prazo
+            </span>
+          )}
+        </NavLink>
 
         {showBetting && (
           <NavLink

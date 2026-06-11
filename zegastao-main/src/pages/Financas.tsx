@@ -6,6 +6,7 @@ import { Goals } from './Goals';
 import { Rules } from './Rules';
 import { Investments } from './Investments';
 import { Projection } from './Projection';
+import { Fire } from './Fire';
 
 const TABS = [
   { id: 'debts', label: 'Dívidas' },
@@ -13,6 +14,7 @@ const TABS = [
   { id: 'rules', label: 'Regras' },
   { id: 'investments', label: 'Investimentos' },
   { id: 'projection', label: 'Projeção' },
+  { id: 'fire', label: '🔥 Liberdade' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -62,6 +64,7 @@ export function Financas() {
         {active === 'rules' && <Rules />}
         {active === 'investments' && <Investments />}
         {active === 'projection' && <Projection />}
+        {active === 'fire' && <Fire />}
       </div>
     </div>
   );

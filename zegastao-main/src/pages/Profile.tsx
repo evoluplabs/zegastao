@@ -3,14 +3,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Crown, LogOut, HelpCircle, Shield,
   ChevronRight, Brain, Zap, Trophy,
-  MessageSquarePlus, FileText, Pencil,
+  MessageSquarePlus, FileText, Pencil, Sun, Moon, Monitor,
+  Users, LinkIcon, Unlink,
 } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
+import { useSharedFinances } from '@/hooks/useSharedFinances';
+import type { AppTheme } from '@/types';
 import { useStore } from '@/store/useStore';
 import { authActions } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useDebts } from '@/hooks/useDebts';
 import { useGoals } from '@/hooks/useGoals';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { formatBRL } from '@/lib/utils';
 import { PHASE_LABELS } from '@/types';
 import { cn } from '@/lib/utils';
@@ -89,6 +95,17 @@ export function Profile() {
   const navigate = useNavigate();
   const [showContext, setShowContext] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const { isLinked, loading: partnerLoading, error: partnerError, linkPartner, unlinkPartner } = useSharedFinances();
+  const [partnerEmail, setPartnerEmail] = useState('');
+  const [partnerName, setPartnerName] = useState<string | null>(null);
+  const [showPartnerForm, setShowPartnerForm] = useState(false);
+
+  const THEMES: { value: AppTheme; label: string; icon: React.ElementType }[] = [
+    { value: 'light', label: 'Claro', icon: Sun },
+    { value: 'dark', label: 'Escuro', icon: Moon },
+    { value: 'system', label: 'Sistema', icon: Monitor },
+  ];
 
   const activeDebts = debts.filter((d) => d.status === 'active');
   const activeGoals = goals.filter((g) => g.status === 'active');
@@ -214,6 +231,103 @@ export function Profile() {
             sub="Marcos da jornada financeira"
             to="/journey"
           />
+        </div>
+      </div>
+
+      {/* Modo Casal / Família */}
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Modo Casal / Família</p>
+        </div>
+        <div className="px-4 py-4 space-y-3">
+          {isLinked ? (
+            <>
+              <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/5 px-3 py-2.5">
+                <LinkIcon className="h-4 w-4 text-success shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-success">Conta vinculada</p>
+                  <p className="text-xs text-muted-foreground">
+                    {partnerName ? `Parceiro: ${partnerName}` : 'Você e seu parceiro(a) têm visão compartilhada.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={async () => { await unlinkPartner(); setPartnerName(null); }}
+                disabled={partnerLoading}
+                className="flex items-center gap-2 text-xs text-destructive hover:underline disabled:opacity-50"
+              >
+                <Unlink className="h-3.5 w-3.5" />
+                {partnerLoading ? 'Desvinculando…' : 'Desvincular conta'}
+              </button>
+            </>
+          ) : showPartnerForm ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Digite o e-mail cadastrado do seu parceiro(a). Ambas as contas passarão a ter visão compartilhada dos dados financeiros.
+              </p>
+              <Input
+                type="email"
+                placeholder="email@parceiro.com"
+                value={partnerEmail}
+                onChange={(e) => setPartnerEmail(e.target.value)}
+              />
+              {partnerError && <p className="text-xs text-destructive">{partnerError}</p>}
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 gap-2"
+                  disabled={partnerLoading || !partnerEmail}
+                  onClick={async () => {
+                    const name = await linkPartner(partnerEmail);
+                    if (name) { setPartnerName(name); setShowPartnerForm(false); setPartnerEmail(''); }
+                  }}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  {partnerLoading ? 'Vinculando…' : 'Vincular'}
+                </Button>
+                <Button variant="ghost" onClick={() => setShowPartnerForm(false)}>Cancelar</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Compartilhe suas finanças com seu parceiro(a) ou cônjuge. Cada um mantém sua conta separada, mas ambos podem ver os dados juntos.
+              </p>
+              <button
+                onClick={() => setShowPartnerForm(true)}
+                className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              >
+                <Users className="h-4 w-4" /> Vincular com parceiro(a)
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Aparência */}
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aparência</p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-sm font-medium mb-3">Tema do aplicativo</p>
+          <div className="grid grid-cols-3 gap-2">
+            {THEMES.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                onClick={() => setTheme(value)}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-medium transition-colors',
+                  theme === value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

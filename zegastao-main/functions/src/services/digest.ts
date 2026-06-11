@@ -1,3 +1,6 @@
+// Lógica compartilhada do digest por usuário.
+// Chamada pelo handler de Cloud Tasks (processUserDigest, agendado pelo
+// dispatcher nightlyDigest) e também sob demanda pelo callable generateInsightsNow.
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { buildCompressedContext } from './context-builder';
@@ -12,9 +15,9 @@ import {
 import { updateCopilotNotes } from './personal-context';
 import { detectNegotiationAlerts } from './negotiation';
 
-export async function processUserDigest(userId: string): Promise<void> {
+export async function runUserDigest(userId: string): Promise<void> {
   const db = getFirestore();
-  const userDoc = await db.collection('users').doc(userId).get();
+  const userRef = db.collection('users').doc(userId);
 
   const snapshot = await buildUserSnapshot(userId);
   const phase = calculatePhase(snapshot.phaseInput);
@@ -24,7 +27,7 @@ export async function processUserDigest(userId: string): Promise<void> {
   const contextWithPhase = `${compressed}\n\n${PHASE_INVESTMENT_CONTEXT[phase]}`;
 
   // 1. Fase no perfil
-  await userDoc.ref.collection('profile').doc('main')
+  await userRef.collection('profile').doc('main')
     .set({ financialPhase: phase }, { merge: true });
 
   // 2. Marcos atingidos (trilha de evolução)
@@ -32,14 +35,12 @@ export async function processUserDigest(userId: string): Promise<void> {
 
   // 3. Tarefas diárias (renda extra / economia conforme a fase)
   const tasks = await generateDailyTasks(phase, snapshot.skills);
-  await db.collection('users').doc(userId)
-    .collection('daily_tasks').doc('today')
+  await userRef.collection('daily_tasks').doc('today')
     .set({ tasks, phase, generatedAt: new Date() });
 
   // 4. Insights do dia
   const insights = await generateInsights(contextWithPhase);
-  await db.collection('users').doc(userId)
-    .collection('insights').doc('latest')
+  await userRef.collection('insights').doc('latest')
     .set({
       insights,
       phase,
@@ -60,18 +61,22 @@ export async function processUserDigest(userId: string): Promise<void> {
   }
 
   // 6. Alertas de negociação a partir das dívidas ativas
-  const debtsSnap = await userDoc.ref
-    .collection('debts').where('status', '==', 'active').get();
-  const alerts = detectNegotiationAlerts(
-    debtsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-  );
-  await db.collection('users').doc(userId)
-    .collection('negotiation_alerts').doc('latest')
+  const debtsSnap = await userRef.collection('debts').where('status', '==', 'active').get();
+  const debtsData = debtsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const alerts = detectNegotiationAlerts(debtsData);
+  await userRef.collection('negotiation_alerts').doc('latest')
     .set({ alerts, generatedAt: new Date() });
 
-  // 7. Zera contador mensal de regras no dia 1
+  // 7. Alertas de vencimento
+  await sendDueDateAlerts(
+    db,
+    userId,
+    debtsData as { id: string; creditor: string; dueDay: number; monthlyPayment: number; status: string }[]
+  ).catch(() => {});
+
+  // 8. Zera contador mensal de regras no dia 1
   if (new Date().getDate() === 1) {
-    const rulesSnap = await userDoc.ref.collection('rules').get();
+    const rulesSnap = await userRef.collection('rules').get();
     if (!rulesSnap.empty) {
       const batch = db.batch();
       rulesSnap.docs.forEach((r) => batch.update(r.ref, { monthRedirected: 0 }));
@@ -80,9 +85,49 @@ export async function processUserDigest(userId: string): Promise<void> {
   }
 }
 
+async function sendDueDateAlerts(
+  db: FirebaseFirestore.Firestore,
+  userId: string,
+  debts: { id: string; creditor: string; dueDay: number; monthlyPayment: number; status: string }[]
+): Promise<void> {
+  const today = new Date();
+  const todayDay = today.getDate();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+  const dueSoon = debts.filter((d) => {
+    if (d.status !== 'active') return false;
+    const diff = d.dueDay - todayDay;
+    const adjustedDiff = diff < 0 ? diff + daysInMonth : diff;
+    return adjustedDiff >= 0 && adjustedDiff <= 3;
+  });
+
+  for (const debt of dueSoon) {
+    const notifKey = `duedate_${debt.id}_${today.toISOString().slice(0, 7)}`;
+    const existing = await db.collection('users').doc(userId)
+      .collection('notifications_log')
+      .where('key', '==', notifKey).limit(1).get();
+    if (!existing.empty) continue;
+
+    const amount = debt.monthlyPayment > 0
+      ? ` · R$${debt.monthlyPayment.toFixed(2).replace('.', ',')}`
+      : '';
+
+    await sendInsightPush(
+      userId,
+      `Vencimento em breve: ${debt.creditor}`,
+      `Parcela${amount} vence dia ${debt.dueDay}. Não esqueça de pagar!`
+    );
+
+    await db.collection('users').doc(userId)
+      .collection('notifications_log').doc()
+      .set({ key: notifKey, sentAt: new Date(), type: 'due_date_alert' });
+  }
+}
+
 async function sendInsightPush(userId: string, title: string, body: string): Promise<void> {
   const db = getFirestore();
-  const tokenDoc = await db.collection('users').doc(userId).collection('fcm_tokens').doc('main').get();
+  const tokenDoc = await db.collection('users').doc(userId)
+    .collection('fcm_tokens').doc('main').get();
   if (!tokenDoc.exists) return;
   const token = tokenDoc.data()?.token as string | undefined;
   if (!token) return;

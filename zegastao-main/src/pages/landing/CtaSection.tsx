@@ -19,10 +19,10 @@ export function CtaSection() {
       <div className="relative mx-auto max-w-2xl px-4 text-center">
         <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-4">Comece agora</p>
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-5 text-balance">
-          Seu plano de quitação está a 3 minutos de distância.
+          Na próxima declaração de IR, você já terá tudo organizado.
         </h2>
         <p className="text-blue-100 text-lg mb-8">
-          Teste grátis. Assine quando quiser. Sem pegadinhas.
+          Dívidas, IR, FIRE e copiloto de IA — comece grátis agora. Assine quando quiser.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">

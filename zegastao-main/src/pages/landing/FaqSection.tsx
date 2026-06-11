@@ -26,6 +26,18 @@ const FAQ = [
     q: 'Posso cancelar quando quiser?',
     a: 'Sim, sem multa e sem enrolação. O plano gratuito nunca expira — as features básicas são permanentemente grátis.',
   },
+  {
+    q: 'O Zé Gastão ajuda com o Imposto de Renda?',
+    a: 'Sim! O app analisa suas transações do ano e identifica despesas dedutíveis (saúde, educação), rendimentos e obrigações (IRPF, Carnê-Leão). Gera um relatório PDF para facilitar sua declaração — e o Copiloto responde dúvidas com seus dados reais.',
+  },
+  {
+    q: 'Posso usar junto com meu cônjuge ou parceiro(a)?',
+    a: 'Sim. O modo casal/família permite que duas contas compartilhem a visão financeira. Cada um mantém seus dados separados, mas podem ver o panorama unificado juntos. Ideal para casais que planejam as finanças juntos.',
+  },
+  {
+    q: 'Funciona para MEI e autônomos?',
+    a: 'Sim. Para MEI, o app sinaliza o prazo da DASN-SIMEI (declaração anual) e monitora o faturamento. Para autônomos, detecta rendimentos que podem exigir Carnê-Leão. Não substitui um contador, mas organiza tudo para que a conversa com ele seja muito mais simples.',
+  },
 ];
 
 export function FaqSection() {

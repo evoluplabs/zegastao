@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
-import { processUserDigest } from '../services/digest';
+import { runUserDigest } from '../services/digest';
 
 export const generateInsightsNow = onCall(
   { region: 'southamerica-east1', enforceAppCheck: false },
@@ -20,7 +20,7 @@ export const generateInsightsNow = onCall(
       }
     }
 
-    await processUserDigest(uid);
+    await runUserDigest(uid);
     await usageRef.set({ lastRun: new Date() }, { merge: true });
     return { success: true };
   }

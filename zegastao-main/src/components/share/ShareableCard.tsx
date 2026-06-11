@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { Share2, Check, Download } from 'lucide-react';
+import { Share2, Check, Download, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { shareNodeAsImage } from '@/lib/shareImage';
+import { shareNodeAsImage, shareViaWhatsApp } from '@/lib/shareImage';
 import { track, Events } from '@/lib/analytics';
 
 export interface ShareableCardProps {
@@ -79,7 +79,7 @@ export function ShareableCard(props: ShareableCardProps) {
         </div>
       </div>
 
-      {/* Botão de ação */}
+      {/* Botão de ação — imagem (Web Share API / download) */}
       <Button className="w-full gap-2" onClick={handleShare} disabled={state === 'working'}>
         {state === 'done' ? (
           <><Check className="h-4 w-4" /> Pronto!</>
@@ -89,8 +89,23 @@ export function ShareableCard(props: ShareableCardProps) {
           <><Share2 className="h-4 w-4" /> Compartilhar imagem</>
         )}
       </Button>
+
+      {/* Fallback WhatsApp: abre conversa com texto pré-formatado */}
+      <button
+        onClick={() => {
+          const msg = props.shareText
+            ? `${props.shareText}${props.shareUrl ? `\n\n${props.shareUrl}` : ''}`
+            : `Estou usando o Zé Gastão pra cuidar das minhas finanças${props.shareUrl ? `\n\n${props.shareUrl}` : ''}`;
+          shareViaWhatsApp(msg);
+          if (props.analyticsId) track(props.analyticsId, { result: 'whatsapp_text' });
+        }}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-500/40 bg-green-50 dark:bg-green-500/5 py-2 text-sm font-medium text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/10 transition-colors"
+      >
+        <MessageCircle className="h-4 w-4" /> Enviar no WhatsApp
+      </button>
+
       <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-        <Download className="h-3 w-3" /> Vira imagem para o status do WhatsApp e stories
+        <Download className="h-3 w-3" /> Imagem: status do WhatsApp e stories
       </p>
     </div>
   );

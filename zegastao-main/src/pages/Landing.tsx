@@ -4,6 +4,7 @@ import { HeroSection } from './landing/HeroSection';
 import { SocialProofBar } from './landing/SocialProofBar';
 import { ProblemSection } from './landing/ProblemSection';
 import { DemoSection } from './landing/DemoSection';
+import { FeaturesSection } from './landing/FeaturesSection';
 import { JourneySection } from './landing/JourneySection';
 import { CasesSection } from './landing/CasesSection';
 import { FaqSection } from './landing/FaqSection';
@@ -20,6 +21,7 @@ export function Landing() {
       <SocialProofBar />
       <ProblemSection />
       <DemoSection />
+      <FeaturesSection />
       <JourneySection />
       <CasesSection />
       <FaqSection />

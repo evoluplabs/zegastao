@@ -3,6 +3,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
 import {
   isImpulse,
   extractAmount,
@@ -15,6 +16,14 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const ChatSchema = z.object({
+  message: z.string().min(1, 'Mensagem vazia').max(2000, 'Mensagem muito longa'),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().max(4000),
+  })).max(20).optional().default([]),
+});
 
 const FREE_LIFETIME_LIMIT = 5;
 
@@ -58,9 +67,11 @@ export const copilotChat = onCall(
     const userId = request.auth?.uid;
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
-    const message: string = request.data?.message || '';
-    const history: ChatMessage[] = request.data?.history || [];
-    if (!message.trim()) throw new HttpsError('invalid-argument', 'Mensagem vazia');
+    const parsed = ChatSchema.safeParse(request.data);
+    if (!parsed.success) {
+      throw new HttpsError('invalid-argument', parsed.error.errors[0]?.message || 'Dados inválidos');
+    }
+    const { message, history } = parsed.data;
 
     const db = getFirestore();
 

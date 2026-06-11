@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { deleteField } from 'firebase/firestore';
-import { X, Trash2, CheckCircle2, TrendingDown, AlertTriangle, MessageCircle } from 'lucide-react';
+import { X, Trash2, CheckCircle2, TrendingDown, AlertTriangle, MessageCircle, Calculator } from 'lucide-react';
 import { updateUserDoc, deleteUserDoc } from '@/lib/firestore';
 import { calcAmortization } from '@/lib/amortization';
 import { Button } from '@/components/ui/button';
@@ -35,9 +35,10 @@ interface Props {
 }
 
 export function DebtEditModal({ debt, onClose }: Props) {
-  const [tab, setTab] = useState<'detail' | 'parcelas' | 'edit'>('detail');
+  const [tab, setTab] = useState<'detail' | 'minimo' | 'parcelas' | 'edit'>('detail');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [minimoPct, setMinimoPct] = useState('15'); // % mínimo do saldo — padrão rotativo
 
   const [form, setForm] = useState({
     creditor: debt.creditor,
@@ -82,6 +83,54 @@ export function DebtEditModal({ debt, onClose }: Props) {
       return null;
     }
   }, [form.totalBalance, form.interestRateMonthly, form.remainingInstallments]);
+
+  // Calculadora custo do mínimo — simula pagamento rotativo (% do saldo)
+  const minimoCost = useMemo(() => {
+    const balance = parseFloat(form.totalBalance.replace(',', '.')) || 0;
+    const rate = (parseFloat(form.interestRateMonthly.replace(',', '.')) || 0) / 100;
+    const normalPayment = parseFloat(form.monthlyPayment.replace(',', '.')) || 0;
+    const minPct = (parseFloat(minimoPct) || 15) / 100;
+    if (balance <= 0 || rate <= 0) return null;
+
+    // Simula pagamento mínimo rotativo: cada mês paga minPct do saldo atual
+    let bal = balance;
+    let totalPaid = 0;
+    let totalInterest = 0;
+    let months = 0;
+    while (bal > 0.01 && months < 600) {
+      const interest = bal * rate;
+      const payment = Math.max(bal * minPct, 5); // mínimo de R$5
+      const amort = Math.max(0, payment - interest);
+      bal = Math.max(0, bal - amort);
+      totalPaid += payment;
+      totalInterest += interest;
+      months++;
+    }
+
+    // Calcula com pagamento normal para comparar
+    let balNormal = balance;
+    let totalInterestNormal = 0;
+    let monthsNormal = 0;
+    if (normalPayment > 0) {
+      while (balNormal > 0.01 && monthsNormal < 600) {
+        const interest = balNormal * rate;
+        const amort = Math.max(0, normalPayment - interest);
+        balNormal = Math.max(0, balNormal - amort);
+        totalInterestNormal += interest;
+        monthsNormal++;
+      }
+    }
+
+    return {
+      minMonths: months,
+      minTotalInterest: totalInterest,
+      minTotalPaid: totalPaid,
+      minMonthlyPayment: balance * minPct,
+      normalMonths: normalPayment > 0 ? monthsNormal : null,
+      normalTotalInterest: normalPayment > 0 ? totalInterestNormal : null,
+      savings: totalInterest - totalInterestNormal,
+    };
+  }, [form.totalBalance, form.interestRateMonthly, form.monthlyPayment, minimoPct]);
 
   async function save() {
     setSaving(true);
@@ -149,17 +198,17 @@ export function DebtEditModal({ debt, onClose }: Props) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b">
-          {(['detail', 'parcelas', 'edit'] as const).map((t) => (
+        <div className="flex border-b overflow-x-auto no-scrollbar">
+          {(['detail', 'minimo', 'parcelas', 'edit'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={cn(
-                'flex-1 py-2.5 text-sm font-medium transition-colors',
+                'flex-1 min-w-[70px] py-2.5 text-xs font-medium transition-colors whitespace-nowrap',
                 tab === t ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {t === 'detail' ? 'Detalhes' : t === 'parcelas' ? 'Parcelas' : 'Editar'}
+              {t === 'detail' ? 'Detalhes' : t === 'minimo' ? '💳 Custo' : t === 'parcelas' ? 'Parcelas' : 'Editar'}
             </button>
           ))}
         </div>
@@ -250,6 +299,92 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 )}
               </div>
             </>
+          )}
+
+          {tab === 'minimo' && (
+            <div className="space-y-4">
+              <div className="rounded-xl border bg-amber-50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20 p-4">
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <Calculator className="h-4 w-4" /> Custo real de pagar só o mínimo
+                </p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-1">
+                  Muitos cartões cobram apenas {minimoPct}% do saldo como mínimo. Veja o que isso custa.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pagamento mínimo (% do saldo)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    inputMode="decimal"
+                    value={minimoPct}
+                    onChange={(e) => setMinimoPct(e.target.value)}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">% por mês</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    ≈ {formatBRL((parseFloat(form.totalBalance.replace(',', '.')) || 0) * (parseFloat(minimoPct) || 15) / 100)}/mês agora
+                  </span>
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  {['10', '15', '20', '25'].map((p) => (
+                    <button key={p} onClick={() => setMinimoPct(p)}
+                      className={cn('text-xs px-2.5 py-1 rounded-lg border transition-colors',
+                        minimoPct === p ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-accent'
+                      )}>
+                      {p}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {minimoCost && (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-500/5 dark:border-red-500/20 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">😱 Pagando só o mínimo</p>
+                    <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                      <div>
+                        <p className="text-muted-foreground">Meses</p>
+                        <p className="font-bold text-red-600 text-sm">{minimoCost.minMonths}</p>
+                        <p className="text-muted-foreground">{Math.floor(minimoCost.minMonths / 12)}a {minimoCost.minMonths % 12}m</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total de juros</p>
+                        <p className="font-bold text-red-600 text-sm">{formatBRL(minimoCost.minTotalInterest)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total pago</p>
+                        <p className="font-bold text-red-600 text-sm">{formatBRL(minimoCost.minTotalPaid)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {minimoCost.normalMonths !== null && minimoCost.normalTotalInterest !== null && (
+                    <div className="rounded-xl border border-green-300 bg-green-50 dark:bg-green-500/5 dark:border-green-500/20 p-4 space-y-2">
+                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">✅ Pagando a parcela normal ({formatBRL(parseFloat(form.monthlyPayment.replace(',', '.')) || 0)}/mês)</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                        <div>
+                          <p className="text-muted-foreground">Meses</p>
+                          <p className="font-bold text-green-600 text-sm">{minimoCost.normalMonths}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Total de juros</p>
+                          <p className="font-bold text-green-600 text-sm">{formatBRL(minimoCost.normalTotalInterest)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Você economiza</p>
+                          <p className="font-bold text-green-600 text-sm">{formatBRL(minimoCost.savings)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-center text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
+                    Cálculo educacional com base no método de amortização rotativa. Valores reais podem variar.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {tab === 'parcelas' && (

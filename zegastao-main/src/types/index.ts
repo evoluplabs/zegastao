@@ -142,6 +142,11 @@ export interface Transaction {
   statementType?: 'checking' | 'credit_card' | null;
   isRecurring?: boolean;
   normalizedDesc?: string | null;
+  // Parcelamento detectado automaticamente no upload
+  isInstallment?: boolean;
+  installmentCurrent?: number;
+  installmentTotal?: number;
+  installmentGroup?: string;
 }
 
 export interface Debt {
@@ -252,6 +257,8 @@ export interface ExtraIncomeSource {
   label?: string;
 }
 
+export type AppTheme = 'dark' | 'light' | 'system';
+
 export interface Profile {
   name?: string;
   email?: string;
@@ -268,6 +275,8 @@ export interface Profile {
   alreadyInvests?: 'yes' | 'no' | 'no_idea';
   organizationId?: string;  // ID da empresa (B2B)
   isEmployee?: boolean;     // vinculado via convite corporativo
+  theme?: AppTheme;
+  sharedWithUid?: string | null;
 }
 
 export interface Milestone {

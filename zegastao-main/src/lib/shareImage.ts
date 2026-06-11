@@ -3,6 +3,12 @@
 // Custo: zero — tudo no navegador.
 import { toPng } from 'html-to-image';
 
+/** Abre o WhatsApp com uma mensagem pré-formatada. Funciona em mobile e desktop (WhatsApp Web). */
+export function shareViaWhatsApp(text: string): void {
+  const encoded = encodeURIComponent(text);
+  window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener,noreferrer');
+}
+
 export type ShareResult = 'shared' | 'downloaded' | 'error';
 
 export async function shareNodeAsImage(

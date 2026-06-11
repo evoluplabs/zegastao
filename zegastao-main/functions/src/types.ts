@@ -14,6 +14,11 @@ export interface ParsedTransaction {
   bank?: string;
   isRecurring?: boolean;
   id?: string;
+  // Parcelamento inteligente
+  isInstallment?: boolean;
+  installmentCurrent?: number;
+  installmentTotal?: number;
+  installmentGroup?: string; // hash normalizado para agrupar parcelas do mesmo produto
 }
 
 export interface Debt {

@@ -28,6 +28,8 @@ import { SetupChecklist } from '@/components/SetupChecklist';
 import { SpendingAlert } from '@/components/SpendingAlert';
 import { SpendingFocus } from '@/components/SpendingFocus';
 import { MonthlyReport, shouldShowMonthlyReport } from '@/components/MonthlyReport';
+import { ProactiveCopilotCards } from '@/components/ProactiveCopilotCards';
+import { useProactiveSuggestions } from '@/hooks/useProactiveSuggestions';
 import { deriveWins } from '@/lib/wins';
 import { formatBRL, formatPct, currentMonthStart } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
@@ -161,6 +163,13 @@ export function Dashboard() {
 
   const wins = deriveWins({ balance, topGoal, redirectedThisMonth, topCategoryDropPct });
 
+  const proactiveSuggestions = useProactiveSuggestions({
+    transactions: allTransactions,
+    debts,
+    goals,
+    monthlyIncome: income,
+  });
+
   // Categorias over-budget para WeeklyChallenge
   const overBudgetCategories = useMemo(() => {
     const BENCH: Record<string, number> = {
@@ -242,6 +251,9 @@ export function Dashboard() {
         {/* Alerta de gastos não-essenciais acima de 30% da renda */}
         <SpendingAlert income={income} byCategory={byCategory} />
 
+        {/* Sugestões proativas do copiloto (rule-based, sem custo de IA) */}
+        {hasAnyData && <ProactiveCopilotCards suggestions={proactiveSuggestions} />}
+
         {/* 2. Diagnóstico financeiro — hero da página */}
         <FinancialDiagnostic
           income={income}
@@ -317,6 +329,27 @@ export function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Card de IR sazonal: Janeiro a Abril */}
+        {(() => {
+          const m = new Date().getMonth() + 1;
+          if (m < 1 || m > 4) return null;
+          return (
+            <Link
+              to="/ir"
+              className="flex items-center gap-3 rounded-xl border border-blue-300/50 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20 px-4 py-3 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-colors"
+            >
+              <span className="text-2xl">📋</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Temporada de IR</p>
+                <p className="text-xs text-blue-700/70 dark:text-blue-400/70">
+                  Deduções, checklist e relatório para sua declaração
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-blue-500 shrink-0" />
+            </Link>
+          );
+        })()}
 
         {/* Mini-vitória */}
         <ShareWinBanner wins={wins} />
@@ -658,8 +691,10 @@ export function Dashboard() {
         <MonthlyReport
           transactions={prevMonthTx}
           goals={goals}
+          debts={debts}
+          monthlyIncome={income}
           monthLabel={new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
-            .toLocaleDateString('pt-BR', { month: 'long' })}
+            .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
           onClose={() => setShowMonthlyReport(false)}
         />
       )}

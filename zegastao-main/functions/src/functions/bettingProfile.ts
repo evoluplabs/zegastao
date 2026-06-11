@@ -3,8 +3,30 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
 
 const ZE_APOSTADOR_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
+
+const BettingProfileSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('suggest_budget') }),
+  z.object({
+    action: z.literal('accept_and_save'),
+    weeklyBudget: z.number().min(5).max(50),
+    preferredMarkets: z.array(z.string()).optional(),
+    preferredLeagues: z.array(z.string()).optional(),
+  }),
+  z.object({ action: z.literal('self_exclude'), days: z.number().min(1).max(365).optional() }),
+  z.object({
+    action: z.literal('record_bet'),
+    analysisId: z.string().optional(),
+    market: z.string().min(1),
+    selection: z.string().min(1),
+    odd: z.number().positive(),
+    amount: z.number().positive().max(1000),
+    outcome: z.enum(['win', 'loss', 'push', 'pending']).optional(),
+    profit: z.number().optional(),
+  }),
+]);
 
 const client = new Anthropic();
 
@@ -46,8 +68,12 @@ export const bettingProfile = onCall(
     const userId = request.auth?.uid;
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
-    const action: string = request.data?.action;
+    const parsed = BettingProfileSchema.safeParse(request.data);
+    if (!parsed.success) {
+      throw new HttpsError('invalid-argument', parsed.error.errors[0]?.message || 'Dados inválidos');
+    }
 
+    const action = parsed.data.action;
     const db = getFirestore();
 
     // ---- Ação: sugerir budget (antes do aceite) ----
@@ -66,7 +92,7 @@ export const bettingProfile = onCall(
 
     // ---- Ação: salvar perfil com aceite ----
     if (action === 'accept_and_save') {
-      const { weeklyBudget, preferredMarkets, preferredLeagues } = request.data;
+      const { weeklyBudget, preferredMarkets, preferredLeagues } = parsed.data as Extract<typeof parsed.data, { action: 'accept_and_save' }>;
 
       if (!weeklyBudget || weeklyBudget <= 0) {
         throw new HttpsError('invalid-argument', 'Budget inválido');
@@ -94,7 +120,7 @@ export const bettingProfile = onCall(
 
     // ---- Ação: auto-exclusão ----
     if (action === 'self_exclude') {
-      const { days } = request.data;
+      const { days } = parsed.data as Extract<typeof parsed.data, { action: 'self_exclude' }>;
       const until = new Date();
       until.setDate(until.getDate() + (days || 7));
 
@@ -108,7 +134,7 @@ export const bettingProfile = onCall(
 
     // ---- Ação: registrar resultado de aposta ----
     if (action === 'record_bet') {
-      const { analysisId, market, selection, odd, amount, outcome, profit } = request.data;
+      const { analysisId, market, selection, odd, amount, outcome, profit } = parsed.data as Extract<typeof parsed.data, { action: 'record_bet' }>;
 
       const betRef = db.collection('users').doc(userId).collection('betting_history').doc();
       await betRef.set({

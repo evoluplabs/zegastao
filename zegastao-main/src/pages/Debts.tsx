@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { DebtEditModal } from '@/components/flows/DebtEditModal';
 import { DebtSimulator } from '@/components/DebtSimulator';
+import { TransactionInstallmentGroups } from '@/components/TransactionInstallmentGroups';
 import type { Debt } from '@/types';
 
 export function Debts() {
@@ -276,6 +277,9 @@ export function Debts() {
           </CardContent>
         </Card>
       ))}
+
+      {/* Parcelas detectadas automaticamente no extrato */}
+      <TransactionInstallmentGroups />
 
       {editDebt && <DebtEditModal debt={editDebt} onClose={() => setEditDebt(null)} />}
       {simulateDebt && <DebtSimulator debt={simulateDebt} onClose={() => setSimulateDebt(null)} />}

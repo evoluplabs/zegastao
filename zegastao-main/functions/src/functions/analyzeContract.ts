@@ -25,27 +25,56 @@ export const analyzeContract = onObjectFinalized(
       await contractRef.set({ status: 'analyzing', storagePath: filePath }, { merge: true });
 
       const [buffer] = await getStorage().bucket(bucket).file(filePath).download();
-      const { text } = await pdfParse(buffer);
+      const contentType = event.data.contentType || '';
+      const isImage = contentType.startsWith('image/') ||
+        /\.(jpg|jpeg|png|webp)$/i.test(filePath);
 
-      const client = new Anthropic();
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: `Analise este contrato financeiro brasileiro e extraia as informações em JSON.
-
-CONTRATO:
-${text.substring(0, 8000)}
-
+      const CONTRACT_PROMPT = `Analise este contrato financeiro brasileiro e extraia as informações em JSON.
 Retorne APENAS JSON válido com esta estrutura:
 {"contractNumber":"","creditor":"","contractDate":"yyyy-mm-dd","contractType":"personal_loan|financing|credit_card|overdraft|consortium|other","principalAmount":0,"totalAmount":0,"monthlyInterestRate":0,"annualInterestRate":0,"cetRate":0,"totalInstallments":0,"installmentAmount":0,"firstDueDate":"yyyy-mm-dd","lastDueDate":"yyyy-mm-dd","amortizationType":"price|sac|other","latePaymentFee":0,"lateInterestRate":0,"earlyPaymentDiscount":false,"keyClausesForUser":[],"redFlags":[],"negotiationOpportunities":[]}
 
 Em "keyClausesForUser": explique em linguagem simples o que o usuário PRECISA saber.
 Em "redFlags": cláusulas desvantajosas ou abusivas.
 Em "negotiationOpportunities": onde e como negociar.
-Valores monetários como number (sem R$ ou vírgulas). Taxas como decimal (12% = 0.12).`,
+Valores monetários como number (sem R$ ou vírgulas). Taxas como decimal (12% = 0.12).`;
+
+      const client = new Anthropic();
+      let messageContent: Anthropic.MessageParam['content'];
+
+      if (isImage) {
+        // Visão: envia imagem diretamente ao Sonnet
+        const imageMediaType = contentType.startsWith('image/')
+          ? contentType as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
+          : 'image/jpeg';
+        messageContent = [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: imageMediaType,
+              data: buffer.toString('base64'),
+            },
+          } as Anthropic.ImageBlockParam,
+          { type: 'text', text: CONTRACT_PROMPT },
+        ];
+      } else {
+        // PDF: extrai texto com pdfParse
+        const { text } = await pdfParse(buffer);
+        messageContent = [
+          {
+            type: 'text',
+            text: `${CONTRACT_PROMPT}\n\nCONTRATO:\n${text.substring(0, 8000)}`,
+          },
+        ];
+      }
+
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'user',
+            content: messageContent,
           },
         ],
       });

@@ -1,14 +1,17 @@
 import { useMemo, useRef, useState } from 'react';
-import { X, Share2, Check } from 'lucide-react';
+import { X, Share2, Check, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { shareNodeAsImage } from '@/lib/shareImage';
+import { generateMonthlyReportPdf } from '@/lib/reportPdf';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
-import type { Transaction, Goal } from '@/types';
+import type { Transaction, Goal, Debt } from '@/types';
 
 interface Props {
   transactions: Transaction[]; // transações do mês anterior
   goals: Goal[];
+  debts?: Debt[];
+  monthlyIncome?: number;
   monthLabel: string;          // ex: "maio"
   onClose: () => void;
 }
@@ -28,9 +31,10 @@ export function dismissMonthlyReport() {
   localStorage.setItem(DISMISS_KEY, `${now.getFullYear()}-${now.getMonth()}`);
 }
 
-export function MonthlyReport({ transactions, goals, monthLabel, onClose }: Props) {
+export function MonthlyReport({ transactions, goals, debts = [], monthlyIncome = 0, monthLabel, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<'idle' | 'working' | 'done'>('idle');
+  const [pdfState, setPdfState] = useState<'idle' | 'working' | 'done'>('idle');
 
   const summary = useMemo(() => {
     const incomes = transactions.filter((t) => t.amount > 0);
@@ -70,6 +74,23 @@ export function MonthlyReport({ transactions, goals, monthLabel, onClose }: Prop
     track(Events.WIN_SHARED, { type: 'monthly_report', result });
     setState(result === 'error' ? 'idle' : 'done');
     if (result !== 'error') setTimeout(() => setState('idle'), 2500);
+  }
+
+  async function handlePdf() {
+    setPdfState('working');
+    try {
+      await generateMonthlyReportPdf({
+        monthLabel,
+        transactions,
+        goals,
+        debts,
+        monthlyIncome,
+      });
+      setPdfState('done');
+      setTimeout(() => setPdfState('idle'), 2500);
+    } catch {
+      setPdfState('idle');
+    }
   }
 
   const positive = summary.balance >= 0;
@@ -156,6 +177,15 @@ export function MonthlyReport({ transactions, goals, monthLabel, onClose }: Prop
               <>Gerando imagem…</>
             ) : (
               <><Share2 className="h-4 w-4" /> Compartilhar no WhatsApp</>
+            )}
+          </Button>
+          <Button variant="outline" className="w-full gap-2" onClick={handlePdf} disabled={pdfState === 'working'}>
+            {pdfState === 'done' ? (
+              <><Check className="h-4 w-4" /> PDF baixado!</>
+            ) : pdfState === 'working' ? (
+              <>Gerando PDF…</>
+            ) : (
+              <><Download className="h-4 w-4" /> Baixar PDF completo</>
             )}
           </Button>
           <Button variant="ghost" className="w-full" onClick={close}>Agora não</Button>

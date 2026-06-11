@@ -7,6 +7,7 @@ import { ParsedTransaction } from '../../types';
 import { detectBank, parseBRAmount, parseBRDate } from './bank-detector';
 import { parseCSV, parseXLSX } from './csv-parser';
 import { extractTextByCoordinate, CoordinateParseError } from './pdf-coordinate';
+import { detectInstallment } from './installment-detector';
 
 export async function parseFile(buffer: Buffer, filePath: string): Promise<ParsedTransaction[]> {
   // ATENÇÃO: o arquivo é salvo no Storage SEM extensão (uploads/{uid}/{uploadId}),
@@ -265,12 +266,14 @@ function parseNubankLines(lines: string[], fullText: string): ParsedTransaction[
       if (!date) continue;
       const amount = parseBRAmount(payMatch[4]);
       if (amount === null) continue;
+      const desc = stripCardMask(payMatch[3].trim());
       out.push({
         date,
-        description: stripCardMask(payMatch[3].trim()),
+        description: desc,
         amount: -amount,
         type: 'in',
         bank: 'nubank',
+        ...(detectInstallment(desc) ?? {}),
       });
       continue;
     }
@@ -281,12 +284,14 @@ function parseNubankLines(lines: string[], fullText: string): ParsedTransaction[
       if (!date) continue;
       const amount = parseBRAmount(txMatch[4]);
       if (amount === null) continue;
+      const desc = stripCardMask(txMatch[3].trim());
       out.push({
         date,
-        description: stripCardMask(txMatch[3].trim()),
+        description: desc,
         amount: -amount,
         type: 'out',
         bank: 'nubank',
+        ...(detectInstallment(desc) ?? {}),
       });
     }
   }
@@ -327,6 +332,7 @@ function parseGenericLines(lines: string[], bank: string): ParsedTransaction[] {
       amount,
       type: amount >= 0 ? 'in' : 'out',
       bank,
+      ...(detectInstallment(description) ?? {}),
     });
   }
 
