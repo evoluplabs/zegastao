@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { DebtEditModal } from '@/components/flows/DebtEditModal';
 import { DebtSimulator } from '@/components/DebtSimulator';
 import type { Debt } from '@/types';
@@ -217,7 +217,7 @@ export function Debts() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Juros</span>
-              <span>{(d.interestRateMonthly * 100).toFixed(1)}% a.m.</span>
+              <span>{formatPct(d.interestRateMonthly * 100, 1)} a.m.</span>
             </div>
             {d.statementMonth && (
               <div className="flex justify-between">

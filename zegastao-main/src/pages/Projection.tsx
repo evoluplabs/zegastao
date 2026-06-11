@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { DebtTimeline } from '@/components/charts/DebtTimeline';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 
 function monthLabel(ym: string): string {
   if (!ym) return '—';
@@ -47,7 +47,7 @@ export function Projection() {
     return compareScenarios([
       { label: 'Parcela mínima', principal, monthlyRate: rate, totalInstallments: n },
       { label: `+ ${formatBRL(extraMonthly)}/mês`, principal, monthlyRate: rate, totalInstallments: n, extraMonthly },
-      { label: `Negociação -${(discount * 100).toFixed(0)}% juros`, principal, monthlyRate: rate * (1 - discount), totalInstallments: n },
+      { label: `Negociação -${formatPct(discount * 100)} juros`, principal, monthlyRate: rate * (1 - discount), totalInstallments: n },
     ]);
   }, [selectedDebt, scExtra, scDiscount, scInstallments]);
 

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { X, Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { shareNodeAsImage } from '@/lib/shareImage';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 import type { Transaction, Goal } from '@/types';
 
@@ -137,7 +137,7 @@ export function MonthlyReport({ transactions, goals, monthLabel, onClose }: Prop
                   <div className="rounded-xl bg-white/15 backdrop-blur-sm p-2.5 text-center">
                     <p className="text-[9px] uppercase font-semibold opacity-80">Meta: {summary.topGoal.name}</p>
                     <p className="text-sm font-bold">
-                      {Math.min(100, (summary.topGoal.currentAmount / (summary.topGoal.targetAmount || 1)) * 100).toFixed(0)}% concluída
+                      {formatPct(Math.min(100, (summary.topGoal.currentAmount / (summary.topGoal.targetAmount || 1)) * 100))} concluída
                     </p>
                   </div>
                 )}

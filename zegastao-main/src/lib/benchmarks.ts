@@ -1,0 +1,17 @@
+export const BENCHMARKS: Record<string, { ideal: number; label: string; tip?: string }> = {
+  'Moradia':        { ideal: 35, label: 'ideal', tip: 'Considere dividir o imóvel, alugar um cômodo ou renegociar o aluguel.' },
+  'Alimentação':    { ideal: 25, label: 'ideal', tip: 'Planeje o cardápio da semana e vá ao mercado com lista — evita compra por impulso.' },
+  'Mercado':        { ideal: 20, label: 'ideal', tip: 'Compare preços em 2 supermercados e prefira marcas próprias — economiza ~20%.' },
+  'Transporte':     { ideal: 15, label: 'ideal', tip: 'Combine transporte público + app só quando necessário. Caronas solidárias economizam até 60%.' },
+  'Transporte app': { ideal: 5,  label: 'ideal', tip: 'Limite corridas por app a situações essenciais. Use o transporte público no dia a dia.' },
+  'Combustível':    { ideal: 10, label: 'ideal', tip: 'Evite acelerar bruscamente, calibre pneus mensalmente e compare preços nos postos da rota.' },
+  'Saúde':          { ideal: 10, label: 'ideal', tip: 'Verifique se o plano de saúde da empresa é mais barato que o particular.' },
+  'Farmácia':       { ideal: 5,  label: 'ideal', tip: 'Peça ao médico a versão genérica dos medicamentos — até 80% mais barato.' },
+  'Lazer':          { ideal: 10, label: 'ideal', tip: 'Substitua 1 saída cara por opções gratuitas (parques, eventos, cinema com meia-entrada).' },
+  'Educação':       { ideal: 10, label: 'ideal', tip: 'Coursera, Alura e YouTube têm conteúdo de qualidade gratuito ou barato.' },
+  'Streaming':      { ideal: 3,  label: 'ideal', tip: 'Compartilhe planos familiares ou cancele serviços que usa menos de 2x por semana.' },
+  'Delivery':       { ideal: 8,  label: 'ideal', tip: 'Limite a 2 pedidos por semana e aproveite promoções de quarta — economiza ~R$200/mês.' },
+  'Restaurantes':   { ideal: 8,  label: 'ideal', tip: 'Prefira o almoço executivo ao invés do jantar à la carte — até 50% mais barato.' },
+  'Beleza':         { ideal: 5,  label: 'ideal', tip: 'Espaçe os procedimentos e veja tutoriais para fazer em casa o que der.' },
+  'Vestuário':      { ideal: 5,  label: 'ideal', tip: 'Antes de comprar, espere 48h — se ainda quiser, a compra foi planejada.' },
+};

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { estimateGoalDate } from '@/lib/projection';
 
 export function Goals() {
@@ -139,7 +139,7 @@ export function Goals() {
                   <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {pct.toFixed(0)}% concluído{eta ? ` · previsão: ${eta}` : ''}
+                  {formatPct(pct)} concluído{eta ? ` · previsão: ${eta}` : ''}
                 </p>
                 {g.targetDate && (
                   <p className="mt-1 text-xs font-medium text-primary">

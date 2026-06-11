@@ -26,9 +26,10 @@ import { FinancialSimulator } from '@/components/FinancialSimulator';
 import { RecurringExpenses } from '@/components/RecurringExpenses';
 import { SetupChecklist } from '@/components/SetupChecklist';
 import { SpendingAlert } from '@/components/SpendingAlert';
+import { SpendingFocus } from '@/components/SpendingFocus';
 import { MonthlyReport, shouldShowMonthlyReport } from '@/components/MonthlyReport';
 import { deriveWins } from '@/lib/wins';
-import { formatBRL, currentMonthStart } from '@/lib/utils';
+import { formatBRL, formatPct, currentMonthStart } from '@/lib/utils';
 import { PHASE_LABELS, type FinancialPhase } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -400,7 +401,7 @@ export function Dashboard() {
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-                <TrendingDown className="h-4 w-4 text-destructive" /> Dívida prioritária
+                <TrendingDown className="h-4 w-4 text-destructive" /> Gestão de dívidas
               </CardTitle>
               <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setOpenDebt(true)}>
                 <Plus className="h-3.5 w-3.5" /> Nova
@@ -409,18 +410,41 @@ export function Dashboard() {
             <CardContent>
               {topDebt ? (
                 <div className="space-y-2">
+                  {/* Resumo geral */}
+                  {debts.filter((d) => d.status === 'active').length > 1 && (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{debts.filter((d) => d.status === 'active').length} dívidas ativas</span>
+                      {income > 0 && (
+                        <span className={debtPayments / income > 0.3 ? 'text-destructive font-semibold' : ''}>
+                          {formatPct((debtPayments / income) * 100, 0)} da renda comprometida
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {/* Dívida prioritária */}
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="font-semibold truncate">{topDebt.creditor}</p>
+                    <p className="font-semibold truncate text-sm">{topDebt.creditor}</p>
                     <span className="text-xs text-destructive font-semibold shrink-0">
-                      {(topDebt.interestRateMonthly * 100).toFixed(1)}% a.m.
+                      {formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.
                     </span>
                   </div>
                   <p className="text-2xl font-bold">{formatBRL(topDebt.totalBalance)}</p>
-                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                    <div className="h-full rounded-full bg-destructive/60 w-full" />
-                  </div>
+                  {/* Barra de progresso de quitação */}
+                  {topDebt.totalInstallments && topDebt.totalInstallments > 0 && (
+                    <>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-destructive/60 transition-all"
+                          style={{ width: `${Math.min(100, ((topDebt.paidInstallments || 0) / topDebt.totalInstallments) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {topDebt.paidInstallments || 0}/{topDebt.totalInstallments} parcelas pagas
+                      </p>
+                    </>
+                  )}
                   <Link to="/financas?tab=debts" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-                    Ver todas <ArrowRight className="h-3 w-3" />
+                    Ver gestão de dívidas <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
               ) : (
@@ -449,7 +473,7 @@ export function Dashboard() {
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="font-semibold truncate">{topGoal.name}</p>
                     <span className="text-xs text-muted-foreground shrink-0">
-                      {Math.min(100, (topGoal.currentAmount / (topGoal.targetAmount || 1)) * 100).toFixed(0)}%
+                      {formatPct(Math.min(100, (topGoal.currentAmount / (topGoal.targetAmount || 1)) * 100))}
                     </span>
                   </div>
                   <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
@@ -480,41 +504,46 @@ export function Dashboard() {
 
         {/* 8. Análise de gastos (só com transações) */}
         {(byCategory.length > 0 || hasCurrentMonthTx) && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Fluxo do mês</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FlowChart
-                  data={[
-                    { label: 'Renda', value: income, color: '#10b981' },
-                    { label: 'Gastos', value: expenses, color: '#ef4444' },
-                    { label: 'Parcelas', value: debtPayments, color: '#f59e0b' },
-                  ]}
-                />
-              </CardContent>
-            </Card>
+          <div className="space-y-3">
+            {/* Destaque: para onde foi mais dinheiro */}
+            <SpendingFocus byCategory={byCategory} income={income} />
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Análise por categoria</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {byCategory.length > 0 ? (
-                  <div className="space-y-3">
-                    <CategoryBreakdown data={byCategory.slice(0, 5)} />
-                    <CategoryAnalysis
-                      categories={byCategory.slice(0, 6)}
-                      income={income}
-                      transactions={currentMonthTx}
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
-                )}
-              </CardContent>
-            </Card>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Fluxo do mês</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FlowChart
+                    data={[
+                      { label: 'Renda', value: income, color: '#10b981' },
+                      { label: 'Gastos', value: expenses, color: '#ef4444' },
+                      { label: 'Parcelas', value: debtPayments, color: '#f59e0b' },
+                    ]}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Análise por categoria</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {byCategory.length > 0 ? (
+                    <div className="space-y-3">
+                      <CategoryBreakdown data={byCategory.slice(0, 5)} />
+                      <CategoryAnalysis
+                        categories={byCategory.slice(0, 6)}
+                        income={income}
+                        transactions={currentMonthTx}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 

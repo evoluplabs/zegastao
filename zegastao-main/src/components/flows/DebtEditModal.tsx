@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { deleteField } from 'firebase/firestore';
 import { X, Trash2, CheckCircle2, TrendingDown, AlertTriangle, MessageCircle } from 'lucide-react';
 import { updateUserDoc, deleteUserDoc } from '@/lib/firestore';
 import { calcAmortization } from '@/lib/amortization';
@@ -6,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { InstallmentTracker } from '@/components/InstallmentTracker';
+import { InvoiceTracker } from '@/components/InvoiceTracker';
 import type { Debt } from '@/types';
 
 const DEBT_TYPES = [
@@ -49,6 +51,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
     statementMonth: debt.statementMonth || '',
     informalUrgency: debt.informalUrgency || 'whenever',
     notes: debt.notes || '',
+    cardMode: (debt.cardMode || 'parcelado') as 'fatura' | 'parcelado',
   });
 
   const isCard     = form.type === 'Cartão de crédito';
@@ -84,7 +87,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
     setSaving(true);
     try {
       const newRemaining = parseInt(form.remainingInstallments) || 0;
-      const patch: Partial<Debt> = {
+      const patch: Record<string, unknown> = {
         creditor: form.creditor,
         type: form.type,
         totalBalance: parseFloat(form.totalBalance.replace(',', '.')) || 0,
@@ -92,13 +95,21 @@ export function DebtEditModal({ debt, onClose }: Props) {
         interestRateMonthly: (parseFloat(form.interestRateMonthly.replace(',', '.')) || 0) / 100,
         dueDay: parseInt(form.dueDay) || 10,
         remainingInstallments: newRemaining,
-        status: form.status as Debt['status'],
-        notes: form.notes || undefined,
+        status: form.status,
         // Define totalInstallments na primeira edição (se não existia)
         totalInstallments: debt.totalInstallments || ((debt.paidInstallments || 0) + newRemaining) || newRemaining,
       };
-      if (isCard && form.statementMonth) patch.statementMonth = form.statementMonth;
-      if (isInformal) patch.informalUrgency = form.informalUrgency as Debt['informalUrgency'];
+      // notes: usa deleteField() quando limpa uma nota existente para não enviar undefined
+      if (form.notes.trim()) {
+        patch.notes = form.notes.trim();
+      } else if (debt.notes) {
+        patch.notes = deleteField();
+      }
+      if (isCard) {
+        if (form.statementMonth) patch.statementMonth = form.statementMonth;
+        patch.cardMode = form.cardMode;
+      }
+      if (isInformal) patch.informalUrgency = form.informalUrgency;
       await updateUserDoc('debts', debt.id, patch);
       onClose();
     } finally {
@@ -161,7 +172,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 {[
                   { label: 'Saldo', value: formatBRL(debt.totalBalance) },
                   { label: 'Parcela/mês', value: formatBRL(debt.monthlyPayment) },
-                  { label: 'Juros a.m.', value: `${(debt.interestRateMonthly * 100).toFixed(1)}%` },
+                  { label: 'Juros a.m.', value: formatPct(debt.interestRateMonthly * 100, 1) },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl border bg-secondary/40 p-3 text-center">
                     <p className="text-[10px] text-muted-foreground uppercase font-medium">{item.label}</p>
@@ -242,7 +253,9 @@ export function DebtEditModal({ debt, onClose }: Props) {
           )}
 
           {tab === 'parcelas' && (
-            <InstallmentTracker debt={debt} />
+            debt.cardMode === 'fatura'
+              ? <InvoiceTracker debt={debt} />
+              : <InstallmentTracker debt={debt} />
           )}
 
           {tab === 'edit' && (
@@ -306,14 +319,38 @@ export function DebtEditModal({ debt, onClose }: Props) {
               </div>
 
               {isCard && (
-                <div className="space-y-1">
-                  <Label>Mês de referência da fatura (AAAA-MM)</Label>
-                  <Input
-                    placeholder="Ex: 2026-06"
-                    value={form.statementMonth}
-                    onChange={(e) => setForm({ ...form, statementMonth: e.target.value })}
-                  />
-                </div>
+                <>
+                  <div className="space-y-1">
+                    <Label>Como você usa este cartão?</Label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { id: 'parcelado' as const, label: '📦 Parcelado', sub: 'Rastreia parcelas fixas' },
+                        { id: 'fatura' as const, label: '💳 Fatura integral', sub: 'Pago todo mês no vencimento' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setForm({ ...form, cardMode: opt.id })}
+                          className={cn(
+                            'flex flex-col items-start rounded-lg border px-3 py-2 text-xs text-left transition-colors',
+                            form.cardMode === opt.id ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-accent'
+                          )}
+                        >
+                          <span>{opt.label}</span>
+                          <span className="text-muted-foreground">{opt.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Mês de referência da fatura (AAAA-MM)</Label>
+                    <Input
+                      placeholder="Ex: 2026-06"
+                      value={form.statementMonth}
+                      onChange={(e) => setForm({ ...form, statementMonth: e.target.value })}
+                    />
+                  </div>
+                </>
               )}
 
               {isInformal && (

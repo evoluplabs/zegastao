@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { TrendingDown, TrendingUp, Minus, X, ChevronRight } from 'lucide-react';
 import { projectDebtPayoff } from '@/lib/projection';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import type { Debt, Goal } from '@/types';
 
@@ -150,7 +150,7 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
         ? '—'
         : comprometimento > 999
         ? '>999%'
-        : `${comprometimento.toFixed(0)}%`,
+        : formatPct(comprometimento),
       sub: income <= 0
         ? 'Configure sua renda no Perfil'
         : income < 100

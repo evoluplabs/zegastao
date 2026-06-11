@@ -7,7 +7,7 @@ import { useContracts, useDocuments } from '@/hooks/useDocuments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import type { Contract } from '@/types';
 
 const STATUS_LABEL: Record<Contract['status'], string> = {
@@ -137,8 +137,8 @@ export function Documents() {
               <div className="grid grid-cols-2 gap-2">
                 <Info label="Credor" value={c.extracted.creditor} />
                 <Info label="Valor financiado" value={formatBRL(c.extracted.principalAmount)} />
-                <Info label="Juros ao mês" value={`${(c.extracted.monthlyInterestRate * 100).toFixed(2)}%`} />
-                <Info label="CET anual" value={c.extracted.cetRate ? `${(c.extracted.cetRate * 100).toFixed(2)}%` : '—'} />
+                <Info label="Juros ao mês" value={formatPct(c.extracted.monthlyInterestRate * 100, 2)} />
+                <Info label="CET anual" value={c.extracted.cetRate ? formatPct(c.extracted.cetRate * 100, 2) : '—'} />
                 <Info label="Parcelas" value={`${c.extracted.totalInstallments}x ${formatBRL(c.extracted.installmentAmount)}`} />
                 <Info label="Sistema" value={c.extracted.amortizationType.toUpperCase()} />
               </div>

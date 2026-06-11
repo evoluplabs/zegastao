@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { X, Zap, TrendingDown } from 'lucide-react';
 import { projectDebtPayoff } from '@/lib/projection';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { Debt } from '@/types';
 
@@ -57,7 +57,7 @@ export function DebtSimulator({ debt, onClose }: Props) {
             <p className="text-xs text-muted-foreground">Dívida</p>
             <p className="font-semibold text-sm">{debt.creditor}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {formatBRL(debt.totalBalance)} · parcela {formatBRL(debt.monthlyPayment)}/mês · {(debt.interestRateMonthly * 100).toFixed(1)}% a.m.
+              {formatBRL(debt.totalBalance)} · parcela {formatBRL(debt.monthlyPayment)}/mês · {formatPct(debt.interestRateMonthly * 100, 1)} a.m.
             </p>
           </div>
 

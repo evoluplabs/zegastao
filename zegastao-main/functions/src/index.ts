@@ -12,3 +12,4 @@ export { createMPCheckout, handleMPWebhook } from './functions/mercadopago';
 export { betAnalysis } from './functions/betAnalysis';
 export { bettingProfile } from './functions/bettingProfile';
 export { whatsappWebhook } from './functions/whatsappWebhook';
+export { generateInsightsNow } from './functions/generateInsightsNow';

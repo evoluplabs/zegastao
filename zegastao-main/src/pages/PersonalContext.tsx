@@ -1,10 +1,11 @@
 import { useEffect, useState, type TextareaHTMLAttributes } from 'react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import {
   Brain, Save, Bot, PenLine, Zap, TrendingUp, AlertCircle,
-  CheckCircle2, Clock, ChevronDown, ChevronUp, DollarSign, Target,
+  CheckCircle2, ChevronDown, ChevronUp, DollarSign, Target, RefreshCw,
 } from 'lucide-react';
-import { db } from '@/firebase';
+import { db, functions } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import { useCopilotNotes } from '@/hooks/useDocuments';
 import { useDebts } from '@/hooks/useDebts';
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { PHASE_LABELS } from '@/types';
@@ -95,6 +96,8 @@ function PersonaCard() {
   const notes = useCopilotNotes();
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const phase = profile?.financialPhase;
   const activeDebts = debts.filter((d) => d.status === 'active');
@@ -108,11 +111,25 @@ function PersonaCard() {
     { label: 'Fase', value: phase ? PHASE_LABELS[phase] : 'Calculando…', status: 'neutral' },
     { label: 'Renda mensal', value: income > 0 ? formatBRL(income) : 'Não informada', status: income > 0 ? 'good' : 'warn' },
     { label: 'Dívidas ativas', value: activeDebts.length === 0 ? 'Nenhuma 🎉' : `${activeDebts.length} (${formatBRL(totalDebt)})`, status: activeDebts.length === 0 ? 'good' : activeDebts.length > 3 ? 'bad' : 'warn' },
-    { label: 'Comprometimento', value: income > 0 ? `${comprometimento.toFixed(0)}% da renda em parcelas` : '—', status: comprometimento < 30 ? 'good' : comprometimento < 60 ? 'warn' : 'bad' },
+    { label: 'Comprometimento', value: income > 0 ? `${formatPct(comprometimento)} da renda em parcelas` : '—', status: comprometimento < 30 ? 'good' : comprometimento < 60 ? 'warn' : 'bad' },
     { label: 'Metas ativas', value: activeGoals.length === 0 ? 'Nenhuma ainda' : `${activeGoals.length} meta${activeGoals.length > 1 ? 's' : ''}`, status: activeGoals.length > 0 ? 'good' : 'neutral' },
   ];
 
   const statusClass = { good: 'text-green-600', warn: 'text-yellow-600', bad: 'text-red-600', neutral: 'text-foreground' };
+
+  async function generateNow() {
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const fn = httpsCallable(functions, 'generateInsightsNow');
+      await fn({});
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao gerar análise.';
+      setGenError(msg);
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border bg-card p-5 space-y-4">
@@ -164,11 +181,33 @@ function PersonaCard() {
       )}
 
       {!notes && (
-        <div className="rounded-xl bg-secondary/50 border px-4 py-3 text-xs text-muted-foreground">
-          <Bot className="h-4 w-4 inline-block mr-1.5" />
-          As análises de comportamento aparecem após o primeiro processamento noturno (00h). Continue usando o app!
+        <div className="space-y-2">
+          <div className="rounded-xl bg-secondary/50 border px-4 py-3 text-xs text-muted-foreground">
+            <Bot className="h-4 w-4 inline-block mr-1.5" />
+            As análises de comportamento ainda não foram geradas.
+          </div>
+          <Button
+            className="w-full gap-2"
+            variant="outline"
+            loading={generating}
+            onClick={generateNow}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Gerar minha análise agora
+          </Button>
+          {genError && <p className="text-xs text-destructive text-center">{genError}</p>}
         </div>
       )}
+
+      {notes && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="ghost" loading={generating} onClick={generateNow} className="gap-1.5 text-xs text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5" />
+            {generating ? 'Gerando…' : 'Atualizar análise'}
+          </Button>
+        </div>
+      )}
+      {genError && notes && <p className="text-xs text-destructive text-center">{genError}</p>}
     </div>
   );
 }
@@ -203,7 +242,7 @@ function IncomeTasksSection() {
           <div className="text-xs">
             <p className="font-semibold text-amber-800">Dívida prioritária: {topDebt.creditor}</p>
             <p className="text-amber-700 mt-0.5">
-              Parcela: <strong>{formatBRL(topDebt.monthlyPayment)}/mês</strong> · Juros: <strong>{(topDebt.interestRateMonthly * 100).toFixed(1)}% a.m.</strong>
+              Parcela: <strong>{formatBRL(topDebt.monthlyPayment)}/mês</strong> · Juros: <strong>{formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.</strong>
               {' '}— as tarefas abaixo foram escolhidas para te ajudar a cobrir ou acelerar esse pagamento.
             </p>
           </div>

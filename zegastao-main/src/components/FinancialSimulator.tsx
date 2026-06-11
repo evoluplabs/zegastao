@@ -3,7 +3,7 @@ import { X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { projectDebtPayoff } from '@/lib/projection';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { Debt } from '@/types';
 
@@ -95,7 +95,7 @@ export function FinancialSimulator({ income, expenses, debts, onClose }: Props) 
             ? `Você ficaria R$ ${formatBRL(Math.abs(newBalance))} no vermelho por mês`
             : `Sobraria ${formatBRL(newBalance)}/mês — mais apertado`,
           details: [
-            `${newCompromisso.toFixed(0)}% da renda comprometida (era ${income > 0 ? ((expenses / income) * 100).toFixed(0) : '?'}%)`,
+            `${formatPct(newCompromisso)} da renda comprometida (era ${income > 0 ? formatPct((expenses / income) * 100) : '?'})`,
             newBalance < 0
               ? `Para cobrir o déficit: busque R${formatBRL(Math.abs(newBalance))} em renda extra`
               : null,

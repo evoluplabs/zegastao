@@ -1,6 +1,7 @@
 // Gerador de sugestões de renda extra local (sem API).
 // Usa habilidades do usuário + situação de dívidas para criar tarefas específicas e acionáveis.
 
+import { formatPct } from '@/lib/utils';
 import type { Debt, Goal } from '@/types';
 
 export interface IncomeTask {
@@ -188,7 +189,7 @@ function buildDebtContext(task: Omit<IncomeTask, 'id' | 'category' | 'debtContex
   if (pct >= 100) return `Cobriria a parcela completa do ${topDebt.creditor} (${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(payment)})`;
   if (pct >= 50) return `Cobriria ${pct}% da parcela do ${topDebt.creditor}`;
   const interest = topDebt.interestRateMonthly;
-  if (interest > 0.1) return `Reduziria juros futuros do ${topDebt.creditor} (${(interest * 100).toFixed(0)}% a.m.)`;
+  if (interest > 0.1) return `Reduziria juros futuros do ${topDebt.creditor} (${formatPct(interest * 100)} a.m.)`;
   return undefined;
 }
 

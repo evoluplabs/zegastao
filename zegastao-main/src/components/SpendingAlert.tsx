@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, X, ChevronRight } from 'lucide-react';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 
 // Categorias consideradas não-essenciais (corte possível)
 const NON_ESSENTIAL = new Set([
@@ -45,7 +45,7 @@ export function SpendingAlert({ income, byCategory }: Props) {
             Tá gastando demais com {topCategory?.name.toLowerCase() || 'supérfluos'}
           </p>
           <p className="text-xs text-amber-700/80 dark:text-amber-400/70 mt-1 leading-relaxed">
-            {formatBRL(nonEssentialTotal)} ({pct.toFixed(0)}% da renda) foram para gastos que dá pra cortar este mês.
+            {formatBRL(nonEssentialTotal)} ({formatPct(pct)} da renda) foram para gastos que dá pra cortar este mês.
             {topCategory && ` Só ${topCategory.name.toLowerCase()}: ${formatBRL(topCategory.amount)}.`}
           </p>
           <Link

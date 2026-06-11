@@ -164,6 +164,7 @@ export interface Debt {
   paidInstallments?: number;     // parcelas já pagas (acumulado)
   lastPaymentMonth?: string;     // 'YYYY-MM' do último pagamento registrado
   amortizationType?: 'price' | 'sac';
+  cardMode?: 'fatura' | 'parcelado'; // só para type === 'Cartão de crédito'
 }
 
 export interface Goal {

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ShareableCard } from '@/components/share/ShareableCard';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { MILESTONE_ORDER, PHASE_LABELS, type Milestone } from '@/types';
-import { formatBRL } from '@/lib/utils';
+import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 
@@ -160,7 +160,7 @@ export function Journey() {
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Foco de quitação</p>
             <Badge variant="destructive" className="text-[10px]">
-              {(topDebt.interestRateMonthly * 100).toFixed(1)}% a.m.
+              {formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.
             </Badge>
           </div>
           <div className="flex items-baseline justify-between">
