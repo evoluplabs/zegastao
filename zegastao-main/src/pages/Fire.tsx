@@ -28,7 +28,7 @@ const PHASE_LABELS: Record<string, string> = {
 export function Fire() {
   const profile = useStore((s) => s.profile);
   const { data: debts } = useDebts();
-  const { investments } = useInvestments();
+  const { data: investments } = useInvestments();
 
   const totalInvested = investments.reduce((s, i) => s + (i.currentValue || i.amount), 0);
   const totalDebts = debts
