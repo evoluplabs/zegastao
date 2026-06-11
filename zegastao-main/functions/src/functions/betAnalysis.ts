@@ -3,15 +3,51 @@
 // encontrados por liga + data, com alocação de orçamento).
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp, Firestore } from 'firebase-admin/firestore';
+import { z } from 'zod';
 import { orchestrate } from '../services/betting/orchestrator';
 import { BettingAnalysis } from '../services/betting/consolidator';
 import { findFixturesForObjective, getLeagueId, getSportKey } from '../services/betting/fixtures-finder';
 
-// Feature flag: quando false, a function recusa qualquer chamada.
-// Espelha VITE_FEATURE_ZE_APOSTADOR no frontend.
 const ZE_APOSTADOR_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
-
 const BLOCKED_PHASES = ['survival', 'reorganizing'];
+const FREE_DAILY_BET_LIMIT = 3;
+
+const BetAnalysisSchema = z.object({
+  homeTeam: z.string().min(1, 'Time da casa é obrigatório').max(100),
+  awayTeam: z.string().min(1, 'Time visitante é obrigatório').max(100),
+  homeTeamId: z.number().optional().default(0),
+  awayTeamId: z.number().optional().default(0),
+  league: z.string().max(100).optional().default('Desconhecida'),
+  leagueSportKey: z.string().max(100).optional().default('soccer_brazil_serie_a'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+async function checkBetRateLimit(
+  db: ReturnType<typeof getFirestore>,
+  userId: string
+): Promise<void> {
+  const subDoc = await db.collection('users').doc(userId).collection('subscription').doc('main').get();
+  const plan = subDoc.exists ? (subDoc.data()!.plan as string) : 'free';
+  if (plan !== 'free') return; // pagos sem limite
+
+  const today = new Date().toISOString().slice(0, 10);
+  const usageRef = db.collection('users').doc(userId).collection('usage').doc('bet_analyses');
+
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(usageRef);
+    const data = doc.exists ? doc.data()! : {};
+    const count: number = data.lastDate === today ? (data.dailyCount || 0) : 0;
+
+    if (count >= FREE_DAILY_BET_LIMIT) {
+      throw new HttpsError(
+        'resource-exhausted',
+        `Plano gratuito permite ${FREE_DAILY_BET_LIMIT} análises por dia. Assine o Copiloto para análises ilimitadas.`
+      );
+    }
+
+    tx.set(usageRef, { dailyCount: count + 1, lastDate: today }, { merge: true });
+  });
+}
 
 interface ProfileGuards {
   weeklyBudget: number;
@@ -19,7 +55,6 @@ interface ProfileGuards {
   financialPhase?: string;
 }
 
-// Validações comuns aos dois modos: fase financeira, perfil e auto-exclusão.
 async function loadAndGuardProfile(db: Firestore, userId: string): Promise<ProfileGuards> {
   const insightsDoc = await db
     .collection('users').doc(userId)
@@ -69,8 +104,6 @@ interface BudgetAllocationItem {
   skip: boolean;
 }
 
-// Distribui o orçamento da sessão proporcionalmente à confiança das análises.
-// Jogos com confiança < 50 são descartados.
 function allocateBudget(
   analyses: Array<BettingAnalysis & { matchId: string }>,
   sessionBudget: number
@@ -140,6 +173,7 @@ export const betAnalysis = onCall(
       const targetDate = date || new Date().toISOString().slice(0, 10);
       const budget = typeof sessionBudget === 'number' && sessionBudget > 0 ? sessionBudget : 20;
 
+      await checkBetRateLimit(db, userId);
       const { weeklyBudget, weeklyStaked, financialPhase } = await loadAndGuardProfile(db, userId);
 
       const fixtures = await findFixturesForObjective(leagueSportKeys, targetDate, teamPreferences);
@@ -203,25 +237,23 @@ export const betAnalysis = onCall(
     }
 
     // ===== Modo SINGLE: uma partida (fluxo manual) =====
-    const {
-      homeTeam, awayTeam,
-      homeTeamId, awayTeamId,
-      league, leagueSportKey, date,
-    } = request.data;
-
-    if (!homeTeam || !awayTeam) {
-      throw new HttpsError('invalid-argument', 'Times são obrigatórios');
+    const parsed = BetAnalysisSchema.safeParse(request.data);
+    if (!parsed.success) {
+      throw new HttpsError('invalid-argument', parsed.error.errors[0]?.message || 'Dados inválidos');
     }
 
+    const { homeTeam, awayTeam, homeTeamId, awayTeamId, league, leagueSportKey, date } = parsed.data;
+
+    await checkBetRateLimit(db, userId);
     const { weeklyBudget, weeklyStaked, financialPhase } = await loadAndGuardProfile(db, userId);
 
     const sportKey = leagueSportKey || 'soccer_brazil_serie_a';
     const analysis = await orchestrate({
       homeTeam,
       awayTeam,
-      homeTeamId: homeTeamId || 0,
-      awayTeamId: awayTeamId || 0,
-      league: league || 'Desconhecida',
+      homeTeamId,
+      awayTeamId,
+      league,
       leagueSportKey: sportKey,
       date: date || new Date().toISOString().slice(0, 10),
       weeklyBudget,
