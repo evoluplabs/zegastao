@@ -146,13 +146,23 @@ export function FinancialDiagnostic({ income, expenses, debts, goals, compact = 
     {
       label: 'Comprometimento',
       tooltip: 'Soma de todos os seus gastos fixos + parcelas de dívidas dividido pela renda. Ideal: abaixo de 70%. Acima de 90% é zona de perigo.',
-      value: income > 0 ? `${comprometimento.toFixed(0)}%` : '—',
-      sub: comprometimento < 70
+      value: income <= 0
+        ? '—'
+        : comprometimento > 999
+        ? '>999%'
+        : `${comprometimento.toFixed(0)}%`,
+      sub: income <= 0
+        ? 'Configure sua renda no Perfil'
+        : income < 100
+        ? 'Renda muito baixa — verifique seu perfil'
+        : comprometimento < 70
         ? 'Dentro do recomendado — ótimo!'
         : comprometimento < 90
         ? 'Acima de 70% — atenção nos gastos'
+        : comprometimento > 999
+        ? 'Renda quase zero — ajuste no Perfil'
         : 'Acima de 90% — precisa cortar urgente',
-      status: comprometimento < 70 ? 'good' : comprometimento < 90 ? 'warn' : 'bad',
+      status: income < 100 ? 'warn' : comprometimento < 70 ? 'good' : comprometimento < 90 ? 'warn' : 'bad',
       icon: comprometimento < 70 ? <TrendingDown className="h-4 w-4 text-green-600" /> : <TrendingUp className="h-4 w-4 text-red-500" />,
     },
     {

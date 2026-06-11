@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, TrendingUp, History, BarChart2, Percent } from 'lucide-react';
+import { ChevronDown, ChevronUp, TrendingUp, History, BarChart2, Percent, HeartPulse, Sigma, Flag, Repeat, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BettingAnalysis } from '@/types';
 
@@ -17,31 +17,62 @@ interface AgentSection {
 export function AgentInsights({ analysis }: Props) {
   const [open, setOpen] = useState<string | null>(null);
 
+  const o = analysis.agentOutputs;
   const sections: AgentSection[] = [
     {
       key: 'form',
       label: 'Forma Recente',
       icon: <TrendingUp className="h-4 w-4" />,
-      content: analysis.agentOutputs.form,
+      content: o.form,
     },
     {
       key: 'h2h',
       label: 'Confronto Direto (H2H)',
       icon: <History className="h-4 w-4" />,
-      content: analysis.agentOutputs.h2h,
+      content: o.h2h,
     },
+    ...(o.injury ? [{
+      key: 'injury',
+      label: 'Desfalques (Lesões/Suspensões)',
+      icon: <HeartPulse className="h-4 w-4" />,
+      content: o.injury,
+    }] : []),
+    ...(o.matchContext ? [{
+      key: 'matchContext',
+      label: 'Contexto da Partida',
+      icon: <Flag className="h-4 w-4" />,
+      content: o.matchContext,
+    }] : []),
+    ...(o.stats ? [{
+      key: 'stats',
+      label: 'Estatísticas',
+      icon: <Sigma className="h-4 w-4" />,
+      content: o.stats,
+    }] : []),
     {
       key: 'odds',
       label: 'Value das Odds',
       icon: <Percent className="h-4 w-4" />,
-      content: analysis.agentOutputs.oddsValue,
+      content: o.oddsValue,
     },
+    ...(o.historyInsight ? [{
+      key: 'history',
+      label: 'Seu Histórico',
+      icon: <Repeat className="h-4 w-4" />,
+      content: o.historyInsight,
+    }] : []),
     {
       key: 'strategy',
       label: 'Raciocínio Estratégico',
       icon: <BarChart2 className="h-4 w-4" />,
-      content: analysis.agentOutputs.strategy.reasoning,
+      content: o.strategy.reasoning,
     },
+    ...(o.risk ? [{
+      key: 'risk',
+      label: 'Gestão de Risco',
+      icon: <Shield className="h-4 w-4" />,
+      content: o.risk,
+    }] : []),
   ];
 
   return (

@@ -19,6 +19,11 @@ async function fetchJSON<T>(url: string, headers: Record<string, string>): Promi
   return res.json() as Promise<T>;
 }
 
+// Exported for use by fixtures-finder
+export async function fetchFootballJSON<T>(path: string): Promise<T> {
+  return fetchJSON<T>(`${API_FOOTBALL_BASE}${path}`, footballHeaders());
+}
+
 // ---- API-Football ----
 
 export interface APIFootballFixture {
