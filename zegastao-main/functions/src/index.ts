@@ -12,6 +12,14 @@ if (process.env.SENTRY_DSN) {
   });
 }
 
+// Avisos de startup — não causa process.exit para não derrubar functions independentes
+const REQUIRED_ENV = ['ANTHROPIC_API_KEY', 'MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET'];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.warn(`[startup] Variável de ambiente ausente: ${key}. Funções que dependem dela podem falhar.`);
+  }
+}
+
 export { onStatementUpload } from './functions/onUpload';
 export { analyzeContract } from './functions/analyzeContract';
 export { nightlyDigest } from './functions/nightlyDigest';

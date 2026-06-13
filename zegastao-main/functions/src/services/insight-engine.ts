@@ -14,25 +14,33 @@ Responda APENAS com JSON neste formato (sem texto fora do JSON):
 export async function generateInsights(compressedContext: string): Promise<Insight[]> {
   const client = new Anthropic();
 
-  try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 700,
-      system: SYSTEM,
-      messages: [
-        {
-          role: 'user',
-          content: `Gere os insights de hoje a partir deste contexto:\n\n${compressedContext}`,
-        },
-      ],
-    });
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 700,
+    system: SYSTEM,
+    messages: [
+      {
+        role: 'user',
+        content: `Gere os insights de hoje a partir deste contexto:\n\n${compressedContext}`,
+      },
+    ],
+  });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
-    const data = JSON.parse(text.replace(/```json|```/g, '').trim());
-    const insights = Array.isArray(data.insights) ? data.insights : [];
-    return insights.slice(0, 4);
-  } catch (e) {
-    console.error('generateInsights failed:', e);
-    return [];
+  const block = response.content[0];
+  if (!block || block.type !== 'text') {
+    throw new Error('generateInsights: resposta vazia ou tipo inesperado do modelo');
   }
+
+  let data: { insights?: unknown };
+  try {
+    data = JSON.parse(block.text.replace(/```json|```/g, '').trim());
+  } catch {
+    throw new Error(`generateInsights: JSON inválido na resposta: ${block.text.slice(0, 200)}`);
+  }
+
+  if (!Array.isArray(data.insights)) {
+    throw new Error(`generateInsights: campo "insights" ausente ou não é array`);
+  }
+
+  return (data.insights as Insight[]).slice(0, 4);
 }

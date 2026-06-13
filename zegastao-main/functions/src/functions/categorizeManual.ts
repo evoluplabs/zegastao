@@ -4,6 +4,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { saveCategoryCache } from '../services/category-cache';
 import { normalizeDescription } from '../services/keyword-classifier';
+import { CATEGORIES } from '../services/ai-categorizer';
 
 export const categorizeManual = onCall(
   { region: 'southamerica-east1' },
@@ -12,10 +13,11 @@ export const categorizeManual = onCall(
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
     const transactionId: string = request.data?.transactionId;
-    const newCategory: string = request.data?.category;
-    if (!transactionId || !newCategory) {
+    const rawCategory: string = request.data?.category;
+    if (!transactionId || !rawCategory) {
       throw new HttpsError('invalid-argument', 'transactionId e category são obrigatórios');
     }
+    const newCategory = CATEGORIES.includes(rawCategory) ? rawCategory : 'Outros';
 
     const db = getFirestore();
     const txRef = db

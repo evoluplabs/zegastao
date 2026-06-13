@@ -112,11 +112,20 @@ export const handleMPWebhook = onRequest(
       const plan = payment.metadata?.plan as string | undefined;
       if (!userId || !plan || !PLAN_DETAILS[plan]) { res.status(200).send('ok'); return; }
 
+      const db = getFirestore();
+
+      // Idempotência: ignorar pagamento já processado
+      const existingSub = await db.collection('users').doc(userId)
+        .collection('subscription').doc('main').get();
+      if (existingSub.exists && existingSub.data()?.mpPaymentId === paymentId) {
+        res.status(200).send('ok');
+        return;
+      }
+
       const months = PLAN_DETAILS[plan].months;
       const periodEnd = new Date();
       periodEnd.setMonth(periodEnd.getMonth() + months);
 
-      const db = getFirestore();
       await db.collection('users').doc(userId).collection('subscription').doc('main').set({
         plan,
         status: 'active',

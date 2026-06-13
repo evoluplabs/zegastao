@@ -1,12 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Admin check: preferimos custom claim (admin: true), mas email como fallback durante migração.
-    // Após rodar scripts/set-admin.ts, remova a condição de email.
+    // Admin check via custom claim (admin: true).
+    // Para setar: rodar scripts/set-admin.ts <email> e re-logar no app.
     function isAdmin() {
-      return request.auth != null &&
-        (request.auth.token.admin == true ||
-         request.auth.token.email == 'processocristao@gmail.com');
+      return request.auth != null && request.auth.token.admin == true;
     }
 
     // Modo casal/família: verifica se o parceiro autenticado tem acesso compartilhado.

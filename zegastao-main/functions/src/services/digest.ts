@@ -38,15 +38,22 @@ export async function runUserDigest(userId: string): Promise<void> {
   await userRef.collection('daily_tasks').doc('today')
     .set({ tasks, phase, generatedAt: new Date() });
 
-  // 4. Insights do dia
-  const insights = await generateInsights(contextWithPhase);
-  await userRef.collection('insights').doc('latest')
-    .set({
-      insights,
-      phase,
-      generatedAt: new Date(),
-      contextSnapshot: contextWithPhase,
-    });
+  // 4. Insights do dia — não sobrescrever com vazio em caso de erro
+  let insightsError: Error | null = null;
+  let insights: Awaited<ReturnType<typeof generateInsights>> = [];
+  try {
+    insights = await generateInsights(contextWithPhase);
+    await userRef.collection('insights').doc('latest')
+      .set({
+        insights,
+        phase,
+        generatedAt: new Date(),
+        contextSnapshot: contextWithPhase,
+      });
+  } catch (e) {
+    insightsError = e instanceof Error ? e : new Error(String(e));
+    console.error('runUserDigest: falha ao gerar insights, preservando último resultado:', insightsError.message);
+  }
 
   // 5. Anotações automáticas do copiloto (contexto pessoal colaborativo)
   const notable = snapshot.context.expenses.byCategory
@@ -83,6 +90,9 @@ export async function runUserDigest(userId: string): Promise<void> {
       await batch.commit();
     }
   }
+
+  // Propaga erro de insights para que o callable retorne a causa real ao frontend
+  if (insightsError) throw insightsError;
 }
 
 async function sendDueDateAlerts(
