@@ -6,6 +6,7 @@ import { registerForPushNotifications } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
@@ -60,8 +61,8 @@ export function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [name, setName] = useState(profile?.name || '');
-  const [income, setIncome] = useState('');
-  const [debt, setDebt] = useState({ name: '', balance: '', payment: '', rate: '' });
+  const [income, setIncome] = useState(0);
+  const [debt, setDebt] = useState({ name: '', balance: 0, payment: 0, rate: 0 });
   const [skills, setSkills] = useState<string[]>([]);
   const [dreams, setDreams] = useState<string[]>([]);
   const [invest, setInvest] = useState<'yes' | 'no' | 'no_idea' | 'skip'>('no_idea');
@@ -76,10 +77,9 @@ export function Onboarding() {
   async function finish() {
     setBusy(true);
     try {
-      const monthlyIncome = parseFloat(income.replace(',', '.')) || 0;
       await setProfile({
         name,
-        monthlyIncome,
+        monthlyIncome: income,
         skills,
         investmentGoals: dreams,
         alreadyInvests: invest === 'skip' ? 'no_idea' : invest,
@@ -87,21 +87,20 @@ export function Onboarding() {
         onboardingDone: true,
       });
 
-      const balance = parseFloat(debt.balance.replace(',', '.')) || 0;
-      if (debt.name && balance > 0) {
+      if (debt.name && debt.balance > 0) {
         await addUserDoc('debts', {
           creditor: debt.name,
           type: 'Outros',
-          totalBalance: balance,
-          monthlyPayment: parseFloat(debt.payment.replace(',', '.')) || 0,
+          totalBalance: debt.balance,
+          monthlyPayment: debt.payment,
           remainingInstallments: 0,
-          interestRateMonthly: (parseFloat(debt.rate.replace(',', '.')) || 0) / 100,
+          interestRateMonthly: debt.rate,
           dueDay: 10,
           status: 'active',
         });
       }
 
-      setStoreProfile({ ...profile, name, monthlyIncome, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false });
+      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false });
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length });
       // Solicitar push em background — não bloquear navegação
       if (user) registerForPushNotifications(user.uid).catch(() => {});
@@ -182,10 +181,11 @@ export function Onboarding() {
                 <Label>Como prefere ser chamado?</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
               </div>
-              <div className="space-y-1">
-                <Label>Renda mensal líquida (R$)</Label>
-                <Input inputMode="decimal" value={income} onChange={(e) => setIncome(e.target.value)} placeholder="Ex: 4500" />
-              </div>
+              <CurrencyInput
+                label="Renda mensal líquida"
+                value={income}
+                onChange={setIncome}
+              />
               <Button className="w-full" onClick={() => setStep(1)} disabled={!name || !income}>
                 Continuar
               </Button>
@@ -199,19 +199,10 @@ export function Onboarding() {
                 <Input value={debt.name} onChange={(e) => setDebt({ ...debt, name: e.target.value })} placeholder="Ex: Cartão Nubank" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>Saldo (R$)</Label>
-                  <Input inputMode="decimal" value={debt.balance} onChange={(e) => setDebt({ ...debt, balance: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Parcela/mês</Label>
-                  <Input inputMode="decimal" value={debt.payment} onChange={(e) => setDebt({ ...debt, payment: e.target.value })} />
-                </div>
+                <CurrencyInput label="Saldo" value={debt.balance} onChange={(v) => setDebt({ ...debt, balance: v })} />
+                <CurrencyInput label="Parcela/mês" value={debt.payment} onChange={(v) => setDebt({ ...debt, payment: v })} />
               </div>
-              <div className="space-y-1">
-                <Label>Juros ao mês (%)</Label>
-                <Input inputMode="decimal" value={debt.rate} onChange={(e) => setDebt({ ...debt, rate: e.target.value })} placeholder="Ex: 12" />
-              </div>
+              <PercentInput label="Juros ao mês" value={debt.rate} onChange={(v) => setDebt({ ...debt, rate: v })} />
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-2.5">
                 <span className="text-lg">📤</span>
                 <div className="flex-1 min-w-0">

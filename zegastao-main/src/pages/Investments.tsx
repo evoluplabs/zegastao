@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Disclaimer } from '@/components/Disclaimer';
 import { formatBRL } from '@/lib/utils';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import type { InvestmentType } from '@/types';
 
 const TYPES: { value: InvestmentType; label: string }[] = [
@@ -30,24 +31,23 @@ export function Investments() {
   const profile = useStore((s) => s.profile);
   const { data: investments } = useInvestments();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ type: 'tesouro' as InvestmentType, institution: '', amount: '', ticker: '' });
+  const [form, setForm] = useState({ type: 'tesouro' as InvestmentType, institution: '', amount: 0, ticker: '' });
 
   const phase = profile?.financialPhase;
   const locked = phase ? !UNLOCKED.includes(phase) : false;
   const total = investments.reduce((s, i) => s + (i.currentValue || i.amount || 0), 0);
 
   async function save() {
-    const amount = parseFloat(form.amount.replace(',', '.')) || 0;
-    if (amount <= 0) return;
+    if (form.amount <= 0) return;
     await addUserDoc('investments', {
       type: form.type,
       institution: form.institution,
-      amount,
-      currentValue: amount,
+      amount: form.amount,
+      currentValue: form.amount,
       ticker: form.ticker || null,
       purchaseDate: new Date().toISOString().substring(0, 10),
     });
-    setForm({ ...form, institution: '', amount: '', ticker: '' });
+    setForm({ ...form, institution: '', amount: 0, ticker: '' });
     setOpen(false);
   }
 
@@ -92,10 +92,7 @@ export function Investments() {
                 <Label>Instituição</Label>
                 <Input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} placeholder="Ex: Nubank" />
               </div>
-              <div className="space-y-1">
-                <Label>Valor aplicado</Label>
-                <Input inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-              </div>
+              <CurrencyInput label="Valor aplicado" value={form.amount} onChange={(v) => setForm({ ...form, amount: v })} />
             </div>
             {(form.type === 'acoes' || form.type === 'cripto' || form.type === 'fii') && (
               <div className="space-y-1">

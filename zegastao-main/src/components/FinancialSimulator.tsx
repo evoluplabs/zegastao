@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { projectDebtPayoff } from '@/lib/projection';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -33,10 +33,10 @@ function monthsLabel(m: number): string {
 
 export function FinancialSimulator({ income, expenses, debts, onClose }: Props) {
   const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(0);
 
   const activeDebts = debts.filter((d) => d.status === 'active');
-  const numVal = parseFloat(value.replace(',', '.')) || 0;
+  const numVal = value;
 
   const baseline = useMemo(() => {
     if (!activeDebts.length) return null;
@@ -155,7 +155,7 @@ export function FinancialSimulator({ income, expenses, debts, onClose }: Props) 
             {SCENARIOS.map((s) => (
               <button
                 key={s.id}
-                onClick={() => { setScenario(s.id); setValue(''); }}
+                onClick={() => { setScenario(s.id); setValue(0); }}
                 className={cn(
                   'rounded-xl border p-3 text-left text-xs transition-all',
                   scenario === s.id
@@ -175,11 +175,9 @@ export function FinancialSimulator({ income, expenses, debts, onClose }: Props) 
               <p className="text-xs font-medium text-muted-foreground">
                 {SCENARIOS.find((s) => s.id === scenario)?.placeholder}
               </p>
-              <Input
-                inputMode="decimal"
-                placeholder="Ex: 500"
+              <CurrencyInput
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={setValue}
                 className="text-lg font-bold"
                 autoFocus
               />

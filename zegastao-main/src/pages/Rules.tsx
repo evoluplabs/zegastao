@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CATEGORIES, type TriggerType } from '@/types';
 import { formatBRL } from '@/lib/utils';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 
 const TRIGGER_LABELS: Record<TriggerType, string> = {
   transaction_in_category: 'a cada gasto na categoria',
@@ -25,8 +26,8 @@ export function Rules() {
     name: '',
     triggerType: 'income_received' as TriggerType,
     triggerCategoryName: CATEGORIES[0] as string,
-    triggerThreshold: '',
-    actionPercentage: '30',
+    triggerThreshold: 0,
+    actionPercentage: 0.30,
     actionGoalId: '',
   });
 
@@ -37,15 +38,15 @@ export function Rules() {
       isActive: true,
       triggerType: form.triggerType,
       triggerCategoryName: form.triggerType === 'income_received' ? null : form.triggerCategoryName,
-      triggerThreshold: parseFloat(form.triggerThreshold.replace(',', '.')) || 0,
+      triggerThreshold: form.triggerThreshold,
       actionType: 'redirect_percentage',
-      actionPercentage: parseFloat(form.actionPercentage.replace(',', '.')) || 0,
+      actionPercentage: form.actionPercentage * 100,
       actionGoalId: form.actionGoalId || null,
       timesTriggered: 0,
       totalRedirected: 0,
       monthRedirected: 0,
     });
-    setForm({ ...form, name: '', triggerThreshold: '' });
+    setForm({ ...form, name: '', triggerThreshold: 0 });
     setOpen(false);
   }
 
@@ -87,24 +88,21 @@ export function Rules() {
                 </Select>
               )}
               {form.triggerType === 'category_monthly_over' && (
-                <Input
-                  className="w-28"
-                  inputMode="decimal"
-                  placeholder="R$/mês"
+                <CurrencyInput
+                  wrapperClassName="w-28"
                   value={form.triggerThreshold}
-                  onChange={(e) => setForm({ ...form, triggerThreshold: e.target.value })}
+                  onChange={(v) => setForm({ ...form, triggerThreshold: v })}
                 />
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span>ENTÃO redirecionar</span>
-              <Input
-                className="w-20"
-                inputMode="decimal"
+              <PercentInput
+                wrapperClassName="w-24"
                 value={form.actionPercentage}
-                onChange={(e) => setForm({ ...form, actionPercentage: e.target.value })}
+                onChange={(v) => setForm({ ...form, actionPercentage: v })}
               />
-              <span>% para</span>
+              <span>para</span>
               <Select
                 className="w-auto"
                 value={form.actionGoalId}

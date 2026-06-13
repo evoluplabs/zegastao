@@ -4,6 +4,7 @@ import { addUserDoc } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { CATEGORIES } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +22,7 @@ export function TransactionWizard({ onClose }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     type: 'out' as 'in' | 'out',
-    amount: '',
+    amount: 0,
     date: new Date().toISOString().substring(0, 10),
     description: '',
     category: '',
@@ -33,13 +34,12 @@ export function TransactionWizard({ onClose }: Props) {
   const categories = form.type === 'in' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   async function save() {
-    const amount = parseFloat(form.amount.replace(',', '.')) || 0;
-    if (amount <= 0 || !form.description) return;
+    if (form.amount <= 0 || !form.description) return;
     setSaving(true);
     await addUserDoc('transactions', {
       date: form.date,
       description: form.description,
-      amount: form.type === 'out' ? -Math.abs(amount) : Math.abs(amount),
+      amount: form.type === 'out' ? -Math.abs(form.amount) : Math.abs(form.amount),
       type: form.type,
       category: form.category || (form.type === 'out' ? 'Outros' : 'Renda extra'),
       aiConfidence: 1,
@@ -53,7 +53,7 @@ export function TransactionWizard({ onClose }: Props) {
   }
 
   function canProceed() {
-    if (step === 0) return parseFloat(form.amount.replace(',', '.') || '0') > 0;
+    if (step === 0) return form.amount > 0;
     return form.description.trim().length > 0;
   }
 
@@ -164,20 +164,13 @@ export function TransactionWizard({ onClose }: Props) {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label>Quanto? *</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        autoFocus
-                        inputMode="decimal"
-                        className="pl-9 text-lg font-semibold"
-                        placeholder="0,00"
-                        value={form.amount}
-                        onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  <CurrencyInput
+                    label="Quanto? *"
+                    value={form.amount}
+                    onChange={(v) => setForm({ ...form, amount: v })}
+                    className="text-lg font-semibold"
+                    autoFocus
+                  />
 
                   <div className="space-y-1.5">
                     <Label>Data</Label>

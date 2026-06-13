@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { DebtTimeline } from '@/components/charts/DebtTimeline';
 import { formatBRL, formatPct } from '@/lib/utils';
 
@@ -20,12 +21,12 @@ function monthLabel(ym: string): string {
 export function Projection() {
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
-  const [extra, setExtra] = useState('0');
+  const [extra, setExtra] = useState(0);
   const [strategy, setStrategy] = useState<'avalanche' | 'snowball'>('avalanche');
 
   // ---- Projeção geral de quitação ----
   const projection = useMemo(
-    () => projectDebtPayoff(debts, parseFloat(extra.replace(',', '.')) || 0, strategy),
+    () => projectDebtPayoff(debts, extra, strategy),
     [debts, extra, strategy]
   );
 
@@ -50,8 +51,8 @@ export function Projection() {
     );
   }
   const [debtId, setDebtId] = useState('');
-  const [scExtra, setScExtra] = useState('200');
-  const [scDiscount, setScDiscount] = useState('20');
+  const [scExtra, setScExtra] = useState(200);
+  const [scDiscount, setScDiscount] = useState(0.20);
   const [scInstallments, setScInstallments] = useState('24');
 
   const selectedDebt = activeDebts.find((d) => d.id === debtId) || activeDebts[0];
@@ -61,8 +62,8 @@ export function Projection() {
     const principal = selectedDebt.totalBalance;
     const rate = selectedDebt.interestRateMonthly || 0.01;
     const n = selectedDebt.remainingInstallments || parseInt(scInstallments) || 24;
-    const extraMonthly = parseFloat(scExtra.replace(',', '.')) || 0;
-    const discount = (parseFloat(scDiscount.replace(',', '.')) || 0) / 100;
+    const extraMonthly = scExtra;
+    const discount = scDiscount;
     return compareScenarios([
       { label: 'Parcela mínima', principal, monthlyRate: rate, totalInstallments: n },
       { label: `+ ${formatBRL(extraMonthly)}/mês`, principal, monthlyRate: rate, totalInstallments: n, extraMonthly },
@@ -74,7 +75,7 @@ export function Projection() {
   const advanceRoi = useMemo(() => {
     if (!selectedDebt) return null;
     const n = selectedDebt.remainingInstallments || parseInt(scInstallments) || 24;
-    const extraMonthly = parseFloat(scExtra.replace(',', '.')) || 0;
+    const extraMonthly = scExtra;
     if (extraMonthly <= 0) return null;
     const advances = Array.from({ length: n }, (_, i) => ({ installmentNumber: i + 1, extraAmount: extraMonthly }));
     return calcAmortization(selectedDebt.totalBalance, selectedDebt.interestRateMonthly || 0.01, n, advances);
@@ -113,8 +114,7 @@ export function Projection() {
       <Card>
         <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label>Pagamento extra por mês (R$)</Label>
-            <Input inputMode="decimal" value={extra} onChange={(e) => setExtra(e.target.value)} />
+            <CurrencyInput label="Pagamento extra por mês (R$)" value={extra} onChange={setExtra} />
           </div>
           <div className="space-y-1">
             <Label>Estratégia</Label>
@@ -158,14 +158,8 @@ export function Projection() {
                 </Select>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <Label>Extra/mês</Label>
-                  <Input inputMode="decimal" value={scExtra} onChange={(e) => setScExtra(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Desconto %</Label>
-                  <Input inputMode="decimal" value={scDiscount} onChange={(e) => setScDiscount(e.target.value)} />
-                </div>
+                <CurrencyInput label="Extra/mês" value={scExtra} onChange={setScExtra} />
+                <PercentInput label="Desconto %" value={scDiscount} onChange={setScDiscount} />
                 <div className="space-y-1">
                   <Label>Parcelas</Label>
                   <Input inputMode="numeric" value={scInstallments} onChange={(e) => setScInstallments(e.target.value)} />

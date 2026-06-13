@@ -4,6 +4,7 @@ import { addUserDoc } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -24,9 +25,9 @@ export function GoalWizard({ onClose }: Props) {
   const [selectedPreset, setSelectedPreset] = useState('');
   const [form, setForm] = useState({
     name: '',
-    target: '',
-    current: '',
-    monthly: '',
+    target: 0,
+    current: 0,
+    monthly: 0,
   });
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -39,15 +40,14 @@ export function GoalWizard({ onClose }: Props) {
   }
 
   async function save() {
-    const target = parseFloat(form.target.replace(',', '.')) || 0;
-    if (!form.name || target <= 0) return;
+    if (!form.name || form.target <= 0) return;
     setSaving(true);
     await addUserDoc('goals', {
       name: form.name,
       type: 'Outros',
-      targetAmount: target,
-      currentAmount: parseFloat(form.current.replace(',', '.')) || 0,
-      monthlyContribution: parseFloat(form.monthly.replace(',', '.')) || 0,
+      targetAmount: form.target,
+      currentAmount: form.current,
+      monthlyContribution: form.monthly,
       priority: 1,
       status: 'active',
     });
@@ -57,9 +57,7 @@ export function GoalWizard({ onClose }: Props) {
   }
 
   function canProceed() {
-    if (step === 0) {
-      return form.name.trim().length > 0 && (parseFloat(form.target.replace(',', '.') || '0') > 0);
-    }
+    if (step === 0) return form.name.trim().length > 0 && form.target > 0;
     return true;
   }
 
@@ -131,57 +129,29 @@ export function GoalWizard({ onClose }: Props) {
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Quanto precisa juntar? *</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        inputMode="decimal"
-                        className="pl-9"
-                        placeholder="0,00"
-                        value={form.target}
-                        onChange={(e) => setForm({ ...form, target: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  <CurrencyInput
+                    label="Quanto precisa juntar? *"
+                    value={form.target}
+                    onChange={(v) => setForm({ ...form, target: v })}
+                  />
                 </div>
               )}
 
               {step === 1 && (
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>
-                      Já tem guardado?{' '}
-                      <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        autoFocus
-                        inputMode="decimal"
-                        className="pl-9"
-                        placeholder="0,00"
-                        value={form.current}
-                        onChange={(e) => setForm({ ...form, current: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>
-                      Quanto vai guardar por mês?{' '}
-                      <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        inputMode="decimal"
-                        className="pl-9"
-                        placeholder="0,00"
-                        value={form.monthly}
-                        onChange={(e) => setForm({ ...form, monthly: e.target.value })}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
+                  <CurrencyInput
+                    label="Já tem guardado? (opcional)"
+                    value={form.current}
+                    onChange={(v) => setForm({ ...form, current: v })}
+                    autoFocus
+                  />
+                  <div>
+                    <CurrencyInput
+                      label="Quanto vai guardar por mês? (opcional)"
+                      value={form.monthly}
+                      onChange={(v) => setForm({ ...form, monthly: v })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1.5">
                       💡 Com esse valor o Copiloto calcula quando você chega lá.
                     </p>
                   </div>

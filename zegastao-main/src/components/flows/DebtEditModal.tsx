@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { formatBRL, formatPct } from '@/lib/utils';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
+import { formatBRL, formatPct, roundCents } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { InstallmentTracker } from '@/components/InstallmentTracker';
 import { InvoiceTracker } from '@/components/InvoiceTracker';
@@ -38,14 +39,14 @@ export function DebtEditModal({ debt, onClose }: Props) {
   const [tab, setTab] = useState<'detail' | 'minimo' | 'parcelas' | 'edit'>('detail');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [minimoPct, setMinimoPct] = useState('15'); // % mínimo do saldo — padrão rotativo
+  const [minimoPct, setMinimoPct] = useState('15');
 
   const [form, setForm] = useState({
     creditor: debt.creditor,
     type: debt.type || 'Outros',
-    totalBalance: String(debt.totalBalance),
-    monthlyPayment: String(debt.monthlyPayment),
-    interestRateMonthly: String((debt.interestRateMonthly * 100).toFixed(2)),
+    totalBalance: debt.totalBalance,
+    monthlyPayment: debt.monthlyPayment,
+    interestRateMonthly: debt.interestRateMonthly,
     dueDay: String(debt.dueDay || 10),
     remainingInstallments: String(debt.remainingInstallments || 0),
     status: debt.status,
@@ -63,10 +64,9 @@ export function DebtEditModal({ debt, onClose }: Props) {
     return `https://api.whatsapp.com/send?text=${encodeURIComponent(script)}`;
   }
 
-  // Projection: pay minimum vs +100
   const projection = useMemo(() => {
-    const balance = parseFloat(form.totalBalance.replace(',', '.')) || 0;
-    const rate = (parseFloat(form.interestRateMonthly.replace(',', '.')) || 0) / 100;
+    const balance = form.totalBalance;
+    const rate = form.interestRateMonthly;
     const installments = parseInt(form.remainingInstallments) || 0;
     if (balance <= 0 || installments <= 0 || rate <= 0) return null;
     try {
@@ -84,39 +84,36 @@ export function DebtEditModal({ debt, onClose }: Props) {
     }
   }, [form.totalBalance, form.interestRateMonthly, form.remainingInstallments]);
 
-  // Calculadora custo do mínimo — simula pagamento rotativo (% do saldo)
   const minimoCost = useMemo(() => {
-    const balance = parseFloat(form.totalBalance.replace(',', '.')) || 0;
-    const rate = (parseFloat(form.interestRateMonthly.replace(',', '.')) || 0) / 100;
-    const normalPayment = parseFloat(form.monthlyPayment.replace(',', '.')) || 0;
+    const balance = form.totalBalance;
+    const rate = form.interestRateMonthly;
+    const normalPayment = form.monthlyPayment;
     const minPct = (parseFloat(minimoPct) || 15) / 100;
     if (balance <= 0 || rate <= 0) return null;
 
-    // Simula pagamento mínimo rotativo: cada mês paga minPct do saldo atual
     let bal = balance;
     let totalPaid = 0;
     let totalInterest = 0;
     let months = 0;
     while (bal > 0.01 && months < 600) {
-      const interest = bal * rate;
-      const payment = Math.max(bal * minPct, 5); // mínimo de R$5
-      const amort = Math.max(0, payment - interest);
-      bal = Math.max(0, bal - amort);
-      totalPaid += payment;
-      totalInterest += interest;
+      const interest = roundCents(bal * rate);
+      const payment = Math.max(roundCents(bal * minPct), 5);
+      const amort = Math.max(0, roundCents(payment - interest));
+      bal = Math.max(0, roundCents(bal - amort));
+      totalPaid = roundCents(totalPaid + payment);
+      totalInterest = roundCents(totalInterest + interest);
       months++;
     }
 
-    // Calcula com pagamento normal para comparar
     let balNormal = balance;
     let totalInterestNormal = 0;
     let monthsNormal = 0;
     if (normalPayment > 0) {
       while (balNormal > 0.01 && monthsNormal < 600) {
-        const interest = balNormal * rate;
-        const amort = Math.max(0, normalPayment - interest);
-        balNormal = Math.max(0, balNormal - amort);
-        totalInterestNormal += interest;
+        const interest = roundCents(balNormal * rate);
+        const amort = Math.max(0, roundCents(normalPayment - interest));
+        balNormal = Math.max(0, roundCents(balNormal - amort));
+        totalInterestNormal = roundCents(totalInterestNormal + interest);
         monthsNormal++;
       }
     }
@@ -125,10 +122,10 @@ export function DebtEditModal({ debt, onClose }: Props) {
       minMonths: months,
       minTotalInterest: totalInterest,
       minTotalPaid: totalPaid,
-      minMonthlyPayment: balance * minPct,
+      minMonthlyPayment: roundCents(balance * minPct),
       normalMonths: normalPayment > 0 ? monthsNormal : null,
       normalTotalInterest: normalPayment > 0 ? totalInterestNormal : null,
-      savings: totalInterest - totalInterestNormal,
+      savings: roundCents(totalInterest - totalInterestNormal),
     };
   }, [form.totalBalance, form.interestRateMonthly, form.monthlyPayment, minimoPct]);
 
@@ -139,16 +136,14 @@ export function DebtEditModal({ debt, onClose }: Props) {
       const patch: Record<string, unknown> = {
         creditor: form.creditor,
         type: form.type,
-        totalBalance: parseFloat(form.totalBalance.replace(',', '.')) || 0,
-        monthlyPayment: parseFloat(form.monthlyPayment.replace(',', '.')) || 0,
-        interestRateMonthly: (parseFloat(form.interestRateMonthly.replace(',', '.')) || 0) / 100,
+        totalBalance: form.totalBalance,
+        monthlyPayment: form.monthlyPayment,
+        interestRateMonthly: form.interestRateMonthly,
         dueDay: parseInt(form.dueDay) || 10,
         remainingInstallments: newRemaining,
         status: form.status,
-        // Define totalInstallments na primeira edição (se não existia)
         totalInstallments: debt.totalInstallments || ((debt.paidInstallments || 0) + newRemaining) || newRemaining,
       };
-      // notes: usa deleteField() quando limpa uma nota existente para não enviar undefined
       if (form.notes.trim()) {
         patch.notes = form.notes.trim();
       } else if (debt.notes) {
@@ -216,7 +211,6 @@ export function DebtEditModal({ debt, onClose }: Props) {
         <div className="px-5 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
           {tab === 'detail' && (
             <>
-              {/* Summary cards */}
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: 'Saldo', value: formatBRL(debt.totalBalance) },
@@ -240,7 +234,6 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 <p className="text-xs rounded-lg bg-secondary/50 px-3 py-2 text-muted-foreground leading-relaxed">{debt.notes}</p>
               )}
 
-              {/* Projection */}
               {projection && (
                 <div className="rounded-xl border p-4 space-y-3">
                   <p className="text-sm font-semibold flex items-center gap-1.5">
@@ -263,7 +256,6 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 </div>
               )}
 
-              {/* Botão negociar WhatsApp */}
               {debt.status === 'active' && (
                 <a
                   href={buildWhatsAppUrl()}
@@ -277,7 +269,6 @@ export function DebtEditModal({ debt, onClose }: Props) {
                 </a>
               )}
 
-              {/* Actions */}
               <div className="flex gap-2 pt-1">
                 {debt.status !== 'paid' && (
                   <Button size="sm" variant="outline" className="gap-1.5 text-green-600 border-green-300 hover:bg-green-50" onClick={markPaid}>
@@ -323,7 +314,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
                   />
                   <span className="text-sm text-muted-foreground">% por mês</span>
                   <span className="text-xs text-muted-foreground ml-auto">
-                    ≈ {formatBRL((parseFloat(form.totalBalance.replace(',', '.')) || 0) * (parseFloat(minimoPct) || 15) / 100)}/mês agora
+                    ≈ {formatBRL(form.totalBalance * (parseFloat(minimoPct) || 15) / 100)}/mês agora
                   </span>
                 </div>
                 <div className="flex gap-1 flex-wrap">
@@ -361,7 +352,7 @@ export function DebtEditModal({ debt, onClose }: Props) {
 
                   {minimoCost.normalMonths !== null && minimoCost.normalTotalInterest !== null && (
                     <div className="rounded-xl border border-green-300 bg-green-50 dark:bg-green-500/5 dark:border-green-500/20 p-4 space-y-2">
-                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">✅ Pagando a parcela normal ({formatBRL(parseFloat(form.monthlyPayment.replace(',', '.')) || 0)}/mês)</p>
+                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">✅ Pagando a parcela normal ({formatBRL(form.monthlyPayment)}/mês)</p>
                       <div className="grid grid-cols-3 gap-2 text-xs text-center">
                         <div>
                           <p className="text-muted-foreground">Meses</p>
@@ -419,18 +410,21 @@ export function DebtEditModal({ debt, onClose }: Props) {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label>Saldo total (R$)</Label>
-                  <Input inputMode="decimal" value={form.totalBalance} onChange={(e) => setForm({ ...form, totalBalance: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Parcela/mês (R$)</Label>
-                  <Input inputMode="decimal" value={form.monthlyPayment} onChange={(e) => setForm({ ...form, monthlyPayment: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Juros %/mês</Label>
-                  <Input inputMode="decimal" value={form.interestRateMonthly} onChange={(e) => setForm({ ...form, interestRateMonthly: e.target.value })} />
-                </div>
+                <CurrencyInput
+                  label="Saldo total"
+                  value={form.totalBalance}
+                  onChange={(v) => setForm({ ...form, totalBalance: v })}
+                />
+                <CurrencyInput
+                  label="Parcela/mês"
+                  value={form.monthlyPayment}
+                  onChange={(v) => setForm({ ...form, monthlyPayment: v })}
+                />
+                <PercentInput
+                  label="Juros %/mês"
+                  value={form.interestRateMonthly}
+                  onChange={(v) => setForm({ ...form, interestRateMonthly: v })}
+                />
                 <div className="space-y-1">
                   <Label>Dia de vencimento</Label>
                   <Input inputMode="numeric" value={form.dueDay} onChange={(e) => setForm({ ...form, dueDay: e.target.value })} />

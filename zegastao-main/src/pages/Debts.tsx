@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { DebtEditModal } from '@/components/flows/DebtEditModal';
@@ -27,7 +28,7 @@ export function Debts() {
   const [open, setOpen] = useState(false);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [simulateDebt, setSimulateDebt] = useState<Debt | null>(null);
-  const [form, setForm] = useState({ creditor: '', balance: '', payment: '', rate: '' });
+  const [form, setForm] = useState({ creditor: '', balance: 0, payment: 0, rate: 0 });
   const [payingId, setPayingId] = useState<string | null>(null);
 
   function currentMonth() { return new Date().toISOString().slice(0, 7); }
@@ -82,19 +83,18 @@ export function Debts() {
   const totalBalance = ranked.reduce((s, d) => s + d.totalBalance, 0);
 
   async function save() {
-    const balance = parseFloat(form.balance.replace(',', '.')) || 0;
-    if (!form.creditor || balance <= 0) return;
+    if (!form.creditor || form.balance <= 0) return;
     await addUserDoc('debts', {
       creditor: form.creditor,
       type: 'Outros',
-      totalBalance: balance,
-      monthlyPayment: parseFloat(form.payment.replace(',', '.')) || 0,
+      totalBalance: form.balance,
+      monthlyPayment: form.payment,
       remainingInstallments: 0,
-      interestRateMonthly: (parseFloat(form.rate.replace(',', '.')) || 0) / 100,
+      interestRateMonthly: form.rate,
       dueDay: 10,
       status: 'active',
     });
-    setForm({ creditor: '', balance: '', payment: '', rate: '' });
+    setForm({ creditor: '', balance: 0, payment: 0, rate: 0 });
     setOpen(false);
     toast('Dívida cadastrada!');
   }
@@ -152,18 +152,9 @@ export function Debts() {
               <Input value={form.creditor} onChange={(e) => setForm({ ...form, creditor: e.target.value })} />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <Label>Saldo</Label>
-                <Input inputMode="decimal" value={form.balance} onChange={(e) => setForm({ ...form, balance: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Parcela</Label>
-                <Input inputMode="decimal" value={form.payment} onChange={(e) => setForm({ ...form, payment: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Juros %/mês</Label>
-                <Input inputMode="decimal" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
-              </div>
+              <CurrencyInput label="Saldo" value={form.balance} onChange={(v) => setForm({ ...form, balance: v })} />
+              <CurrencyInput label="Parcela" value={form.payment} onChange={(v) => setForm({ ...form, payment: v })} />
+              <PercentInput label="Juros %/mês" value={form.rate} onChange={(v) => setForm({ ...form, rate: v })} />
             </div>
             <Button onClick={save} className="w-full">Salvar</Button>
           </CardContent>

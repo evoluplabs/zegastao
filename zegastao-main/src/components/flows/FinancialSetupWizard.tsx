@@ -5,6 +5,7 @@ import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { cn } from '@/lib/utils';
 import { formatBRL } from '@/lib/utils';
 import { FinancialDiagnostic } from '@/components/FinancialDiagnostic';
@@ -19,21 +20,21 @@ interface IncomeSource {
   icon: string;
   hint: string;
   enabled: boolean;
-  amount: string;
+  amount: number;
 }
 
 interface DebtEntry {
   name: string;
   type: string;
-  balance: string;
-  payment: string;
-  rate: string;
+  balance: number;
+  payment: number;
+  rate: number;
   statementMonth: string;
 }
 
 interface FixedExpense {
   name: string;
-  amount: string;
+  amount: number;
 }
 
 const INCOME_SOURCES: Omit<IncomeSource, 'enabled' | 'amount'>[] = [
@@ -85,31 +86,31 @@ export function FinancialSetupWizard({ onClose }: Props) {
   const { profile, setProfile: setStoreProfile } = useStore();
   const [step, setStep] = useState(0);
   const [incomeSources, setIncomeSources] = useState<IncomeSource[]>(
-    INCOME_SOURCES.map((s) => ({ ...s, enabled: false, amount: '' }))
+    INCOME_SOURCES.map((s) => ({ ...s, enabled: false, amount: 0 }))
   );
-  const [debts, setDebts] = useState<DebtEntry[]>([{ name: '', type: 'Outros', balance: '', payment: '', rate: '', statementMonth: '' }]);
+  const [debts, setDebts] = useState<DebtEntry[]>([{ name: '', type: 'Outros', balance: 0, payment: 0, rate: 0, statementMonth: '' }]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [selectedGoal, setSelectedGoal] = useState('');
-  const [goalAmount, setGoalAmount] = useState('');
+  const [goalAmount, setGoalAmount] = useState(0);
   const [saving, setSaving] = useState(false);
 
   function toggleIncomeSource(type: string) {
-    setIncomeSources(incomeSources.map((s) => s.type === type ? { ...s, enabled: !s.enabled, amount: '' } : s));
+    setIncomeSources(incomeSources.map((s) => s.type === type ? { ...s, enabled: !s.enabled, amount: 0 } : s));
   }
 
-  function updateIncomeAmount(type: string, amount: string) {
+  function updateIncomeAmount(type: string, amount: number) {
     setIncomeSources(incomeSources.map((s) => s.type === type ? { ...s, amount } : s));
   }
 
   function addDebt() {
-    setDebts([...debts, { name: '', type: 'Outros', balance: '', payment: '', rate: '', statementMonth: '' }]);
+    setDebts([...debts, { name: '', type: 'Outros', balance: 0, payment: 0, rate: 0, statementMonth: '' }]);
   }
 
   function removeDebt(i: number) {
     setDebts(debts.filter((_, idx) => idx !== i));
   }
 
-  function updateDebt(i: number, field: keyof DebtEntry, value: string) {
+  function updateDebt<K extends keyof DebtEntry>(i: number, field: K, value: DebtEntry[K]) {
     setDebts(debts.map((d, idx) => idx === i ? { ...d, [field]: value } : d));
   }
 
@@ -118,11 +119,11 @@ export function FinancialSetupWizard({ onClose }: Props) {
     if (exists) {
       setFixedExpenses(fixedExpenses.filter((e) => e.name !== name));
     } else {
-      setFixedExpenses([...fixedExpenses, { name, amount: '' }]);
+      setFixedExpenses([...fixedExpenses, { name, amount: 0 }]);
     }
   }
 
-  function updateFixedAmount(name: string, amount: string) {
+  function updateFixedAmount(name: string, amount: number) {
     setFixedExpenses(fixedExpenses.map((e) => e.name === name ? { ...e, amount } : e));
   }
 
@@ -130,24 +131,23 @@ export function FinancialSetupWizard({ onClose }: Props) {
     setSaving(true);
     try {
       const monthlyIncome = totalIncome;
-      const fixedTotal = fixedExpenses.reduce((s, e) => s + (parseFloat(e.amount.replace(',', '.')) || 0), 0);
-      const sources = incomeSources.filter((s) => s.enabled && parseFloat(s.amount.replace(',', '.')) > 0)
-        .map((s) => ({ type: s.type, amount: parseFloat(s.amount.replace(',', '.')) }));
+      const fixedTotal = fixedExpenses.reduce((s, e) => s + e.amount, 0);
+      const sources = incomeSources.filter((s) => s.enabled && s.amount > 0)
+        .map((s) => ({ type: s.type, amount: s.amount }));
 
       await setProfile({ monthlyIncome, fixedExpenses: fixedTotal, setupWizardDone: true, incomeSources: sources });
       setStoreProfile({ ...profile, monthlyIncome, fixedExpenses: fixedTotal, setupWizardDone: true, incomeSources: sources });
 
       // Salvar dívidas válidas
       for (const d of debts) {
-        const balance = parseFloat(d.balance.replace(',', '.')) || 0;
-        if (d.name && balance > 0) {
+        if (d.name && d.balance > 0) {
           const doc: Record<string, unknown> = {
             creditor: d.name,
             type: d.type || 'Outros',
-            totalBalance: balance,
-            monthlyPayment: parseFloat(d.payment.replace(',', '.')) || 0,
+            totalBalance: d.balance,
+            monthlyPayment: d.payment,
             remainingInstallments: 0,
-            interestRateMonthly: (parseFloat(d.rate.replace(',', '.')) || 0) / 100,
+            interestRateMonthly: d.rate,
             dueDay: 10,
             status: 'active',
           };
@@ -157,13 +157,12 @@ export function FinancialSetupWizard({ onClose }: Props) {
       }
 
       // Salvar meta selecionada
-      const amt = parseFloat(goalAmount.replace(',', '.')) || 0;
-      if (selectedGoal && amt > 0) {
+      if (selectedGoal && goalAmount > 0) {
         const preset = GOAL_PRESETS.find((g) => g.id === selectedGoal);
         await addUserDoc('goals', {
           name: preset?.label || 'Minha meta',
           type: selectedGoal,
-          targetAmount: amt,
+          targetAmount: goalAmount,
           currentAmount: 0,
           status: 'active',
           source: 'setup-wizard',
@@ -176,13 +175,10 @@ export function FinancialSetupWizard({ onClose }: Props) {
     }
   }
 
-  const totalIncome = incomeSources.reduce((s, src) => {
-    if (!src.enabled) return s;
-    return s + (parseFloat(src.amount.replace(',', '.')) || 0);
-  }, 0);
-  const totalFixed = fixedExpenses.reduce((s, e) => s + (parseFloat(e.amount.replace(',', '.')) || 0), 0);
+  const totalIncome = incomeSources.reduce((s, src) => src.enabled ? s + src.amount : s, 0);
+  const totalFixed = fixedExpenses.reduce((s, e) => s + e.amount, 0);
   const available = totalIncome - totalFixed;
-  const totalDebtPayments = debts.reduce((s, d) => s + (parseFloat(d.payment.replace(',', '.')) || 0), 0);
+  const totalDebtPayments = debts.reduce((s, d) => s + d.payment, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
@@ -240,17 +236,13 @@ export function FinancialSetupWizard({ onClose }: Props) {
                       </div>
                     </button>
                     {src.enabled && (
-                      <div className="relative w-28 shrink-0">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                        <Input
-                          autoFocus={src.type === incomeSources.find((s) => s.enabled)?.type}
-                          inputMode="decimal"
-                          className="pl-7 h-8 text-sm font-bold"
-                          placeholder="0,00"
-                          value={src.amount}
-                          onChange={(e) => updateIncomeAmount(src.type, e.target.value)}
-                        />
-                      </div>
+                      <CurrencyInput
+                        value={src.amount}
+                        onChange={(v) => updateIncomeAmount(src.type, v)}
+                        wrapperClassName="w-32 shrink-0"
+                        className="h-8 text-sm font-bold"
+                        autoFocus={src.type === incomeSources.find((s) => s.enabled)?.type}
+                      />
                     )}
                     {!src.enabled && (
                       <div
@@ -342,18 +334,9 @@ export function FinancialSetupWizard({ onClose }: Props) {
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label>Saldo (R$)</Label>
-                      <Input inputMode="decimal" placeholder="Ex: 3500" value={d.balance} onChange={(e) => updateDebt(i, 'balance', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Parcela/mês</Label>
-                      <Input inputMode="decimal" placeholder="Ex: 200" value={d.payment} onChange={(e) => updateDebt(i, 'payment', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Juros %/mês</Label>
-                      <Input inputMode="decimal" placeholder="Ex: 12" value={d.rate} onChange={(e) => updateDebt(i, 'rate', e.target.value)} />
-                    </div>
+                    <CurrencyInput label="Saldo" value={d.balance} onChange={(v) => updateDebt(i, 'balance', v)} />
+                    <CurrencyInput label="Parcela/mês" value={d.payment} onChange={(v) => updateDebt(i, 'payment', v)} />
+                    <PercentInput label="Juros %/mês" value={d.rate} onChange={(v) => updateDebt(i, 'rate', v)} />
                   </div>
                   {d.type === 'Cartão de crédito' && (
                     <div className="space-y-1">
@@ -408,16 +391,12 @@ export function FinancialSetupWizard({ onClose }: Props) {
                   {fixedExpenses.map((e) => (
                     <div key={e.name} className="flex items-center gap-2">
                       <span className="text-xs flex-1 text-muted-foreground truncate">{e.name}</span>
-                      <div className="relative w-28">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                        <Input
-                          inputMode="decimal"
-                          className="pl-7 text-sm h-8"
-                          placeholder="0,00"
-                          value={e.amount}
-                          onChange={(ev) => updateFixedAmount(e.name, ev.target.value)}
-                        />
-                      </div>
+                      <CurrencyInput
+                        value={e.amount}
+                        onChange={(v) => updateFixedAmount(e.name, v)}
+                        wrapperClassName="w-36 shrink-0"
+                        className="h-8 text-sm"
+                      />
                     </div>
                   ))}
                   <div className="rounded-lg bg-secondary px-3 py-2 flex items-center justify-between text-xs">
@@ -458,19 +437,11 @@ export function FinancialSetupWizard({ onClose }: Props) {
                 ))}
               </div>
               {selectedGoal && (
-                <div className="space-y-1">
-                  <Label>Valor alvo (R$) — opcional</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
-                    <Input
-                      inputMode="decimal"
-                      className="pl-9"
-                      placeholder="Ex: 15000"
-                      value={goalAmount}
-                      onChange={(e) => setGoalAmount(e.target.value)}
-                    />
-                  </div>
-                </div>
+                <CurrencyInput
+                  label="Valor alvo — opcional"
+                  value={goalAmount}
+                  onChange={setGoalAmount}
+                />
               )}
             </div>
           )}
@@ -490,14 +461,14 @@ export function FinancialSetupWizard({ onClose }: Props) {
               <FinancialDiagnostic
                 income={totalIncome}
                 expenses={totalFixed + totalDebtPayments}
-                debts={debts.filter((d) => d.name && parseFloat(d.balance.replace(',', '.')) > 0).map((d, i) => ({
+                debts={debts.filter((d) => d.name && d.balance > 0).map((d, i) => ({
                   id: `draft-${i}`,
                   creditor: d.name,
                   type: d.type,
-                  totalBalance: parseFloat(d.balance.replace(',', '.')) || 0,
-                  monthlyPayment: parseFloat(d.payment.replace(',', '.')) || 0,
+                  totalBalance: d.balance,
+                  monthlyPayment: d.payment,
                   remainingInstallments: 12,
-                  interestRateMonthly: (parseFloat(d.rate.replace(',', '.')) || 0) / 100,
+                  interestRateMonthly: d.rate,
                   dueDay: 10,
                   status: 'active' as const,
                 }))}

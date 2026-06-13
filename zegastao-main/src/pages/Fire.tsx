@@ -5,8 +5,7 @@ import { useStore } from '@/store/useStore';
 import { useDebts } from '@/hooks/useDebts';
 import { useInvestments } from '@/hooks/useJourney';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { Disclaimer } from '@/components/Disclaimer';
 import { formatBRL } from '@/lib/utils';
 import { calcFire } from '@/lib/fire';
@@ -36,51 +35,22 @@ export function Fire() {
     .reduce((s, d) => s + d.totalBalance, 0);
   const netAssets = Math.max(0, totalInvested - totalDebts);
 
-  const [monthlyIncome, setMonthlyIncome] = useState(String(profile?.monthlyIncome || ''));
-  const [monthlyExpenses, setMonthlyExpenses] = useState(
-    String(profile?.fixedExpenses || '')
-  );
-  const [currentAssets, setCurrentAssets] = useState(String(netAssets || ''));
-  const [annualReturn, setAnnualReturn] = useState('10');
-  const [inflation, setInflation] = useState('5');
+  const [monthlyIncome, setMonthlyIncome] = useState<number>(profile?.monthlyIncome || 0);
+  const [monthlyExpenses, setMonthlyExpenses] = useState<number>(profile?.fixedExpenses || 0);
+  const [currentAssets, setCurrentAssets] = useState<number>(netAssets || 0);
+  const [annualReturn, setAnnualReturn] = useState<number>(0.10);
+  const [inflation, setInflation] = useState<number>(0.05);
 
   const result = useMemo(() => {
-    const inc = parseFloat(monthlyIncome.replace(',', '.'));
-    const exp = parseFloat(monthlyExpenses.replace(',', '.'));
-    const assets = parseFloat(currentAssets.replace(',', '.'));
-    const ret = parseFloat(annualReturn.replace(',', '.'));
-    const inf = parseFloat(inflation.replace(',', '.'));
-    if (!inc || !exp || isNaN(ret) || isNaN(inf)) return null;
+    if (!monthlyIncome || !monthlyExpenses) return null;
     return calcFire({
-      monthlyIncome: inc,
-      monthlyExpenses: exp,
-      currentAssets: assets || 0,
-      annualReturnPct: ret,
-      inflationPct: inf,
+      monthlyIncome,
+      monthlyExpenses,
+      currentAssets: currentAssets || 0,
+      annualReturnPct: annualReturn * 100,
+      inflationPct: inflation * 100,
     });
   }, [monthlyIncome, monthlyExpenses, currentAssets, annualReturn, inflation]);
-
-  function field(
-    label: string,
-    value: string,
-    setter: (v: string) => void,
-    placeholder: string,
-    hint?: string
-  ) {
-    return (
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">{label}</Label>
-        <Input
-          inputMode="decimal"
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => setter(e.target.value)}
-          className="text-sm"
-        />
-        {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-5">
@@ -101,29 +71,20 @@ export function Fire() {
           <CardTitle className="text-sm">Seus dados</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
-          {field('Renda mensal (R$)', monthlyIncome, setMonthlyIncome, 'Ex: 5000')}
-          {field('Gastos mensais (R$)', monthlyExpenses, setMonthlyExpenses, 'Ex: 3500')}
-          {field(
-            'Patrimônio atual (R$)',
-            currentAssets,
-            setCurrentAssets,
-            'Ex: 20000',
-            `Investimentos menos dívidas: ${formatBRL(netAssets)}`
-          )}
-          {field(
-            'Retorno anual esperado (%)',
-            annualReturn,
-            setAnnualReturn,
-            '10',
-            'Média histórica do mercado: ~10% a.a.'
-          )}
-          {field(
-            'Inflação anual (%)',
-            inflation,
-            setInflation,
-            '5',
-            'Meta do IPCA: ~4–5% ao ano'
-          )}
+          <CurrencyInput label="Renda mensal (R$)" value={monthlyIncome} onChange={setMonthlyIncome} />
+          <CurrencyInput label="Gastos mensais (R$)" value={monthlyExpenses} onChange={setMonthlyExpenses} />
+          <div className="space-y-1.5">
+            <CurrencyInput label="Patrimônio atual (R$)" value={currentAssets} onChange={setCurrentAssets} />
+            <p className="text-[11px] text-muted-foreground">Investimentos menos dívidas: {formatBRL(netAssets)}</p>
+          </div>
+          <div className="space-y-1.5">
+            <PercentInput label="Retorno anual esperado (%)" value={annualReturn} onChange={setAnnualReturn} />
+            <p className="text-[11px] text-muted-foreground">Média histórica do mercado: ~10% a.a.</p>
+          </div>
+          <div className="space-y-1.5">
+            <PercentInput label="Inflação anual (%)" value={inflation} onChange={setInflation} />
+            <p className="text-[11px] text-muted-foreground">Meta do IPCA: ~4–5% ao ano</p>
+          </div>
         </CardContent>
       </Card>
 
@@ -246,18 +207,18 @@ export function Fire() {
           {/* Dica de aceleração */}
           {result.monthlySavings > 0 && result.yearsToFire !== null && result.yearsToFire > 1 && (() => {
             const fasterResult = calcFire({
-              monthlyIncome: parseFloat(monthlyIncome) || 0,
-              monthlyExpenses: parseFloat(monthlyExpenses) || 0,
-              currentAssets: parseFloat(currentAssets) || 0,
-              annualReturnPct: parseFloat(annualReturn) || 10,
-              inflationPct: parseFloat(inflation) || 5,
+              monthlyIncome,
+              monthlyExpenses,
+              currentAssets: currentAssets || 0,
+              annualReturnPct: annualReturn * 100,
+              inflationPct: inflation * 100,
             });
             const extra100 = calcFire({
-              monthlyIncome: (parseFloat(monthlyIncome) || 0) + 100,
-              monthlyExpenses: parseFloat(monthlyExpenses) || 0,
-              currentAssets: parseFloat(currentAssets) || 0,
-              annualReturnPct: parseFloat(annualReturn) || 10,
-              inflationPct: parseFloat(inflation) || 5,
+              monthlyIncome: monthlyIncome + 100,
+              monthlyExpenses,
+              currentAssets: currentAssets || 0,
+              annualReturnPct: annualReturn * 100,
+              inflationPct: inflation * 100,
             });
             const saved = fasterResult.yearsToFire !== null && extra100.yearsToFire !== null
               ? fasterResult.yearsToFire - extra100.yearsToFire

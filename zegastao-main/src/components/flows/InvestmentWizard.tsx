@@ -4,6 +4,7 @@ import { addUserDoc } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { cn } from '@/lib/utils';
 import type { InvestmentType } from '@/types';
 
@@ -28,7 +29,7 @@ export function InvestmentWizard({ onClose }: Props) {
   const [form, setForm] = useState({
     type: '' as InvestmentType | '',
     institution: '',
-    amount: '',
+    amount: 0,
     ticker: '',
   });
   const [saving, setSaving] = useState(false);
@@ -37,14 +38,13 @@ export function InvestmentWizard({ onClose }: Props) {
   const steps = ['Tipo', 'Valor'];
 
   async function save() {
-    const amount = parseFloat(form.amount.replace(',', '.')) || 0;
-    if (amount <= 0 || !form.type) return;
+    if (form.amount <= 0 || !form.type) return;
     setSaving(true);
     await addUserDoc('investments', {
       type: form.type,
       institution: form.institution || null,
-      amount,
-      currentValue: amount,
+      amount: form.amount,
+      currentValue: form.amount,
       ticker: form.ticker || null,
       purchaseDate: new Date().toISOString().substring(0, 10),
     });
@@ -55,7 +55,7 @@ export function InvestmentWizard({ onClose }: Props) {
 
   function canProceed() {
     if (step === 0) return form.type !== '';
-    return parseFloat(form.amount.replace(',', '.') || '0') > 0;
+    return form.amount > 0;
   }
 
   return (
@@ -125,20 +125,12 @@ export function InvestmentWizard({ onClose }: Props) {
 
               {step === 1 && (
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>Valor aplicado *</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        autoFocus
-                        inputMode="decimal"
-                        className="pl-9"
-                        placeholder="0,00"
-                        value={form.amount}
-                        onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  <CurrencyInput
+                    label="Valor aplicado *"
+                    value={form.amount}
+                    onChange={(v) => setForm({ ...form, amount: v })}
+                    autoFocus
+                  />
                   <div className="space-y-1.5">
                     <Label>
                       Instituição{' '}

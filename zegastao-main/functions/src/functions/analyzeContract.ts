@@ -80,7 +80,12 @@ Valores monetários como number (sem R$ ou vírgulas). Taxas como decimal (12% =
       });
 
       const raw = response.content[0].type === 'text' ? response.content[0].text : '{}';
-      const extracted = JSON.parse(raw.replace(/```json|```/g, '').trim()) as ExtractedContract;
+      let extracted: ExtractedContract;
+      try {
+        extracted = JSON.parse(raw.replace(/```json|```/g, '').trim()) as ExtractedContract;
+      } catch {
+        throw new Error(`analyzeContract: JSON inválido na resposta do modelo: ${raw.slice(0, 200)}`);
+      }
 
       let linkedDebtId: string | null = null;
       if (extracted.principalAmount && extracted.monthlyInterestRate) {

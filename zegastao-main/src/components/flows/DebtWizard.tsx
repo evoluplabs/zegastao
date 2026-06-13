@@ -4,6 +4,7 @@ import { addUserDoc } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -20,9 +21,9 @@ export function DebtWizard({ onClose }: Props) {
   const [form, setForm] = useState({
     creditor: '',
     type: 'Outro',
-    balance: '',
-    payment: '',
-    rate: '',
+    balance: 0,
+    payment: 0,
+    rate: 0,
     cardMode: 'parcelado' as 'parcelado' | 'fatura',
   });
   const [saving, setSaving] = useState(false);
@@ -31,16 +32,15 @@ export function DebtWizard({ onClose }: Props) {
   const steps = ['Credor', 'Valores', 'Taxa'];
 
   async function save() {
-    const balance = parseFloat(form.balance.replace(',', '.')) || 0;
-    if (!form.creditor || balance <= 0) return;
+    if (!form.creditor || form.balance <= 0) return;
     setSaving(true);
     await addUserDoc('debts', {
       creditor: form.creditor,
       type: form.type,
-      totalBalance: balance,
-      monthlyPayment: parseFloat(form.payment.replace(',', '.')) || 0,
+      totalBalance: form.balance,
+      monthlyPayment: form.payment,
       remainingInstallments: 0,
-      interestRateMonthly: (parseFloat(form.rate.replace(',', '.')) || 0) / 100,
+      interestRateMonthly: form.rate,
       dueDay: 10,
       status: 'active',
       ...(form.type === 'Cartão de crédito' ? { cardMode: form.cardMode } : {}),
@@ -52,7 +52,7 @@ export function DebtWizard({ onClose }: Props) {
 
   function canProceed() {
     if (step === 0) return form.creditor.trim().length > 0;
-    if (step === 1) return parseFloat(form.balance.replace(',', '.') || '0') > 0;
+    if (step === 1) return form.balance > 0;
     return true;
   }
 
@@ -161,61 +161,31 @@ export function DebtWizard({ onClose }: Props) {
 
               {step === 1 && (
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>Quanto você deve hoje? *</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        autoFocus
-                        inputMode="decimal"
-                        className="pl-9"
-                        placeholder="0,00"
-                        value={form.balance}
-                        onChange={(e) => setForm({ ...form, balance: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>
-                      Parcela mensal{' '}
-                      <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input
-                        inputMode="decimal"
-                        className="pl-9"
-                        placeholder="0,00"
-                        value={form.payment}
-                        onChange={(e) => setForm({ ...form, payment: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  <CurrencyInput
+                    label="Quanto você deve hoje? *"
+                    value={form.balance}
+                    onChange={(v) => setForm({ ...form, balance: v })}
+                    autoFocus
+                  />
+                  <CurrencyInput
+                    label="Parcela mensal (opcional)"
+                    value={form.payment}
+                    onChange={(v) => setForm({ ...form, payment: v })}
+                  />
                 </div>
               )}
 
               {step === 2 && (
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>
-                      Taxa de juros{' '}
-                      <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        autoFocus
-                        inputMode="decimal"
-                        className="pr-12"
-                        placeholder="0,0"
-                        value={form.rate}
-                        onChange={(e) => setForm({ ...form, rate: e.target.value })}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">% a.m.</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      💡 Você acha no contrato, fatura ou no app do credor. Se não souber, deixe em branco.
-                    </p>
-                  </div>
+                  <PercentInput
+                    label="Taxa de juros (opcional)"
+                    value={form.rate}
+                    onChange={(v) => setForm({ ...form, rate: v })}
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    💡 Você acha no contrato, fatura ou no app do credor. Se não souber, deixe em branco.
+                  </p>
                 </div>
               )}
             </>

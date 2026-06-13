@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { estimateGoalDate } from '@/lib/projection';
 
@@ -14,7 +15,7 @@ export function Goals() {
   const { data: goals } = useGoals();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', target: '', current: '', monthly: '', date: '' });
+  const [form, setForm] = useState({ name: '', target: 0, current: 0, monthly: 0, date: '' });
 
   // Quando o usuário define uma data (ex: viagem em julho), calcula o aporte mensal necessário
   const monthsUntil = (() => {
@@ -24,26 +25,23 @@ export function Goals() {
     return Math.max(1, (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth()));
   })();
   const suggestedMonthly = (() => {
-    const target = parseFloat(form.target.replace(',', '.')) || 0;
-    const current = parseFloat(form.current.replace(',', '.')) || 0;
-    if (!form.date || target <= current || monthsUntil <= 0) return 0;
-    return (target - current) / monthsUntil;
+    if (!form.date || form.target <= form.current || monthsUntil <= 0) return 0;
+    return (form.target - form.current) / monthsUntil;
   })();
 
   async function save() {
-    const target = parseFloat(form.target.replace(',', '.')) || 0;
-    if (!form.name || target <= 0) return;
+    if (!form.name || form.target <= 0) return;
     await addUserDoc('goals', {
       name: form.name,
       type: form.date ? 'event_goal' : 'Outros',
-      targetAmount: target,
-      currentAmount: parseFloat(form.current.replace(',', '.')) || 0,
+      targetAmount: form.target,
+      currentAmount: form.current,
       ...(form.date ? { targetDate: form.date } : {}),
       priority: 1,
       status: 'active',
-      monthlyContribution: parseFloat(form.monthly.replace(',', '.')) || (suggestedMonthly > 0 ? Math.ceil(suggestedMonthly) : 0),
+      monthlyContribution: form.monthly || (suggestedMonthly > 0 ? Math.ceil(suggestedMonthly) : 0),
     });
-    setForm({ name: '', target: '', current: '', monthly: '', date: '' });
+    setForm({ name: '', target: 0, current: 0, monthly: 0, date: '' });
     setOpen(false);
     toast('Meta criada!');
   }
@@ -70,18 +68,9 @@ export function Goals() {
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Reserva de emergência" />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <Label>Alvo</Label>
-                <Input inputMode="decimal" value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Já tenho</Label>
-                <Input inputMode="decimal" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Aporte/mês</Label>
-                <Input inputMode="decimal" value={form.monthly} onChange={(e) => setForm({ ...form, monthly: e.target.value })} />
-              </div>
+              <CurrencyInput label="Alvo" value={form.target} onChange={(v) => setForm({ ...form, target: v })} />
+              <CurrencyInput label="Já tenho" value={form.current} onChange={(v) => setForm({ ...form, current: v })} />
+              <CurrencyInput label="Aporte/mês" value={form.monthly} onChange={(v) => setForm({ ...form, monthly: v })} />
             </div>
             <div className="space-y-1">
               <Label>Tem data? (viagem, festa, evento — opcional)</Label>

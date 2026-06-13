@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
@@ -387,9 +388,9 @@ function ExtraIncomeCard() {
     );
   }
 
-  function setAmount(type: ExtraIncomeType, val: string) {
+  function setAmount(type: ExtraIncomeType, val: number) {
     setSources((prev) =>
-      prev.map((s) => s.type === type ? { ...s, estimatedAmount: parseFloat(val.replace(',', '.')) || 0 } : s)
+      prev.map((s) => s.type === type ? { ...s, estimatedAmount: val } : s)
     );
   }
 
@@ -440,14 +441,12 @@ function ExtraIncomeCard() {
                 <div key={src.type} className="flex items-center gap-2">
                   <span className="text-sm shrink-0">{opt.emoji}</span>
                   <p className="text-xs flex-1 truncate">{opt.label}</p>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={src.estimatedAmount || ''}
-                    onChange={(e) => setAmount(src.type, e.target.value)}
-                    placeholder="R$ 0"
-                    className="w-24 rounded-md border border-input bg-background px-2 py-1 text-xs text-right focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
+                  <div className="w-36">
+                    <CurrencyInput
+                      value={src.estimatedAmount || 0}
+                      onChange={(val) => setAmount(src.type, val)}
+                    />
+                  </div>
                 </div>
               );
             })}

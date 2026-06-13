@@ -5,7 +5,7 @@ import { db, auth } from '@/firebase';
 import { calcAmortization } from '@/lib/amortization';
 import { formatBRL } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Label } from '@/components/ui/label';
 import { useInstallments } from '@/hooks/useInstallments';
 import { useToast } from '@/components/ui/Toast';
@@ -31,7 +31,7 @@ export function InstallmentTracker({ debt, onDebtUpdated }: Props) {
   const { toast } = useToast();
   const [paying, setPaying] = useState(false);
   const [showAdvance, setShowAdvance] = useState(false);
-  const [extraAmount, setExtraAmount] = useState('');
+  const [extraAmount, setExtraAmount] = useState(0);
   const [payingAdvance, setPayingAdvance] = useState(false);
 
   const balance = debt.totalBalance;
@@ -89,8 +89,8 @@ export function InstallmentTracker({ debt, onDebtUpdated }: Props) {
 
   async function payAdvance() {
     const uid = auth.currentUser?.uid;
-    const extra = parseFloat(extraAmount.replace(',', '.'));
-    if (!uid || payingAdvance || extra <= 0 || isNaN(extra)) return;
+    const extra = extraAmount;
+    if (!uid || payingAdvance || extra <= 0) return;
     setPayingAdvance(true);
     try {
       const batch = writeBatch(db);
@@ -210,17 +210,16 @@ export function InstallmentTracker({ debt, onDebtUpdated }: Props) {
             <div className="rounded-xl border bg-secondary/30 p-3 space-y-2">
               <Label className="text-xs">Valor extra (abate no saldo)</Label>
               <div className="flex gap-2">
-                <Input
-                  inputMode="decimal"
-                  placeholder="Ex: 200,00"
-                  value={extraAmount}
-                  onChange={(e) => setExtraAmount(e.target.value)}
-                  className="flex-1"
-                />
+                <div className="flex-1">
+                  <CurrencyInput
+                    value={extraAmount}
+                    onChange={setExtraAmount}
+                  />
+                </div>
                 <Button size="sm" loading={payingAdvance} onClick={payAdvance}>
                   <Zap className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setShowAdvance(false); setExtraAmount(''); }}>
+                <Button size="sm" variant="ghost" onClick={() => { setShowAdvance(false); setExtraAmount(0); }}>
                   ✕
                 </Button>
               </div>
