@@ -128,7 +128,7 @@ export function Onboarding() {
 
       // Salvar contas bancárias
       for (const acc of accounts) {
-        await addUserDoc('accounts', acc as Record<string, unknown>);
+        await addUserDoc('accounts', acc as unknown as Record<string, unknown>);
       }
 
       if (debt.name && debt.balance > 0) {
