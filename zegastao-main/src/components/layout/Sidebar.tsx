@@ -9,6 +9,7 @@ import {
   Dices,
   Gift,
   FileSpreadsheet,
+  HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -34,11 +35,11 @@ export function Sidebar() {
   const isIRSeason = irMonth >= 1 && irMonth <= 4;
 
   const NAV = [
-    { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
-    { to: '/financas', label: 'Finanças', icon: CreditCard },
-    { to: '/transactions', label: 'Transações', icon: Receipt },
-    { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
-    { to: '/journey', label: 'Jornada', icon: Trophy },
+    { to: '/dashboard', label: 'Início', sub: 'Visão geral', icon: LayoutDashboard, end: true },
+    { to: '/financas', label: 'Finanças', sub: 'Dívidas, metas, regras', icon: CreditCard },
+    { to: '/transactions', label: 'Transações', sub: 'Histórico e extratos', icon: Receipt },
+    { to: '/copilot', label: 'Copiloto', sub: 'Análise com IA', icon: MessageCircle },
+    { to: '/journey', label: 'Jornada', sub: 'Trilha e tarefas', icon: Trophy },
   ];
 
   return (
@@ -48,22 +49,25 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {NAV.map(({ to, label, sub, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )
             }
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
+            <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">{label}</p>
+              <p className="text-[10px] leading-tight opacity-60">{sub}</p>
+            </div>
           </NavLink>
         ))}
 
@@ -112,6 +116,20 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t p-3 space-y-0.5">
+        <NavLink
+          to="/ajuda"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )
+          }
+        >
+          <HelpCircle className="h-4 w-4 shrink-0" />
+          Ajuda
+        </NavLink>
         <button
           onClick={() => referral.share('sidebar')}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"

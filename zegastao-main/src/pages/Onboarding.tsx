@@ -104,7 +104,7 @@ export function Onboarding() {
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length });
       // Solicitar push em background — não bloquear navegação
       if (user) registerForPushNotifications(user.uid).catch(() => {});
-      navigate('/dashboard');
+      navigate('/dashboard?welcome=1');
     } finally {
       setBusy(false);
     }

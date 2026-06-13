@@ -3,7 +3,7 @@ import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import {
   UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Lock,
-  ArrowLeft, ArrowRight, Calendar, FileDown, ShieldCheck, RotateCcw, Eye,
+  ArrowLeft, ArrowRight, Calendar, FileDown, ShieldCheck, RotateCcw, Eye, Sparkles,
 } from 'lucide-react';
 import { storage, db, auth } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -405,11 +405,16 @@ export function UploadPage() {
               <div className="space-y-3">
                 <div className="flex flex-col items-center text-center gap-2 rounded-2xl border border-success/30 bg-success/5 p-5">
                   <CheckCircle2 className="h-10 w-10 text-success" />
-                  <p className="font-bold text-lg">Pronto! 🎉</p>
+                  <p className="font-bold text-lg">Importação concluída! 🎉</p>
                   <p className="text-sm text-muted-foreground">
-                    {result.totalTransactions ?? 0} transações importadas de {result.filename}.
+                    {result.totalTransactions ?? 0} transações importadas de <span className="font-medium">{result.filename}</span>.
                   </p>
                 </div>
+
+                {/* CTA principal: ir para o dashboard */}
+                <Button className="w-full gap-2" onClick={() => navigate('/dashboard')}>
+                  <Sparkles className="h-4 w-4" /> Ver análise no Dashboard
+                </Button>
 
                 {/* CTA para copilot com contexto pré-preenchido */}
                 <button
@@ -420,17 +425,17 @@ export function UploadPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">Ele já tem o contexto das suas transações importadas</p>
                 </button>
 
-                <Button className="w-full gap-2" onClick={() => navigate('/transactions')}>
+                <Button variant="outline" className="w-full gap-2" onClick={() => navigate('/transactions')}>
                   <FileText className="h-4 w-4" /> Ver minhas transações
                 </Button>
 
                 {/* Sugerir importar o outro tipo */}
                 <Button
-                  variant="outline"
-                  className="w-full"
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
                   onClick={() => resetWizard()}
                 >
-                  Importar {docType === 'checking' ? 'fatura do cartão' : 'extrato da conta'} agora
+                  Importar {docType === 'checking' ? 'fatura do cartão' : 'extrato da conta'} também
                 </Button>
               </div>
             )}

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -89,12 +89,21 @@ export function Dashboard() {
   const tasks = useDailyTasks();
   const { generating, error: insightError, generate } = useGenerateInsights();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [openDebt, setOpenDebt] = useState(false);
   const [openGoal, setOpenGoal] = useState(false);
   const [openTx, setOpenTx] = useState(false);
   const [openSetup, setOpenSetup] = useState(false);
   const [openSimulator, setOpenSimulator] = useState(false);
   const [showMonthlyReport, setShowMonthlyReport] = useState(() => shouldShowMonthlyReport());
+  const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
+
+  useEffect(() => {
+    if (searchParams.get('welcome') === '1') {
+      setSearchParams({}, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
@@ -242,39 +251,32 @@ export function Dashboard() {
     <>
       <div className="space-y-4">
 
-        {/* 1. Checklist de ativação (aparece até o usuário completar os 5 passos) */}
-        <SetupChecklist
-          hasIncome={income > 0}
-          hasDebts={debts.filter((d) => d.status === 'active').length > 0}
-          hasUpload={allTransactions.length > 0}
-          hasGoals={goals.filter((g) => g.status === 'active').length > 0}
-        />
+        {/* Banner de boas-vindas pós-onboarding */}
+        {showWelcome && (
+          <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 flex items-start gap-4">
+            <div className="text-3xl shrink-0">🎉</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-base">
+                Bem-vindo{profile?.name ? `, ${profile.name}` : ''}! Seu plano foi criado.
+              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                O próximo passo é importar seu extrato bancário para o Copiloto te dar insights reais.
+              </p>
+              <Button size="sm" className="mt-3 gap-1.5" asChild>
+                <Link to="/upload"><Upload className="h-3.5 w-3.5" /> Importar extrato agora</Link>
+              </Button>
+            </div>
+            <button
+              onClick={() => setShowWelcome(false)}
+              className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0"
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
-        {/* 2. Anel de progresso do perfil */}
-        <ProfileCompletionRing
-          profile={profile}
-          debts={debts}
-          goals={goals}
-          transactions={allTransactions}
-          onSetupWizard={() => setOpenSetup(true)}
-        />
-
-        {/* Alerta de gastos não-essenciais acima de 30% da renda */}
-        <SpendingAlert income={income} byCategory={byCategory} />
-
-        {/* Sugestões proativas do copiloto (rule-based, sem custo de IA) */}
-        {hasAnyData && <ProactiveCopilotCards suggestions={proactiveSuggestions} />}
-
-        {/* 2. Diagnóstico financeiro — hero da página */}
-        <FinancialDiagnostic
-          income={income}
-          expenses={effectiveExpenses}
-          debts={debts}
-          goals={goals}
-          hasRealTransactions={hasCurrentMonthTx}
-        />
-
-        {/* 3. Hero: Saldo + Fase */}
+        {/* 1. Hero: Saldo + Fase — above the fold */}
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="sm:col-span-2 rounded-2xl border bg-card p-5">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
@@ -342,31 +344,7 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* Card de IR sazonal: Janeiro a Abril */}
-        {(() => {
-          const m = new Date().getMonth() + 1;
-          if (m < 1 || m > 4) return null;
-          return (
-            <Link
-              to="/ir"
-              className="flex items-center gap-3 rounded-xl border border-blue-300/50 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20 px-4 py-3 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-colors"
-            >
-              <span className="text-2xl">📋</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Temporada de IR</p>
-                <p className="text-xs text-blue-700/70 dark:text-blue-400/70">
-                  Deduções, checklist e relatório para sua declaração
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-blue-500 shrink-0" />
-            </Link>
-          );
-        })()}
-
-        {/* Mini-vitória */}
-        <ShareWinBanner wins={wins} />
-
-        {/* 4. Quick Actions */}
+        {/* 2. Quick Actions */}
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenDebt(true)}>
             <Plus className="h-3.5 w-3.5" /> Dívida
@@ -392,7 +370,103 @@ export function Dashboard() {
           </Button>
         </div>
 
-        {/* 5. CTA de importação quando não tem transações */}
+        {/* 3. Tarefas de hoje */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Ações de hoje
+            </h2>
+            <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
+              ver todas →
+            </Link>
+          </div>
+          {tasks.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {tasks.slice(0, 2).map((t, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
+                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm leading-snug">{t.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      ⏱ {t.estimatedTime}
+                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border bg-card/50 p-5 text-center">
+              <Zap className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm font-semibold">Nenhuma tarefa para hoje</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+                Suas tarefas personalizadas são geradas toda meia-noite com base na sua situação financeira atual.
+              </p>
+              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                Ver sua jornada <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Checklist de ativação */}
+        <SetupChecklist
+          hasIncome={income > 0}
+          hasDebts={debts.filter((d) => d.status === 'active').length > 0}
+          hasUpload={allTransactions.length > 0}
+          hasGoals={goals.filter((g) => g.status === 'active').length > 0}
+        />
+
+        {/* Anel de progresso do perfil */}
+        <ProfileCompletionRing
+          profile={profile}
+          debts={debts}
+          goals={goals}
+          transactions={allTransactions}
+          onSetupWizard={() => setOpenSetup(true)}
+        />
+
+        {/* Alerta de gastos não-essenciais acima de 30% da renda */}
+        <SpendingAlert income={income} byCategory={byCategory} />
+
+        {/* Sugestões proativas do copiloto (rule-based, sem custo de IA) */}
+        {hasAnyData && <ProactiveCopilotCards suggestions={proactiveSuggestions} />}
+
+        {/* Diagnóstico financeiro */}
+        <FinancialDiagnostic
+          income={income}
+          expenses={effectiveExpenses}
+          debts={debts}
+          goals={goals}
+          hasRealTransactions={hasCurrentMonthTx}
+        />
+
+        {/* Card de IR sazonal: Janeiro a Abril */}
+        {(() => {
+          const m = new Date().getMonth() + 1;
+          if (m < 1 || m > 4) return null;
+          return (
+            <Link
+              to="/ir"
+              className="flex items-center gap-3 rounded-xl border border-blue-300/50 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20 px-4 py-3 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-colors"
+            >
+              <span className="text-2xl">📋</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Temporada de IR</p>
+                <p className="text-xs text-blue-700/70 dark:text-blue-400/70">
+                  Deduções, checklist e relatório para sua declaração
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-blue-500 shrink-0" />
+            </Link>
+          );
+        })()}
+
+        {/* Mini-vitória */}
+        <ShareWinBanner wins={wins} />
+
+        {/* CTA de importação quando não tem transações */}
         {!hasAnyTx && income > 0 && (
           <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -412,36 +486,7 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* 6. Tarefas de hoje */}
-        {tasks.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold flex items-center gap-2">
-                <Zap className="h-4 w-4 text-amber-500" />
-                Ações de hoje
-              </h2>
-              <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
-                ver todas →
-              </Link>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {tasks.slice(0, 2).map((t, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
-                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm leading-snug">{t.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      ⏱ {t.estimatedTime}
-                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 7. Dívida + Meta */}
+        {/* 5. Dívida + Meta */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
