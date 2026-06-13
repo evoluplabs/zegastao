@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, TrendingDown } from 'lucide-react';
+import { ArrowRight, Sparkles, TrendingDown, AlertTriangle, Clock, CalendarCheck2, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 function DashboardMockup() {
@@ -18,60 +18,60 @@ function DashboardMockup() {
         </div>
 
         <div className="p-4 space-y-3">
-          {/* Phase badge */}
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold px-2 py-0.5">
-              🔄 Reorganização
-            </span>
-            <span className="text-[10px] text-muted-foreground">Fase 2 de 5</span>
-          </div>
-
-          {/* Stats row */}
+          {/* Hero Row: Saldo Total + Receitas + Despesas */}
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Saldo mensal', value: '+R$ 380', color: 'text-green-600' },
-              { label: 'Dívidas', value: 'R$ 8.200', color: 'text-red-500' },
-              { label: 'Categorias', value: '94 txns', color: 'text-primary' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-lg border bg-background p-2">
-                <p className={`text-xs font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-[9px] text-muted-foreground mt-0.5">{s.label}</p>
+            <div className="rounded-lg border bg-background p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Wallet className="h-2.5 w-2.5 text-muted-foreground" />
+                <p className="text-[8px] text-muted-foreground uppercase tracking-wide">Saldo total</p>
               </div>
-            ))}
+              <p className="text-[11px] font-bold text-green-600">R$ 36.218</p>
+            </div>
+            <div className="rounded-lg border bg-background p-2">
+              <p className="text-[8px] text-muted-foreground uppercase tracking-wide mb-0.5">Receitas</p>
+              <p className="text-[11px] font-bold text-green-600">R$ 8.546</p>
+            </div>
+            <div className="rounded-lg border bg-background p-2">
+              <p className="text-[8px] text-muted-foreground uppercase tracking-wide mb-0.5">Despesas</p>
+              <p className="text-[11px] font-bold text-red-500">-R$ 4.898</p>
+            </div>
           </div>
 
-          {/* Projection line */}
-          <div className="rounded-lg border bg-background p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold">Projeção de quitação</span>
-              <span className="text-[10px] text-green-600 font-bold">18 meses</span>
+          {/* Vencidos / Vencendo / Futuro */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-lg border border-red-200 bg-red-50/50 p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <AlertTriangle className="h-2.5 w-2.5 text-red-500" />
+                <p className="text-[8px] font-semibold text-red-600">Vencidos</p>
+              </div>
+              <p className="text-[9px] text-muted-foreground mb-1">Passados</p>
+              <p className="text-[11px] font-bold text-red-600">R$ 650</p>
             </div>
-            <svg viewBox="0 0 200 48" className="w-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#ef4444" />
-                  <stop offset="100%" stopColor="#22c55e" />
-                </linearGradient>
-              </defs>
-              <polyline
-                points="0,42 25,38 50,32 75,26 100,20 125,15 150,10 175,6 200,3"
-                fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle cx="200" cy="3" r="3" fill="#22c55e" />
-              <text x="160" y="16" fontSize="7" fill="#22c55e" fontWeight="600">QUITADO!</text>
-            </svg>
+            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <CalendarCheck2 className="h-2.5 w-2.5 text-amber-600" />
+                <p className="text-[8px] font-semibold text-amber-700">Vencendo</p>
+              </div>
+              <p className="text-[9px] text-muted-foreground mb-1">Próx. 7 dias</p>
+              <p className="text-[11px] font-bold text-amber-700">R$ 1.200</p>
+            </div>
+            <div className="rounded-lg border bg-background p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                <p className="text-[8px] font-semibold">Futuro</p>
+              </div>
+              <p className="text-[9px] text-muted-foreground mb-1">Próx. 30d</p>
+              <p className="text-[11px] font-bold text-muted-foreground">R$ 3.100</p>
+            </div>
           </div>
 
           {/* AI insight */}
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex gap-2">
-            <span className="text-sm">🤖</span>
+            <span className="text-sm shrink-0">🤖</span>
             <div>
               <p className="text-[10px] font-semibold text-primary">Copiloto diz:</p>
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Pagar R$ 80 a mais na dívida do Nubank economiza R$ 1.240 em juros.
+                Pagar R$ 80 a mais no Nubank economiza R$ 1.240 em juros. Você tem margem este mês.
               </p>
             </div>
           </div>
@@ -103,31 +103,37 @@ export function HeroSection() {
             </div>
 
             {/* Tagline */}
-            <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-3">
-              Você merece um plano. Não uma planilha.
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-3">
+              78% dos brasileiros estão endividados. Você merece uma saída.
             </p>
 
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5">
-              Do controle das dívidas à{' '}
-              <span className="text-shimmer">liberdade financeira.</span>
+              Organize dívidas.<br />Controle contas.<br />
+              <span className="text-shimmer">Construa liberdade.</span>
             </h1>
 
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-              O Zé Gastão organiza suas dívidas, detecta deduções do IR, simula sua independência financeira e{' '}
-              <strong className="text-foreground">age por você todo mês com IA</strong>{' '}
-              — sem planilha, sem contador caro, sem enrolação.
+              Seu copiloto financeiro com IA analisa sua situação, monta seu plano e te guia todo mês —{' '}
+              <strong className="text-foreground">de graça pra começar.</strong>
             </p>
 
-            <div className="flex flex-col sm:flex-row items-start gap-3 mb-8">
+            <div className="flex flex-col sm:flex-row items-start gap-3 mb-5">
               <Button asChild size="lg" className="rounded-xl gap-2 px-7 shadow-lg shadow-primary/25">
                 <Link to="/login">
-                  Começar grátis agora
+                  Diagnóstico gratuito em 2 min
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-xl bg-white/70 backdrop-blur-sm">
                 <a href="#como-funciona">Ver como funciona</a>
               </Button>
+            </div>
+
+            {/* Trust signals */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-6">
+              <span className="flex items-center gap-1"><span className="text-green-500">✓</span> Gratuito para começar</span>
+              <span className="flex items-center gap-1"><span>🔒</span> Dados criptografados</span>
+              <span className="flex items-center gap-1"><span>⭐</span> Sem cartão de crédito</span>
             </div>
 
             {/* Social proof */}
@@ -143,9 +149,13 @@ export function HeroSection() {
                   </div>
                 ))}
               </div>
-              <span>
-                <strong className="text-foreground">+2.000 pessoas</strong> já usam o Zé Gastão
-              </span>
+              <div>
+                <span><strong className="text-foreground">+2.000 usuários ativos</strong></span>
+                <div className="flex items-center gap-0.5 text-amber-400">
+                  {'★★★★★'.split('').map((s, i) => <span key={i} className="text-xs">{s}</span>)}
+                  <span className="text-xs text-muted-foreground ml-1">4.9</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -157,8 +167,8 @@ export function HeroSection() {
             </div>
             <DashboardMockup />
             <div className="absolute -bottom-4 -left-4 rounded-xl bg-white shadow-md border px-3 py-2 text-xs z-10" style={{ animation: 'bounce 4s ease-in-out infinite', animationDelay: '1.5s' }}>
-              <div className="font-bold text-green-600">✓ Quitação: Jun 2026</div>
-              <div className="text-muted-foreground">18 meses restantes</div>
+              <div className="font-bold text-green-600">✓ Saldo Total: R$ 36.218</div>
+              <div className="text-muted-foreground">3 contas vinculadas</div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target } from 'lucide-react';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target, Wallet, CalendarClock, Clock, CalendarCheck2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
@@ -9,6 +9,9 @@ import { useRules } from '@/hooks/useRules';
 import { useInsights } from '@/hooks/useInsights';
 import { useDailyTasks } from '@/hooks/useJourney';
 import { useGenerateInsights } from '@/hooks/useGenerateInsights';
+import { useAccounts } from '@/hooks/useAccounts';
+import { AccountWizard } from '@/components/flows/AccountWizard';
+import type { Account } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -88,9 +91,12 @@ export function Dashboard() {
   const { insights, generatedAt: insightsGeneratedAt } = useInsights();
   const tasks = useDailyTasks();
   const { generating, error: insightError, generate } = useGenerateInsights();
+  const { data: accounts } = useAccounts();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDebt, setOpenDebt] = useState(false);
+  const [openAccount, setOpenAccount] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [openGoal, setOpenGoal] = useState(false);
   const [openTx, setOpenTx] = useState(false);
   const [openSetup, setOpenSetup] = useState(false);
@@ -200,6 +206,26 @@ export function Dashboard() {
       .filter((c) => c.ideal > 0 && c.pct > c.ideal * 1.1);
   }, [byCategory, income]);
 
+  // Saldo total das contas bancárias
+  const totalAccountBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+
+  // Vencidos / Vencendo / Futuro — baseado em dueDay das dívidas ativas
+  const { overdue, dueSoon, future: futureDue } = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    let overdue = 0, dueSoon = 0, future = 0;
+    for (const d of debts) {
+      if (d.status !== 'active') continue;
+      const dueDate = new Date(year, month, d.dueDay);
+      const daysUntil = Math.ceil((dueDate.getTime() - now.getTime()) / 86_400_000);
+      if (daysUntil < 0) overdue += d.monthlyPayment;
+      else if (daysUntil <= 7) dueSoon += d.monthlyPayment;
+      else future += d.monthlyPayment;
+    }
+    return { overdue, dueSoon, future };
+  }, [debts]);
+
   const hasAnyData = income > 0 || debts.length > 0 || allTransactions.length > 0 || goals.length > 0;
   const hasCurrentMonthTx = currentMonthTx.length > 0;
   const hasAnyTx = allTransactions.length > 0;
@@ -276,62 +302,182 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* 1. Hero: Saldo + Fase — above the fold */}
+        {/* 1. Hero Row: Saldo Total + Receitas + Despesas */}
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="sm:col-span-2 rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
-              {hasCurrentMonthTx ? 'Saldo este mês' : 'Estimativa do mês'}
-            </p>
-            <p className={cn(
-              'text-4xl font-bold tracking-tight',
-              income === 0 ? 'text-muted-foreground' : balance >= 0 ? 'text-success' : 'text-destructive'
-            )}>
-              {income === 0 ? '—' : formatBRL(balance)}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-              <span className="text-muted-foreground">
-                Renda <span className="font-semibold text-success">{income > 0 ? formatBRL(income) : '—'}</span>
-              </span>
-              <span className="text-muted-foreground">
-                Gastos <span className="font-semibold">{effectiveExpenses > 0 ? formatBRL(effectiveExpenses) : '—'}</span>
-              </span>
-              {debtPayments > 0 && (
-                <span className="text-muted-foreground">
-                  Parcelas <span className="font-semibold text-amber-600">{formatBRL(debtPayments)}</span>
-                </span>
-              )}
+          {/* Saldo Total das contas */}
+          <div className="sm:col-span-1 rounded-2xl border bg-card p-5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {accounts.length > 0 ? 'Saldo total' : 'Saldo estimado'}
+              </p>
             </div>
-            {!hasCurrentMonthTx && hasAnyTx && (
-              <p className="mt-2 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-1.5">
-                Transações de meses anteriores encontradas. Importe o extrato atual para ver o saldo deste mês.
+            <p className={cn(
+              'text-3xl font-bold tracking-tight tabular-nums',
+              accounts.length > 0
+                ? totalAccountBalance >= 0 ? 'text-success' : 'text-destructive'
+                : income === 0 ? 'text-muted-foreground' : balance >= 0 ? 'text-success' : 'text-destructive'
+            )}>
+              {accounts.length > 0 ? formatBRL(totalAccountBalance) : income === 0 ? '—' : formatBRL(balance)}
+            </p>
+            {accounts.length === 0 && (
+              <button
+                onClick={() => setOpenAccount(true)}
+                className="mt-2 text-xs text-primary hover:underline"
+              >
+                + Adicionar contas bancárias
+              </button>
+            )}
+            {accounts.length > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">{accounts.length} conta{accounts.length > 1 ? 's' : ''} vinculada{accounts.length > 1 ? 's' : ''}</p>
+            )}
+          </div>
+
+          {/* Receitas no mês */}
+          <div className="rounded-2xl border bg-card p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Receitas no mês</p>
+            <p className="text-3xl font-bold tracking-tight tabular-nums text-success">
+              {income > 0 ? formatBRL(income) : '—'}
+            </p>
+            {hasCurrentMonthTx && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {currentMonthTx.filter(t => t.amount > 0).length} entrada{currentMonthTx.filter(t => t.amount > 0).length !== 1 ? 's' : ''}
               </p>
             )}
-            {!hasCurrentMonthTx && !hasAnyTx && income > 0 && (
-              <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
-                Importe seu extrato bancário para ver gastos reais deste mês.
-              </p>
-            )}
+          </div>
+
+          {/* Despesas no mês */}
+          <div className="rounded-2xl border bg-card p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Despesas no mês</p>
+            <p className={cn(
+              'text-3xl font-bold tracking-tight tabular-nums',
+              effectiveExpenses > 0 ? 'text-destructive' : 'text-muted-foreground'
+            )}>
+              {effectiveExpenses > 0 ? formatBRL(effectiveExpenses) : '—'}
+            </p>
             {hasCurrentMonthTx && balance < 0 && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                Você gastou mais do que ganhou. O Copiloto pode ajudar a reverter isso.
+              <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                <AlertTriangle className="h-3 w-3" /> Acima da renda
+              </div>
+            )}
+            {hasCurrentMonthTx && balance >= 0 && effectiveExpenses > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Sobra: {formatBRL(balance)}</p>
+            )}
+          </div>
+        </div>
+
+        {/* 2. Agenda de Vencimentos */}
+        {debts.filter(d => d.status === 'active').length > 0 && (
+          <div className="grid gap-3 grid-cols-3">
+            {/* Vencidos */}
+            <div className={cn('rounded-2xl border p-4', overdue > 0 ? 'border-destructive/30 bg-destructive/5' : 'bg-card')}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className={cn('h-4 w-4', overdue > 0 ? 'text-destructive' : 'text-muted-foreground')} />
+                <p className="text-xs font-semibold">Vencidos</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Passados</p>
+              <p className={cn('text-lg font-bold tabular-nums', overdue > 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                {overdue > 0 ? formatBRL(overdue) : '0,00'}
+              </p>
+            </div>
+
+            {/* Vencendo */}
+            <div className={cn('rounded-2xl border p-4', dueSoon > 0 ? 'border-amber-300/40 bg-amber-50/50 dark:bg-amber-500/5' : 'bg-card')}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <CalendarCheck2 className={cn('h-4 w-4', dueSoon > 0 ? 'text-amber-600' : 'text-muted-foreground')} />
+                <p className="text-xs font-semibold">Vencendo</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Próx. 7 dias</p>
+              <p className={cn('text-lg font-bold tabular-nums', dueSoon > 0 ? 'text-amber-600' : 'text-muted-foreground')}>
+                {dueSoon > 0 ? formatBRL(dueSoon) : '0,00'}
+              </p>
+            </div>
+
+            {/* Futuro */}
+            <div className="rounded-2xl border bg-card p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs font-semibold">Futuro</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Próx. 30 dias</p>
+              <p className="text-lg font-bold tabular-nums text-muted-foreground">
+                {futureDue > 0 ? formatBRL(futureDue) : '0,00'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Saldo das Contas + Fase */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {/* Saldo das Contas */}
+          <div className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold flex items-center gap-1.5">
+                <Wallet className="h-4 w-4 text-primary" /> Saldo das contas
+              </h2>
+              <button
+                onClick={() => setOpenAccount(true)}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                + Adicionar
+              </button>
+            </div>
+            {accounts.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-2">Nenhuma conta cadastrada</p>
+                <button
+                  onClick={() => setOpenAccount(true)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Adicionar minha primeira conta →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {accounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    onClick={() => { setEditingAccount(acc); setOpenAccount(true); }}
+                    className="flex items-center justify-between w-full hover:bg-accent/50 rounded-lg px-1 py-1 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{acc.emoji ?? '🏦'}</span>
+                      <div className="text-left">
+                        <p className="text-sm font-medium leading-tight">{acc.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{acc.type === 'checking' ? 'Conta corrente' : acc.type === 'savings' ? 'Poupança' : acc.type === 'wallet' ? 'Carteira' : 'Conta'}</p>
+                      </div>
+                    </div>
+                    <span className={cn('text-sm font-bold tabular-nums', acc.balance >= 0 ? 'text-success' : 'text-destructive')}>
+                      {formatBRL(acc.balance)}
+                    </span>
+                  </button>
+                ))}
+                {accounts.length > 1 && (
+                  <div className="border-t pt-2 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className={cn('text-sm font-bold tabular-nums', totalAccountBalance >= 0 ? 'text-success' : 'text-destructive')}>
+                      {formatBRL(totalAccountBalance)}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
+          {/* Fase financeira */}
           {phase ? (
-            <div className={cn('rounded-2xl border p-4 flex flex-col justify-between', PHASE_COLORS[phase])}>
+            <div className={cn('rounded-2xl border p-5 flex flex-col justify-between', PHASE_COLORS[phase])}>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-1">Sua fase</p>
-                <p className="text-lg font-bold">{PHASE_LABELS[phase]}</p>
+                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-1">Sua fase financeira</p>
+                <p className="text-xl font-bold">{PHASE_LABELS[phase]}</p>
                 <p className="text-xs mt-1 opacity-70 leading-relaxed">{PHASE_DESCRIPTIONS[phase]}</p>
               </div>
               <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100">
-                Ver trilha <ArrowRight className="h-3 w-3" />
+                Ver trilha completa <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card p-4 flex flex-col items-start justify-between">
+            <div className="rounded-2xl border bg-card p-5 flex flex-col items-start justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Fase financeira</p>
                 <p className="text-sm font-semibold">Calculando…</p>
@@ -756,6 +902,12 @@ export function Dashboard() {
       {openGoal && <GoalWizard onClose={() => setOpenGoal(false)} />}
       {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
       {openSetup && <FinancialSetupWizard onClose={() => setOpenSetup(false)} />}
+      {openAccount && (
+        <AccountWizard
+          onClose={() => { setOpenAccount(false); setEditingAccount(undefined); }}
+          existing={editingAccount}
+        />
+      )}
       {openSimulator && (
         <FinancialSimulator
           income={income}
