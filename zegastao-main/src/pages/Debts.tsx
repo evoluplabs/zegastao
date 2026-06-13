@@ -4,17 +4,15 @@ import { doc, writeBatch, collection } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import { useDebts } from '@/hooks/useDebts';
 import { useNegotiationAlerts } from '@/hooks/useDocuments';
-import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
+import { deleteUserDoc } from '@/lib/firestore';
 import { calcAmortization } from '@/lib/amortization';
 import { useToast } from '@/components/ui/Toast';
 import { NEGOTIATION_SCRIPTS } from '@/lib/negotiation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { CurrencyInput, PercentInput } from '@/components/ui/CurrencyInput';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL, formatPct } from '@/lib/utils';
+import { DebtWizard } from '@/components/flows/DebtWizard';
 import { DebtEditModal } from '@/components/flows/DebtEditModal';
 import { DebtSimulator } from '@/components/DebtSimulator';
 import { TransactionInstallmentGroups } from '@/components/TransactionInstallmentGroups';
@@ -25,10 +23,9 @@ export function Debts() {
   const { toast } = useToast();
   const alerts = useNegotiationAlerts();
   const [openScript, setOpenScript] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [openWizard, setOpenWizard] = useState(false);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [simulateDebt, setSimulateDebt] = useState<Debt | null>(null);
-  const [form, setForm] = useState({ creditor: '', balance: 0, payment: 0, rate: 0 });
   const [payingId, setPayingId] = useState<string | null>(null);
 
   function currentMonth() { return new Date().toISOString().slice(0, 7); }
@@ -82,23 +79,6 @@ export function Debts() {
 
   const totalBalance = ranked.reduce((s, d) => s + d.totalBalance, 0);
 
-  async function save() {
-    if (!form.creditor || form.balance <= 0) return;
-    await addUserDoc('debts', {
-      creditor: form.creditor,
-      type: 'Outros',
-      totalBalance: form.balance,
-      monthlyPayment: form.payment,
-      remainingInstallments: 0,
-      interestRateMonthly: form.rate,
-      dueDay: 10,
-      status: 'active',
-    });
-    setForm({ creditor: '', balance: 0, payment: 0, rate: 0 });
-    setOpen(false);
-    toast('Dívida cadastrada!');
-  }
-
   async function remove(id: string) {
     await deleteUserDoc('debts', id);
     toast('Dívida removida', 'info');
@@ -111,8 +91,8 @@ export function Debts() {
           <h2 className="text-lg font-semibold">Dívidas</h2>
           <p className="text-sm text-muted-foreground">Total ativo: {formatBRL(totalBalance)}</p>
         </div>
-        <Button size="sm" onClick={() => setOpen(!open)}>
-          <Plus className="h-4 w-4" /> Nova
+        <Button size="sm" onClick={() => setOpenWizard(true)}>
+          <Plus className="h-4 w-4 mr-1" /> Nova dívida
         </Button>
       </div>
 
@@ -143,23 +123,6 @@ export function Debts() {
           </Card>
         );
       })}
-
-      {open && (
-        <Card>
-          <CardContent className="space-y-3 pt-6">
-            <div className="space-y-1">
-              <Label>Credor</Label>
-              <Input value={form.creditor} onChange={(e) => setForm({ ...form, creditor: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <CurrencyInput label="Saldo" value={form.balance} onChange={(v) => setForm({ ...form, balance: v })} />
-              <CurrencyInput label="Parcela" value={form.payment} onChange={(v) => setForm({ ...form, payment: v })} />
-              <PercentInput label="Juros %/mês" value={form.rate} onChange={(v) => setForm({ ...form, rate: v })} />
-            </div>
-            <Button onClick={save} className="w-full">Salvar</Button>
-          </CardContent>
-        </Card>
-      )}
 
       {ranked.length === 0 && (
         <Card>
@@ -272,6 +235,7 @@ export function Debts() {
       {/* Parcelas detectadas automaticamente no extrato */}
       <TransactionInstallmentGroups />
 
+      {openWizard && <DebtWizard onClose={() => setOpenWizard(false)} />}
       {editDebt && <DebtEditModal debt={editDebt} onClose={() => setEditDebt(null)} />}
       {simulateDebt && <DebtSimulator debt={simulateDebt} onClose={() => setSimulateDebt(null)} />}
     </div>

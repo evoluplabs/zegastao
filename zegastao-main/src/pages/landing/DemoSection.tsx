@@ -18,7 +18,7 @@ function ChatMockup() {
 
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="flex items-center gap-2 border-b px-4 py-3 bg-secondary/40">
+      <div className="flex items-center gap-2 border-b px-4 py-3 bg-muted/70">
         <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center">
           <Bot className="h-4 w-4 text-white" />
         </div>
@@ -60,7 +60,7 @@ function UploadMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between"
+      <div className="px-4 py-3 border-b bg-muted/70 flex items-center justify-between"
         style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <span className="text-xs font-semibold">Extrato importado</span>
         <span className="text-[10px] text-green-500 font-medium">✓ 94 transações</span>
@@ -105,7 +105,7 @@ function ProjectionMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40"
+      <div className="px-4 py-3 border-b bg-muted/70"
         style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <p className="text-xs font-semibold">Projeção de quitação</p>
         <p className="text-[10px] text-muted-foreground">Dívida Nubank · R$ 8.200</p>
@@ -141,13 +141,13 @@ function ContractMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40 flex items-center justify-between"
+      <div className="px-4 py-3 border-b bg-muted/70 flex items-center justify-between"
         style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <span className="text-xs font-semibold">Contrato analisado</span>
         <span className="text-[10px] text-red-500 font-semibold">⚠ 2 red flags</span>
       </div>
       <div className="p-4 space-y-2">
-        <div className="rounded-lg bg-secondary/40 p-3 text-[10px] leading-relaxed text-muted-foreground"
+        <div className="rounded-lg bg-muted/70 p-3 text-[10px] leading-relaxed text-muted-foreground"
           style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 300ms forwards' }}>
           <p>§ 4.2 — CET:{' '}
             <span className="bg-red-200 text-red-700 font-semibold px-1 rounded animate-pulse">
@@ -191,7 +191,7 @@ function JourneyMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40"
+      <div className="px-4 py-3 border-b bg-muted/70"
         style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <p className="text-xs font-semibold">Jornada Financeira</p>
         <p className="text-[10px] text-muted-foreground">2 de 10 marcos conquistados</p>
@@ -239,7 +239,7 @@ function PhaseMockup() {
   ];
   return (
     <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
-      <div className="px-4 py-3 border-b bg-secondary/40"
+      <div className="px-4 py-3 border-b bg-muted/70"
         style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
         <p className="text-xs font-semibold">Dashboard adaptativo</p>
         <p className="text-[10px] text-muted-foreground">Muda conforme sua fase financeira</p>

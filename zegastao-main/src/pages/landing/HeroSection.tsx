@@ -7,7 +7,7 @@ function DashboardMockup() {
     <div className="perspective-wrap w-full max-w-lg mx-auto">
       <div className="tilt-card animate-float rounded-2xl border bg-card shadow-2xl shadow-primary/10 overflow-hidden">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-secondary/40">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/60">
           <div className="flex items-center gap-2">
             <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
             <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
@@ -103,7 +103,7 @@ export function HeroSection() {
             </div>
 
             {/* Tagline */}
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
               78% dos brasileiros estão endividados. Você merece uma saída.
             </p>
 

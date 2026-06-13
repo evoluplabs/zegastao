@@ -31,6 +31,7 @@ import { RecurringExpenses } from '@/components/RecurringExpenses';
 import { SetupChecklist } from '@/components/SetupChecklist';
 import { SpendingAlert } from '@/components/SpendingAlert';
 import { SpendingFocus } from '@/components/SpendingFocus';
+import { CategorySpendingPanel } from '@/components/CategorySpendingPanel';
 import { MonthlyReport, shouldShowMonthlyReport } from '@/components/MonthlyReport';
 import { ProactiveCopilotCards } from '@/components/ProactiveCopilotCards';
 import { useProactiveSuggestions } from '@/hooks/useProactiveSuggestions';
@@ -114,6 +115,14 @@ export function Dashboard() {
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
 
+  // Receita real das transações do mês (positivas); fallback para perfil se sem dados
+  const actualIncome = useMemo(
+    () => currentMonthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
+    [currentMonthTx]
+  );
+  const displayIncome = actualIncome > 0 ? actualIncome : income;
+  const isIncomeEstimate = actualIncome === 0 && income > 0;
+
   const monthStart = currentMonthStart();
 
   // Início do mês anterior para calcular queda de categoria
@@ -176,7 +185,7 @@ export function Dashboard() {
   // Use fixed expenses from profile if no transaction data yet for this month
   const effectiveExpenses = expenses > 0 ? expenses : (profile?.fixedExpenses || 0);
 
-  const balance = income - expenses;
+  const balance = displayIncome - expenses;
   const redirectedThisMonth = rules.reduce((s, r) => s + (r.monthRedirected || 0), 0);
 
   const topDebt = [...debts]
@@ -335,13 +344,18 @@ export function Dashboard() {
 
           {/* Receitas no mês */}
           <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Receitas no mês</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Receitas no mês</p>
+              {isIncomeEstimate && (
+                <span className="text-[10px] text-muted-foreground/70 border rounded px-1">estimado</span>
+              )}
+            </div>
             <p className="text-3xl font-bold tracking-tight tabular-nums text-success">
-              {income > 0 ? formatBRL(income) : '—'}
+              {displayIncome > 0 ? formatBRL(displayIncome) : '—'}
             </p>
-            {hasCurrentMonthTx && (
+            {hasCurrentMonthTx && actualIncome > 0 && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {currentMonthTx.filter(t => t.amount > 0).length} entrada{currentMonthTx.filter(t => t.amount > 0).length !== 1 ? 's' : ''}
+                {currentMonthTx.filter((t) => t.amount > 0).length} entrada{currentMonthTx.filter((t) => t.amount > 0).length !== 1 ? 's' : ''}
               </p>
             )}
           </div>
@@ -407,7 +421,12 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* 3. Saldo das Contas + Fase */}
+        {/* 3. Gastos por Categoria */}
+        {byCategory.length > 0 && (
+          <CategorySpendingPanel byCategory={byCategory} income={income} />
+        )}
+
+        {/* 4. Saldo das Contas + Fase */}
         <div className="grid gap-3 sm:grid-cols-2">
           {/* Saldo das Contas */}
           <div className="rounded-2xl border bg-card p-5">
@@ -738,10 +757,9 @@ export function Dashboard() {
           </Card>
         </div>
 
-        {/* 8. Análise de gastos (só com transações) */}
+        {/* 8. Fluxo + Donut — complementam o CategorySpendingPanel acima */}
         {(byCategory.length > 0 || hasCurrentMonthTx) && (
           <div className="space-y-3">
-            {/* Destaque: para onde foi mais dinheiro */}
             <SpendingFocus byCategory={byCategory} income={income} />
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -752,9 +770,8 @@ export function Dashboard() {
                 <CardContent>
                   <FlowChart
                     data={[
-                      { label: 'Renda', value: income, color: '#10b981' },
+                      { label: 'Renda', value: displayIncome, color: '#10b981' },
                       { label: 'Gastos', value: expenses, color: '#ef4444' },
-                      // Parcelas já estão em "Gastos" quando há transações reais — não dobrar
                       ...(!hasCurrentMonthTx && debtPayments > 0
                         ? [{ label: 'Parcelas', value: debtPayments, color: '#f59e0b' }]
                         : []),
@@ -765,18 +782,11 @@ export function Dashboard() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Análise por categoria</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Por categoria</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {byCategory.length > 0 ? (
-                    <div className="space-y-3">
-                      <CategoryBreakdown data={byCategory.slice(0, 5)} />
-                      <CategoryAnalysis
-                        categories={byCategory.slice(0, 6)}
-                        income={income}
-                        transactions={currentMonthTx}
-                      />
-                    </div>
+                    <CategoryBreakdown data={byCategory.slice(0, 5)} />
                   ) : (
                     <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
                   )}

@@ -124,6 +124,12 @@ export const BETTING_MARKET_LABELS: Record<string, string> = {
 export const BETTING_DISCLAIMER =
   'Esta análise é educacional e não garante resultados. Apostas esportivas envolvem risco de perda total do valor apostado. Aposte com responsabilidade e dentro do seu limite semanal configurado com o Copiloto.';
 
+export interface CategoryBudget {
+  id: string;
+  category: string;
+  monthlyLimit: number;
+}
+
 export type AccountType = 'checking' | 'savings' | 'wallet' | 'investment' | 'other';
 
 export interface Account {
