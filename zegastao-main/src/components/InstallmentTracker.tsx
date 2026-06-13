@@ -128,7 +128,7 @@ export function InstallmentTracker({ debt, onDebtUpdated }: Props) {
       await batch.commit();
       toast(`Pagamento de ${formatBRL(extra)} registrado!`);
       setShowAdvance(false);
-      setExtraAmount('');
+      setExtraAmount(0);
       onDebtUpdated?.();
     } catch {
       toast('Erro ao registrar pagamento', 'error');

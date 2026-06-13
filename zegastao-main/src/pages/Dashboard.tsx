@@ -115,14 +115,6 @@ export function Dashboard() {
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
 
-  // Receita real das transações do mês (positivas); fallback para perfil se sem dados
-  const actualIncome = useMemo(
-    () => currentMonthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-    [currentMonthTx]
-  );
-  const displayIncome = actualIncome > 0 ? actualIncome : income;
-  const isIncomeEstimate = actualIncome === 0 && income > 0;
-
   const monthStart = currentMonthStart();
 
   // Início do mês anterior para calcular queda de categoria
@@ -136,6 +128,14 @@ export function Dashboard() {
     () => allTransactions.filter((t) => t.date >= monthStart),
     [allTransactions, monthStart]
   );
+
+  // Receita real das transações do mês (positivas); fallback para perfil se sem dados
+  const actualIncome = useMemo(
+    () => currentMonthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
+    [currentMonthTx]
+  );
+  const displayIncome = actualIncome > 0 ? actualIncome : income;
+  const isIncomeEstimate = actualIncome === 0 && income > 0;
 
   // Transactions for previous month
   const prevMonthTx = useMemo(
