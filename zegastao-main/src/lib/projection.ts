@@ -34,7 +34,7 @@ export function projectDebtPayoff(
     creditor: d.creditor,
     balance: d.totalBalance,
     monthlyPayment: d.monthlyPayment,
-    rate: d.interestRateMonthly,
+    rate: Math.max(0, d.interestRateMonthly), // taxa nunca negativa
   }));
 
   const timeline: MonthSummary[] = [];
@@ -49,12 +49,12 @@ export function projectDebtPayoff(
 
     for (const debt of working) {
       if (debt.balance <= 0) continue;
-      const interest = debt.balance * debt.rate;
-      debt.balance += interest;
-      totalInterest += interest;
+      const interest = Math.round(debt.balance * debt.rate * 100) / 100;
+      debt.balance = Math.round((debt.balance + interest) * 100) / 100;
+      totalInterest = Math.round((totalInterest + interest) * 100) / 100;
 
       const payment = Math.min(debt.monthlyPayment + (extra > 0 ? extra : 0), debt.balance);
-      debt.balance = Math.max(0, debt.balance - payment);
+      debt.balance = Math.max(0, Math.round((debt.balance - payment) * 100) / 100);
       extra = Math.max(0, extra - Math.max(0, payment - debt.monthlyPayment));
 
       summary.debts.push({

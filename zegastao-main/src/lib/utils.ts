@@ -41,3 +41,21 @@ export function formatNumber(value: number, decimals = 0): string {
     maximumFractionDigits: decimals,
   }).format(value || 0);
 }
+
+/** Converte string no formato BRL ("1.234,56" ou "1234,56") para número. */
+export function parseDecimalBR(str: string): number {
+  if (!str) return 0;
+  const cleaned = str.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+/** Arredonda para 2 casas decimais (evita acúmulo de float em simulações). */
+export function roundCents(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/** Converte percentual exibido ("2,5") para decimal de armazenamento (0.025). */
+export function pctToDecimal(pct: string): number {
+  return parseDecimalBR(pct) / 100;
+}

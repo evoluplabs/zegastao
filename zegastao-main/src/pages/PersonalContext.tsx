@@ -1,11 +1,11 @@
 import { useEffect, useState, type TextareaHTMLAttributes } from 'react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { useGenerateInsights } from '@/hooks/useGenerateInsights';
 import {
   Brain, Save, Bot, PenLine, Zap, TrendingUp, AlertCircle,
   CheckCircle2, ChevronDown, ChevronUp, DollarSign, Target, RefreshCw,
 } from 'lucide-react';
-import { db, functions } from '@/firebase';
+import { db } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import { useCopilotNotes } from '@/hooks/useDocuments';
 import { useDebts } from '@/hooks/useDebts';
@@ -96,8 +96,7 @@ function PersonaCard() {
   const notes = useCopilotNotes();
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
-  const [generating, setGenerating] = useState(false);
-  const [genError, setGenError] = useState<string | null>(null);
+  const { generating, error: genError, generate: generateNow } = useGenerateInsights();
 
   const phase = profile?.financialPhase;
   const activeDebts = debts.filter((d) => d.status === 'active');
@@ -116,29 +115,6 @@ function PersonaCard() {
   ];
 
   const statusClass = { good: 'text-green-600', warn: 'text-yellow-600', bad: 'text-red-600', neutral: 'text-foreground' };
-
-  async function generateNow() {
-    setGenerating(true);
-    setGenError(null);
-
-    const timeout = setTimeout(() => {
-      setGenerating(false);
-      setGenError('A geração demorou demais. Tente novamente.');
-    }, 60_000);
-
-    try {
-      const fn = httpsCallable(functions, 'generateInsightsNow');
-      await fn({});
-    } catch (err: unknown) {
-      // FirebaseFunctionsError.message pode vir como "functions/code: texto" — pega só o texto
-      const raw = err instanceof Error ? err.message : 'Erro ao gerar análise.';
-      const msg = raw.includes(': ') ? raw.split(': ').slice(1).join(': ') : raw;
-      setGenError(msg);
-    } finally {
-      clearTimeout(timeout);
-      setGenerating(false);
-    }
-  }
 
   return (
     <div className="rounded-2xl border bg-card p-5 space-y-4">

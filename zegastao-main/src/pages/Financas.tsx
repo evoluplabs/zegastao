@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Debts } from './Debts';
@@ -22,18 +21,9 @@ type TabId = typeof TABS[number]['id'];
 export function Financas() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as TabId | null;
-  const [active, setActive] = useState<TabId>(
-    TABS.find((t) => t.id === tabParam)?.id ?? 'debts'
-  );
-
-  useEffect(() => {
-    if (tabParam && TABS.find((t) => t.id === tabParam)) {
-      setActive(tabParam as TabId);
-    }
-  }, [tabParam]);
+  const active: TabId = TABS.find((t) => t.id === tabParam)?.id ?? 'debts';
 
   function switchTab(id: TabId) {
-    setActive(id);
     setSearchParams({ tab: id }, { replace: true });
   }
 

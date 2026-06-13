@@ -8,6 +8,7 @@ import { useGoals } from '@/hooks/useGoals';
 import { useRules } from '@/hooks/useRules';
 import { useInsights } from '@/hooks/useInsights';
 import { useDailyTasks } from '@/hooks/useJourney';
+import { useGenerateInsights } from '@/hooks/useGenerateInsights';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,15 @@ const TASK_CATEGORY_ICONS: Record<string, string> = {
   investimento: '📈',
 };
 
+function formatInsightTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffH = Math.floor(diffMs / 3_600_000);
+  if (diffH < 1) return 'Agora mesmo';
+  if (diffH < 24) return `Há ${diffH}h`;
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
 function SkeletonCard({ className }: { className?: string }) {
   return (
     <div className={cn('rounded-lg border bg-card p-6 animate-pulse', className)}>
@@ -75,8 +85,9 @@ export function Dashboard() {
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
   const { data: rules } = useRules();
-  const { insights } = useInsights();
+  const { insights, generatedAt: insightsGeneratedAt } = useInsights();
   const tasks = useDailyTasks();
+  const { generating, error: insightError, generate } = useGenerateInsights();
 
   const [openDebt, setOpenDebt] = useState(false);
   const [openGoal, setOpenGoal] = useState(false);
@@ -640,15 +651,37 @@ export function Dashboard() {
         )}
 
         {/* 10. Insights do copiloto */}
-        {insights.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Insights do copiloto
-              </h2>
-              <Badge variant="outline" className="text-xs">Atualiza à meia-noite</Badge>
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Insights do copiloto
+            </h2>
+            <div className="flex items-center gap-2">
+              {insightsGeneratedAt && (
+                <span className="text-xs text-muted-foreground hidden sm:block">
+                  {formatInsightTime(insightsGeneratedAt)}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generate}
+                disabled={generating}
+                className="text-xs h-7 px-2"
+              >
+                {generating ? 'Gerando…' : 'Gerar agora'}
+              </Button>
             </div>
+          </div>
+
+          {insightError && (
+            <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2 text-xs text-destructive">
+              {insightError}
+            </div>
+          )}
+
+          {insights.length > 0 ? (
             <div className="space-y-3">
               {insights.map((ins, i) => (
                 <div key={i} className="rounded-xl border bg-card p-4 hover:border-primary/20 transition-all">
@@ -662,18 +695,15 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Insights empty state */}
-        {insights.length === 0 && hasAnyTx && (
-          <div className="rounded-xl border bg-card/50 p-6 text-center">
-            <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Insights personalizados aparecem após o primeiro processamento noturno.
-            </p>
-          </div>
-        )}
+          ) : hasAnyTx ? (
+            <div className="rounded-xl border bg-card/50 p-6 text-center">
+              <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground mb-3">
+                Nenhum insight gerado ainda. Clique em "Gerar agora" para analisar sua situação.
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* Wizards */}

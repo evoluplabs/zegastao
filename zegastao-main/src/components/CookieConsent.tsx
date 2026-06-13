@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,7 @@ import { Button } from '@/components/ui/button';
 const STORAGE_KEY = 'zg_cookie_consent';
 
 export function CookieConsent() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) setVisible(true);
-  }, []);
+  const [visible, setVisible] = useState(() => !localStorage.getItem(STORAGE_KEY));
 
   function accept() {
     localStorage.setItem(STORAGE_KEY, 'accepted');
