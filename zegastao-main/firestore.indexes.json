@@ -39,14 +39,15 @@
         { "fieldPath": "isInstallment", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "profile",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "referralCode", "order": "ASCENDING" }
-      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "profile",
+      "fieldPath": "referralCode",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    }
+  ]
 }
