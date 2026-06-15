@@ -24,6 +24,12 @@ export function Projection() {
   const [extra, setExtra] = useState(0);
   const [strategy, setStrategy] = useState<'avalanche' | 'snowball'>('avalanche');
 
+  // These must be declared before any conditional return (Rules of Hooks)
+  const [debtId, setDebtId] = useState('');
+  const [scExtra, setScExtra] = useState(200);
+  const [scDiscount, setScDiscount] = useState(0.20);
+  const [scInstallments, setScInstallments] = useState('24');
+
   // ---- Projeção geral de quitação ----
   const projection = useMemo(
     () => projectDebtPayoff(debts, extra, strategy),
@@ -50,10 +56,6 @@ export function Projection() {
       </div>
     );
   }
-  const [debtId, setDebtId] = useState('');
-  const [scExtra, setScExtra] = useState(200);
-  const [scDiscount, setScDiscount] = useState(0.20);
-  const [scInstallments, setScInstallments] = useState('24');
 
   const selectedDebt = activeDebts.find((d) => d.id === debtId) || activeDebts[0];
 

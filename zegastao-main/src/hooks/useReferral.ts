@@ -20,17 +20,22 @@ export function useReferral() {
     ? `${window.location.origin}/login?ref=${referralCode}`
     : null;
 
-  async function share(context?: string) {
+  async function share(context?: string): Promise<'shared' | 'copied' | 'fallback' | undefined> {
     if (!referralUrl) return;
     const text = `Estou usando o Copiloto Financeiro para sair das dívidas com ajuda de IA. Entra grátis pelo meu link: ${referralUrl}`;
     track(Events.REFERRAL_SHARED, { context: context || 'manual' });
     if (navigator.share) {
       try {
         await navigator.share({ text, url: referralUrl });
+        return 'shared';
       } catch { /* cancelou */ }
-    } else {
+      return;
+    }
+    try {
       await navigator.clipboard.writeText(text);
       return 'copied';
+    } catch {
+      return 'fallback';
     }
   }
 

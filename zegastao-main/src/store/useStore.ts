@@ -7,9 +7,11 @@ interface AppState {
   user: User | null;
   profile: Profile | null;
   authLoading: boolean;
+  showCombined: boolean;
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
   setAuthLoading: (loading: boolean) => void;
+  toggleCombined: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -18,15 +20,17 @@ export const useStore = create<AppState>()(
       user: null,
       profile: null,
       authLoading: true,
+      showCombined: false,
       setUser: (user) => set({ user }),
       setProfile: (profile) => set({ profile }),
       setAuthLoading: (authLoading) => set({ authLoading }),
+      toggleCombined: () => set((s) => ({ showCombined: !s.showCombined })),
     }),
     {
       name: 'zegastao-store',
       storage: createJSONStorage(() => localStorage),
-      // Only persist profile (not user/auth — Firebase handles auth state)
-      partialize: (state) => ({ profile: state.profile }),
+      // Persist profile + couple mode toggle
+      partialize: (state) => ({ profile: state.profile, showCombined: state.showCombined }),
     }
   )
 );

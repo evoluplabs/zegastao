@@ -137,6 +137,8 @@ export function Sidebar() {
           onClick={async () => {
             const result = await referral.share('sidebar');
             if (result === 'copied') toast('Link copiado! Cole para indicar um amigo 🎉');
+            else if (result === 'shared') toast('Indicação compartilhada! Obrigado 🎉');
+            else if (result === 'fallback') toast(`Copie seu link: ${referral.referralUrl}`);
           }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
         >

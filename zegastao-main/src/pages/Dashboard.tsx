@@ -100,10 +100,10 @@ export function Dashboard() {
   const { isLinked } = useSharedFinances();
   const { data: partnerData } = usePartnerData();
 
+  const showCombined = useStore((s) => s.showCombined);
+  const toggleCombined = useStore((s) => s.toggleCombined);
+
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showCombined, setShowCombined] = useState(() =>
-    localStorage.getItem('dashboard-combined') === '1'
-  );
   const [openDebt, setOpenDebt] = useState(false);
   const [openAccount, setOpenAccount] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
@@ -224,6 +224,37 @@ export function Dashboard() {
   const combinedIncome = displayIncome + (partnerData?.income ?? 0);
   const combinedExpenses = effectiveExpenses + (partnerData?.expenses ?? 0);
   const combinedBalance = combinedIncome - combinedExpenses;
+
+  // Quando o modo casal está ativo, os cards/painéis usam os valores combinados
+  const coupleActive = showCombined && isLinked && !!partnerData;
+  const displayedIncome = coupleActive ? combinedIncome : displayIncome;
+  const displayedExpenses = coupleActive ? combinedExpenses : effectiveExpenses;
+  const displayedBalance = coupleActive ? combinedBalance : balance;
+  const partnerName = partnerData?.profile?.name || 'Parceiro(a)';
+
+  // Gasto do parceiro por categoria (mês atual) — para split no painel de categorias
+  const partnerByCategory = useMemo(() => {
+    if (!coupleActive || !partnerData?.transactions) return undefined;
+    const map: Record<string, number> = {};
+    for (const t of partnerData.transactions) {
+      if (t.amount < 0) {
+        const abs = Math.abs(t.amount);
+        map[t.category] = (map[t.category] || 0) + abs;
+      }
+    }
+    return Object.entries(map).map(([name, amount]) => ({ name, amount }));
+  }, [coupleActive, partnerData]);
+
+  // Categorias exibidas: combina minhas + do parceiro quando modo casal ativo
+  const combinedByCategoryDisplay = useMemo(() => {
+    if (!coupleActive || !partnerByCategory) return byCategoryDisplay;
+    const map: Record<string, number> = {};
+    for (const c of byCategoryDisplay) map[c.name] = (map[c.name] || 0) + c.amount;
+    for (const c of partnerByCategory) map[c.name] = (map[c.name] || 0) + c.amount;
+    return Object.entries(map)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [coupleActive, partnerByCategory, byCategoryDisplay]);
 
   // Monthly spending trend (last 6 months) — derived from allTransactions already loaded
   const monthlyTrend = useMemo(() => {
@@ -349,54 +380,66 @@ export function Dashboard() {
 
         {/* Banner Modo Casal */}
         {isLinked && partnerData && (
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="overflow-hidden rounded-2xl border bg-card">
+            {/* Faixa de topo */}
+            <div className="flex items-center justify-between gap-3 border-b bg-primary/5 px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-base">💑</span>
                 <span className="text-sm font-semibold">Modo Casal</span>
-                {partnerData.profile?.name && (
-                  <span className="text-sm text-muted-foreground">· {partnerData.profile.name}</span>
+                {coupleActive && (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+                    combinado ativo
+                  </span>
                 )}
               </div>
               <button
-                onClick={() => {
-                  const next = !showCombined;
-                  setShowCombined(next);
-                  localStorage.setItem('dashboard-combined', next ? '1' : '0');
-                }}
-                className="text-xs font-medium text-primary hover:underline"
+                onClick={toggleCombined}
+                role="switch"
+                aria-checked={showCombined}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
+                  showCombined ? 'bg-primary' : 'bg-muted-foreground/30'
+                )}
+                title={showCombined ? 'Ver individual' : 'Combinar tudo'}
               >
-                {showCombined ? 'Ver individual' : 'Ver combinado'}
+                <span
+                  className={cn(
+                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                    showCombined ? 'translate-x-6' : 'translate-x-1'
+                  )}
+                />
               </button>
             </div>
-            {showCombined && (
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                <div>
-                  <p className="text-muted-foreground">Receita combinada</p>
-                  <p className="font-bold text-success text-sm">{formatBRL(combinedIncome)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Despesas combinadas</p>
-                  <p className="font-bold text-destructive text-sm">{formatBRL(combinedExpenses)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Saldo conjunto</p>
-                  <p className={cn('font-bold text-sm', combinedBalance >= 0 ? 'text-success' : 'text-destructive')}>
-                    {formatBRL(combinedBalance)}
-                  </p>
-                </div>
+
+            {/* Duas colunas: você | parceiro */}
+            <div className="grid grid-cols-2 divide-x">
+              <div className="px-4 py-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Você
+                </p>
+                <p className="mt-1 text-sm font-bold text-success tabular-nums">{formatBRL(displayIncome)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">− {formatBRL(effectiveExpenses)} despesas</p>
               </div>
-            )}
-            {!showCombined && (
-              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-card px-3 py-2">
-                  <p className="text-muted-foreground">Você — Receita</p>
-                  <p className="font-semibold">{formatBRL(displayIncome)}</p>
-                </div>
-                <div className="rounded-lg bg-card px-3 py-2">
-                  <p className="text-muted-foreground">{partnerData.profile?.name || 'Parceiro'} — Receita</p>
-                  <p className="font-semibold">{formatBRL(partnerData.income)}</p>
-                </div>
+              <div className="px-4 py-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <span className="inline-block h-2 w-2 rounded-full bg-sky-500" /> {partnerName}
+                </p>
+                <p className="mt-1 text-sm font-bold text-success tabular-nums">{formatBRL(partnerData.income)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">− {formatBRL(partnerData.expenses)} despesas</p>
+              </div>
+            </div>
+
+            {/* Linha combinada */}
+            {coupleActive && (
+              <div className="flex items-center justify-between gap-3 border-t bg-secondary/30 px-4 py-2.5 text-xs">
+                <span className="font-medium text-muted-foreground">Combinado</span>
+                <span className="flex items-center gap-3">
+                  <span className="text-success tabular-nums">{formatBRL(combinedIncome)}</span>
+                  <span className="text-destructive tabular-nums">−{formatBRL(combinedExpenses)}</span>
+                  <span className={cn('font-bold tabular-nums', combinedBalance >= 0 ? 'text-success' : 'text-destructive')}>
+                    = {formatBRL(combinedBalance)}
+                  </span>
+                </span>
               </div>
             )}
           </div>
@@ -442,23 +485,26 @@ export function Dashboard() {
             <div className="flex items-center gap-1.5 mb-1">
               <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saldo do mês</p>
-              {isIncomeEstimate && (
+              {coupleActive && (
+                <span className="text-[10px] font-bold text-primary border border-primary/30 rounded px-1">casal</span>
+              )}
+              {isIncomeEstimate && !coupleActive && (
                 <span className="text-[10px] text-muted-foreground/60 border rounded px-1">est.</span>
               )}
             </div>
             <p className={cn(
               'text-3xl font-bold tracking-tight tabular-nums',
-              displayIncome === 0 && effectiveExpenses === 0
+              displayedIncome === 0 && displayedExpenses === 0
                 ? 'text-muted-foreground'
-                : balance >= 0 ? 'text-success' : 'text-destructive'
+                : displayedBalance >= 0 ? 'text-success' : 'text-destructive'
             )}>
-              {displayIncome === 0 && effectiveExpenses === 0 ? '—' : formatBRL(balance)}
+              {displayedIncome === 0 && displayedExpenses === 0 ? '—' : formatBRL(displayedBalance)}
             </p>
-            {balance < 0 && effectiveExpenses > 0 && (
+            {displayedBalance < 0 && displayedExpenses > 0 && (
               <p className="mt-1 text-xs text-destructive">Despesas acima da renda</p>
             )}
-            {balance >= 0 && effectiveExpenses > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">Sobra do mês</p>
+            {displayedBalance >= 0 && displayedExpenses > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">{coupleActive ? 'Sobra conjunta' : 'Sobra do mês'}</p>
             )}
           </div>
 
@@ -466,36 +512,47 @@ export function Dashboard() {
           <div className="rounded-2xl border bg-card p-5">
             <div className="flex items-center gap-1.5 mb-1">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Receitas no mês</p>
-              {isIncomeEstimate && (
+              {coupleActive && (
+                <span className="text-[10px] font-bold text-primary border border-primary/30 rounded px-1">casal</span>
+              )}
+              {isIncomeEstimate && !coupleActive && (
                 <span className="text-[10px] text-muted-foreground/70 border rounded px-1">estimado</span>
               )}
             </div>
             <p className="text-3xl font-bold tracking-tight tabular-nums text-success">
-              {displayIncome > 0 ? formatBRL(displayIncome) : '—'}
+              {displayedIncome > 0 ? formatBRL(displayedIncome) : '—'}
             </p>
-            {hasCurrentMonthTx && actualIncome > 0 && (
+            {hasCurrentMonthTx && actualIncome > 0 && !coupleActive && (
               <p className="mt-1 text-xs text-muted-foreground">
                 {currentMonthTx.filter((t) => t.amount > 0).length} entrada{currentMonthTx.filter((t) => t.amount > 0).length !== 1 ? 's' : ''}
               </p>
+            )}
+            {coupleActive && (
+              <p className="mt-1 text-xs text-muted-foreground">Você + {partnerName}</p>
             )}
           </div>
 
           {/* Despesas no mês */}
           <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Despesas no mês</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Despesas no mês</p>
+              {coupleActive && (
+                <span className="text-[10px] font-bold text-primary border border-primary/30 rounded px-1">casal</span>
+              )}
+            </div>
             <p className={cn(
               'text-3xl font-bold tracking-tight tabular-nums',
-              effectiveExpenses > 0 ? 'text-destructive' : 'text-muted-foreground'
+              displayedExpenses > 0 ? 'text-destructive' : 'text-muted-foreground'
             )}>
-              {effectiveExpenses > 0 ? formatBRL(effectiveExpenses) : '—'}
+              {displayedExpenses > 0 ? formatBRL(displayedExpenses) : '—'}
             </p>
-            {hasCurrentMonthTx && balance < 0 && (
+            {hasCurrentMonthTx && displayedBalance < 0 && (
               <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
                 <AlertTriangle className="h-3 w-3" /> Acima da renda
               </div>
             )}
-            {hasCurrentMonthTx && balance >= 0 && effectiveExpenses > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">Sobra: {formatBRL(balance)}</p>
+            {hasCurrentMonthTx && displayedBalance >= 0 && displayedExpenses > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Sobra: {formatBRL(displayedBalance)}</p>
             )}
           </div>
         </div>
@@ -542,7 +599,13 @@ export function Dashboard() {
         )}
 
         {/* 3. Gastos por Categoria */}
-        <CategorySpendingPanel byCategory={byCategoryDisplay} income={displayIncome} monthLabel={byCategoryMonth ?? undefined} />
+        <CategorySpendingPanel
+          byCategory={coupleActive ? combinedByCategoryDisplay : byCategoryDisplay}
+          income={displayedIncome}
+          monthLabel={byCategoryMonth ?? undefined}
+          partnerByCategory={coupleActive ? partnerByCategory : undefined}
+          partnerName={partnerName}
+        />
 
         {/* Gráfico de tendência mensal (últimos 6 meses) */}
         {monthlyTrend.length >= 2 && (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Settings2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCategoryBudgets } from '@/hooks/useCategoryBudgets';
 import { CategoryBudgetModal } from '@/components/flows/CategoryBudgetModal';
@@ -21,9 +21,11 @@ interface Props {
   byCategory: { name: string; amount: number }[];
   income: number;
   monthLabel?: string;
+  partnerByCategory?: { name: string; amount: number }[];
+  partnerName?: string;
 }
 
-export function CategorySpendingPanel({ byCategory, income, monthLabel }: Props) {
+export function CategorySpendingPanel({ byCategory, income, monthLabel, partnerByCategory, partnerName }: Props) {
   const { data: budgets } = useCategoryBudgets();
   const [showModal, setShowModal] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -57,6 +59,14 @@ export function CategorySpendingPanel({ byCategory, income, monthLabel }: Props)
   const visibleItems = showAll ? byCategory : byCategory.slice(0, TOP_N);
   const hasMore = byCategory.length > TOP_N;
 
+  // Mapa de gasto do parceiro por categoria (modo casal)
+  const partnerMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const c of partnerByCategory ?? []) m[c.name] = c.amount;
+    return m;
+  }, [partnerByCategory]);
+  const hasPartnerSplit = !!partnerByCategory && partnerByCategory.length > 0;
+
   function CategoryRow({ cat }: { cat: { name: string; amount: number } }) {
     const budget = budgets.find((b) => b.category === cat.name);
     const benchPct = BENCHMARKS[cat.name]?.ideal;
@@ -66,6 +76,8 @@ export function CategorySpendingPanel({ byCategory, income, monthLabel }: Props)
     const isOver = hasLimit && cat.amount > limit;
     const isWarn = hasLimit && pct >= 80 && !isOver;
     const emoji = CATEGORY_EMOJIS[cat.name] ?? '📦';
+    const partnerAmount = partnerMap[cat.name] || 0;
+    const myAmount = Math.max(0, cat.amount - partnerAmount);
 
     return (
       <div className="space-y-1">
@@ -102,6 +114,20 @@ export function CategorySpendingPanel({ byCategory, income, monthLabel }: Props)
               className="h-full rounded-full bg-muted-foreground/30 transition-all"
               style={{ width: `${Math.min(100, income > 0 ? (cat.amount / income) * 300 : 30)}%` }}
             />
+          </div>
+        )}
+
+        {/* Split por pessoa (modo casal) */}
+        {hasPartnerSplit && partnerAmount > 0 && (
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              Você: <span className="font-medium text-foreground">{formatBRL(myAmount)}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-sky-500" />
+              {partnerName || 'Parceiro(a)'}: <span className="font-medium text-foreground">{formatBRL(partnerAmount)}</span>
+            </span>
           </div>
         )}
       </div>
