@@ -208,7 +208,7 @@ export function Dashboard() {
   // Use fixed expenses from profile if no transaction data yet for this month
   const effectiveExpenses = expenses > 0 ? expenses : (profile?.fixedExpenses || 0);
 
-  const balance = displayIncome - expenses;
+  const balance = displayIncome - effectiveExpenses;
   const redirectedThisMonth = rules.reduce((s, r) => s + (r.monthRedirected || 0), 0);
 
   const topDebt = [...debts]

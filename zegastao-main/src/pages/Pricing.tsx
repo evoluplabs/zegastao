@@ -82,15 +82,15 @@ export function Pricing() {
   const annualPrice = 'R$ 178,80';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-12">
         {/* Subscriber banner */}
         {plan !== 'free' && plan && (
-          <div className="mb-8 rounded-2xl border border-green-300 bg-green-50 px-6 py-5">
-            <p className="font-semibold text-green-800 text-base">
+          <div className="mb-8 rounded-2xl border border-green-500/30 bg-green-500/10 px-6 py-5">
+            <p className="font-semibold text-green-700 dark:text-green-300 text-base">
               ✅ Você já é assinante do plano {plan}
             </p>
-            <p className="text-sm text-green-700 mt-1">
+            <p className="text-sm text-green-700 dark:text-green-400 mt-1">
               Acesso ativo{sub.currentPeriodEnd ? ` até ${sub.currentPeriodEnd.toDate().toLocaleDateString('pt-BR')}` : ''} — gerencie no seu perfil.
             </p>
             <Link
