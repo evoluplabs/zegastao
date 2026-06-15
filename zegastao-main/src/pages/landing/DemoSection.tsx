@@ -312,7 +312,7 @@ export function DemoSection() {
               className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                 active === t.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-card border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                  : 'bg-card border border-border text-foreground/70 hover:text-foreground hover:border-primary/40 hover:bg-accent'
               }`}
             >
               <t.icon className="h-3.5 w-3.5" />

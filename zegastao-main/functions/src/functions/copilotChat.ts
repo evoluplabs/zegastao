@@ -79,6 +79,10 @@ export const copilotChat = onCall(
     const userId = request.auth?.uid;
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new HttpsError('internal', 'Serviço de IA temporariamente indisponível. Tente novamente mais tarde.');
+    }
+
     const parsed = ChatSchema.safeParse(request.data);
     if (!parsed.success) {
       throw new HttpsError('invalid-argument', parsed.error.errors[0]?.message || 'Dados inválidos');

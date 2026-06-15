@@ -203,6 +203,11 @@
     background-size: 200% 200%;
     animation: gradient-x 8s ease infinite;
   }
+  .dark .bg-gradient-animated {
+    background: linear-gradient(135deg, #0a1f1a 0%, #0d1b2a 50%, #071a14 100%);
+    background-size: 200% 200%;
+    animation: gradient-x 8s ease infinite;
+  }
 
   /* Shimmer text */
   .text-shimmer {

@@ -226,8 +226,12 @@ export function Dashboard() {
     let overdue = 0, dueSoon = 0, future = 0;
     for (const d of debts) {
       if (d.status !== 'active') continue;
-      const dueDate = new Date(year, month, d.dueDay);
-      const daysUntil = Math.ceil((dueDate.getTime() - now.getTime()) / 86_400_000);
+      const dueThisMonth = new Date(year, month, d.dueDay);
+      const daysThisMonth = Math.ceil((dueThisMonth.getTime() - now.getTime()) / 86_400_000);
+      // Se o vencimento já passou há mais de 5 dias neste mês, trata como próximo mês
+      const daysUntil = daysThisMonth < -5
+        ? Math.ceil((new Date(year, month + 1, d.dueDay).getTime() - now.getTime()) / 86_400_000)
+        : daysThisMonth;
       if (daysUntil < 0) overdue += d.monthlyPayment;
       else if (daysUntil <= 7) dueSoon += d.monthlyPayment;
       else future += d.monthlyPayment;
@@ -313,32 +317,28 @@ export function Dashboard() {
 
         {/* 1. Hero Row: Saldo Total + Receitas + Despesas */}
         <div className="grid gap-3 sm:grid-cols-3">
-          {/* Saldo Total das contas */}
+          {/* Saldo do mês (receitas − despesas) */}
           <div className="sm:col-span-1 rounded-2xl border bg-card p-5">
             <div className="flex items-center gap-1.5 mb-1">
               <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {accounts.length > 0 ? 'Saldo total' : 'Saldo estimado'}
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saldo do mês</p>
+              {isIncomeEstimate && (
+                <span className="text-[10px] text-muted-foreground/60 border rounded px-1">est.</span>
+              )}
             </div>
             <p className={cn(
               'text-3xl font-bold tracking-tight tabular-nums',
-              accounts.length > 0
-                ? totalAccountBalance >= 0 ? 'text-success' : 'text-destructive'
-                : income === 0 ? 'text-muted-foreground' : balance >= 0 ? 'text-success' : 'text-destructive'
+              displayIncome === 0 && effectiveExpenses === 0
+                ? 'text-muted-foreground'
+                : balance >= 0 ? 'text-success' : 'text-destructive'
             )}>
-              {accounts.length > 0 ? formatBRL(totalAccountBalance) : income === 0 ? '—' : formatBRL(balance)}
+              {displayIncome === 0 && effectiveExpenses === 0 ? '—' : formatBRL(balance)}
             </p>
-            {accounts.length === 0 && (
-              <button
-                onClick={() => setOpenAccount(true)}
-                className="mt-2 text-xs text-primary hover:underline"
-              >
-                + Adicionar contas bancárias
-              </button>
+            {balance < 0 && effectiveExpenses > 0 && (
+              <p className="mt-1 text-xs text-destructive">Despesas acima da renda</p>
             )}
-            {accounts.length > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">{accounts.length} conta{accounts.length > 1 ? 's' : ''} vinculada{accounts.length > 1 ? 's' : ''}</p>
+            {balance >= 0 && effectiveExpenses > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Sobra do mês</p>
             )}
           </div>
 
@@ -422,9 +422,7 @@ export function Dashboard() {
         )}
 
         {/* 3. Gastos por Categoria */}
-        {byCategory.length > 0 && (
-          <CategorySpendingPanel byCategory={byCategory} income={income} />
-        )}
+        <CategorySpendingPanel byCategory={byCategory} income={displayIncome} />
 
         {/* 4. Saldo das Contas + Fase */}
         <div className="grid gap-3 sm:grid-cols-2">

@@ -12,6 +12,9 @@ Responda APENAS com JSON neste formato (sem texto fora do JSON):
 {"insights":[{"type":"alert|tip|win|projection","emoji":"💡","title":"curto","body":"1-2 frases"}]}`;
 
 export async function generateInsights(compressedContext: string): Promise<Insight[]> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY não configurada.');
+  }
   const client = new Anthropic();
 
   const response = await client.messages.create({

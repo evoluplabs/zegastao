@@ -26,7 +26,19 @@ export function CategorySpendingPanel({ byCategory, income }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  if (byCategory.length === 0) return null;
+  if (byCategory.length === 0) {
+    return (
+      <div className="rounded-2xl border bg-card p-5 text-center space-y-2">
+        <h2 className="text-sm font-semibold">Gastos por categoria</h2>
+        <p className="text-xs text-muted-foreground">
+          Importe seu extrato bancário para ver para onde está indo seu dinheiro por categoria.
+        </p>
+        <a href="/upload" className="inline-block text-xs text-primary hover:underline font-medium">
+          Importar extrato →
+        </a>
+      </div>
+    );
+  }
 
   const VISIBLE = 6;
   const items = expanded ? byCategory : byCategory.slice(0, VISIBLE);
