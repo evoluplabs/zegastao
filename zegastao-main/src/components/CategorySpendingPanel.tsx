@@ -19,9 +19,10 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 interface Props {
   byCategory: { name: string; amount: number }[];
   income: number;
+  monthLabel?: string;
 }
 
-export function CategorySpendingPanel({ byCategory, income }: Props) {
+export function CategorySpendingPanel({ byCategory, income, monthLabel }: Props) {
   const { data: budgets } = useCategoryBudgets();
   const [showModal, setShowModal] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -42,6 +43,10 @@ export function CategorySpendingPanel({ byCategory, income }: Props) {
 
   const VISIBLE = 6;
   const items = expanded ? byCategory : byCategory.slice(0, VISIBLE);
+
+  const monthName = monthLabel
+    ? new Date(monthLabel + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    : null;
   const hasMore = byCategory.length > VISIBLE;
 
   const overCount = byCategory.filter((cat) => {
@@ -55,8 +60,13 @@ export function CategorySpendingPanel({ byCategory, income }: Props) {
     <>
       <div className="rounded-2xl border bg-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-sm font-semibold">Gastos por categoria</h2>
+            {monthName && (
+              <span className="text-[10px] rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 px-2 py-0.5 font-medium border border-amber-500/20">
+                {monthName} · importe o extrato atual para ver o mês atual
+              </span>
+            )}
             {overCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                 <AlertTriangle className="h-3 w-3" /> {overCount} acima

@@ -17,6 +17,7 @@ import { useReferral } from '@/hooks/useReferral';
 import { useStore } from '@/store/useStore';
 import { Logo } from '@/components/ui/Logo';
 import { FEATURES } from '@/lib/features';
+import { useToast } from '@/components/ui/Toast';
 
 const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
@@ -24,6 +25,7 @@ export function Sidebar() {
   const { isPaid } = useSubscription();
   const referral = useReferral();
   const { profile } = useStore();
+  const { toast } = useToast();
 
   const phase = profile?.financialPhase;
   // Em modo de teste (VITE_FEATURE_ZE_APOSTADOR=true), mostra para qualquer fase.
@@ -131,7 +133,10 @@ export function Sidebar() {
           Ajuda
         </NavLink>
         <button
-          onClick={() => referral.share('sidebar')}
+          onClick={async () => {
+            const result = await referral.share('sidebar');
+            if (result === 'copied') toast('Link copiado! Cole para indicar um amigo 🎉');
+          }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
         >
           <Gift className="h-4 w-4 shrink-0" />

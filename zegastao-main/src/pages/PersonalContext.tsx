@@ -223,11 +223,11 @@ function IncomeTasksSection() {
     <div className="space-y-4">
       {/* Contexto da dívida prioritária */}
       {topDebt && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
-          <DollarSign className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+          <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs">
-            <p className="font-semibold text-amber-800">Dívida prioritária: {topDebt.creditor}</p>
-            <p className="text-amber-700 mt-0.5">
+            <p className="font-semibold text-amber-800 dark:text-amber-300">Dívida prioritária: {topDebt.creditor}</p>
+            <p className="text-amber-700 dark:text-amber-400 mt-0.5">
               Parcela: <strong>{formatBRL(topDebt.monthlyPayment)}/mês</strong> · Juros: <strong>{formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.</strong>
               {' '}— as tarefas abaixo foram escolhidas para te ajudar a cobrir ou acelerar esse pagamento.
             </p>

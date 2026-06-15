@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bot, Upload, TrendingUp, FileText, Trophy, LayoutDashboard } from 'lucide-react';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 /* ── Chat Mockup ── */
 function ChatMockup() {
@@ -289,6 +290,7 @@ const TABS = [
 ];
 
 export function DemoSection() {
+  useScrollReveal();
   const [active, setActive] = useState('chat');
   const tab = TABS.find((t) => t.id === active)!;
   const MockupComponent = tab.component;

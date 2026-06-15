@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import {
@@ -79,8 +79,21 @@ export function UploadPage() {
   const [error, setError] = useState('');
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(false);
+  const [usedUploads, setUsedUploads] = useState<number | null>(null);
 
   const stepIndex = STEP_ORDER.indexOf(step);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user || isPaid) return;
+    getDocs(query(collection(db, 'users', user.uid, 'uploads'), orderBy('uploadedAt', 'desc'), limit(20)))
+      .then((snap) => {
+        const done = snap.docs.filter((d) => d.data().status === 'done').length;
+        setUsedUploads(done);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPaid]);
 
   function goNext() {
     const next = STEP_ORDER[stepIndex + 1];
@@ -185,7 +198,12 @@ export function UploadPage() {
           <div className="flex items-center gap-2 text-sm">
             <Lock className="h-4 w-4 text-amber-500 shrink-0" />
             <span className="text-amber-700 dark:text-amber-400">
-              Plano gratuito: {limits.uploadsTotal ?? limits.uploadsPerMonth} upload para testar
+              {usedUploads !== null
+                ? usedUploads >= (limits.uploadsTotal ?? 1)
+                  ? 'Você já usou seu upload gratuito'
+                  : `Plano gratuito: ${Math.max(0, (limits.uploadsTotal ?? 1) - usedUploads)} upload restante`
+                : `Plano gratuito: ${limits.uploadsTotal ?? limits.uploadsPerMonth} upload para testar`
+              }
             </span>
           </div>
           <Button
@@ -279,9 +297,9 @@ export function UploadPage() {
                   <strong>Qual mês enviar?</strong> {guide.whichMonth}
                 </p>
               </div>
-              <div className="flex items-start gap-2 rounded-xl bg-green-50 border border-green-100 px-3 py-2.5">
-                <FileDown className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-green-800 leading-snug">
+              <div className="flex items-start gap-2 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 px-3 py-2.5">
+                <FileDown className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-green-800 dark:text-green-300 leading-snug">
                   <strong>Formato:</strong> {guide.format}.
                 </p>
               </div>

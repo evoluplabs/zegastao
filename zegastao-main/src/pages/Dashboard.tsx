@@ -160,6 +160,29 @@ export function Dashboard() {
     return { expenses, byCategory, debtPayments };
   }, [currentMonthTx, debts]);
 
+  // Fallback: se não há gastos no mês atual, usa o mês mais recente com dados
+  const { byCategoryDisplay, byCategoryMonth } = useMemo(() => {
+    if (byCategory.length > 0) return { byCategoryDisplay: byCategory, byCategoryMonth: null };
+    const map: Record<string, number> = {};
+    let refMonth = '';
+    for (const t of allTransactions) {
+      if (t.amount >= 0) continue;
+      const m = t.date.slice(0, 7);
+      if (!refMonth || m > refMonth) refMonth = m;
+    }
+    if (!refMonth) return { byCategoryDisplay: [], byCategoryMonth: null };
+    for (const t of allTransactions) {
+      if (t.amount >= 0) continue;
+      if (t.date.slice(0, 7) !== refMonth) continue;
+      const abs = Math.abs(t.amount);
+      map[t.category] = (map[t.category] || 0) + abs;
+    }
+    const result = Object.entries(map)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount);
+    return { byCategoryDisplay: result, byCategoryMonth: refMonth };
+  }, [byCategory, allTransactions]);
+
   // Categorias do mês anterior (para calcular queda)
   const prevByCategory = useMemo(() => {
     const map: Record<string, number> = {};
@@ -422,7 +445,7 @@ export function Dashboard() {
         )}
 
         {/* 3. Gastos por Categoria */}
-        <CategorySpendingPanel byCategory={byCategory} income={displayIncome} />
+        <CategorySpendingPanel byCategory={byCategoryDisplay} income={displayIncome} monthLabel={byCategoryMonth ?? undefined} />
 
         {/* 4. Saldo das Contas + Fase */}
         <div className="grid gap-3 sm:grid-cols-2">

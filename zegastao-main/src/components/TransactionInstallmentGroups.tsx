@@ -1,11 +1,32 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, CreditCard, ShoppingCart } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, ShoppingCart, Pencil, Check, X } from 'lucide-react';
+import { writeBatch, doc } from 'firebase/firestore';
+import { db, auth } from '@/firebase';
 import { formatBRL } from '@/lib/utils';
 import { useTransactionInstallments } from '@/hooks/useTransactionInstallments';
 
 export function TransactionInstallmentGroups() {
   const { groups, loading } = useTransactionInstallments();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [editTotal, setEditTotal] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
+
+  async function saveTotal(groupKey: string, transactions: { id: string }[]) {
+    const uid = auth.currentUser?.uid;
+    if (!uid || editTotal < 1) return;
+    setSaving(true);
+    try {
+      const batch = writeBatch(db);
+      transactions.forEach((tx) => {
+        batch.update(doc(db, 'users', uid, 'transactions', tx.id), { installmentTotal: editTotal });
+      });
+      await batch.commit();
+      setEditingGroup(null);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (loading) return null;
   if (groups.length === 0) return null;
@@ -29,28 +50,42 @@ export function TransactionInstallmentGroups() {
         return (
           <div key={g.group} className="rounded-xl border bg-card overflow-hidden">
             {/* Header */}
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/30 transition-colors"
-              onClick={() => setExpanded(isOpen ? null : g.group)}
-            >
-              <CreditCard className="h-4 w-4 shrink-0 text-primary" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{g.merchantLabel}</p>
-                <p className="text-xs text-muted-foreground">
-                  {g.found} de {g.total}x encontradas · {formatBRL(avgInstallment)}/parcela
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-semibold">{formatBRL(g.totalAmount)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {remaining > 0 ? `${remaining} restantes` : 'Quitado'}
-                </p>
-              </div>
-              {isOpen
-                ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
-                : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-              }
-            </button>
+            <div className="flex items-center">
+              <button
+                className="flex-1 flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/30 transition-colors"
+                onClick={() => setExpanded(isOpen ? null : g.group)}
+              >
+                <CreditCard className="h-4 w-4 shrink-0 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{g.merchantLabel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {g.found} de {g.total}x encontradas · {formatBRL(avgInstallment)}/parcela
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold">{formatBRL(g.totalAmount)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {remaining > 0 ? `${remaining} restantes` : 'Quitado'}
+                  </p>
+                </div>
+                {isOpen
+                  ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 ml-1" />
+                  : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-1" />
+                }
+              </button>
+              <button
+                className="px-3 py-3 text-muted-foreground hover:text-primary transition-colors"
+                title="Corrigir total de parcelas"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingGroup(g.group);
+                  setEditTotal(g.total);
+                  setExpanded(g.group);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
             {/* Barra de progresso */}
             <div className="px-4 pb-1">
@@ -65,6 +100,33 @@ export function TransactionInstallmentGroups() {
             {/* Detalhes expandidos */}
             {isOpen && (
               <div className="px-4 pb-4 pt-2 space-y-3 border-t mt-1">
+                {/* Edição do total de parcelas */}
+                {editingGroup === g.group && (
+                  <div className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-2">
+                    <span className="text-xs text-muted-foreground flex-1">Total de parcelas:</span>
+                    <input
+                      type="number"
+                      min={g.found}
+                      max={120}
+                      value={editTotal}
+                      onChange={(e) => setEditTotal(Number(e.target.value))}
+                      className="w-16 rounded border bg-background px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <button
+                      onClick={() => saveTotal(g.group, g.transactions)}
+                      disabled={saving || editTotal < g.found}
+                      className="text-primary hover:text-primary/80 disabled:opacity-40"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditingGroup(null)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
                 {/* Resumo financeiro */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg bg-secondary/40 p-2.5 text-center">

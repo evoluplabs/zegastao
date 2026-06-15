@@ -97,7 +97,7 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left — copy */}
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white/70 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-primary mb-6 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-card/70 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-primary mb-6 shadow-sm">
               <Sparkles className="h-3 w-3" />
               Powered by Claude AI · Feito para o Brasil
             </div>
@@ -124,7 +124,7 @@ export function HeroSection() {
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-xl bg-white/70 backdrop-blur-sm">
+              <Button asChild variant="outline" size="lg" className="rounded-xl bg-card/70 backdrop-blur-sm">
                 <a href="#como-funciona">Ver como funciona</a>
               </Button>
             </div>
@@ -142,7 +142,7 @@ export function HeroSection() {
                 {['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'].map((c, i) => (
                   <div
                     key={i}
-                    className="h-7 w-7 rounded-full border-2 border-white flex items-center justify-center text-white text-[9px] font-bold"
+                    className="h-7 w-7 rounded-full border-2 border-card flex items-center justify-center text-white text-[9px] font-bold"
                     style={{ backgroundColor: c }}
                   >
                     {['A', 'M', 'J', 'C', 'R'][i]}
@@ -161,12 +161,12 @@ export function HeroSection() {
 
           {/* Right — 3D mockup */}
           <div className="relative">
-            <div className="absolute -top-6 -right-4 flex items-center gap-1.5 rounded-xl bg-white shadow-md border px-3 py-2 text-xs font-medium z-10 animate-bounce" style={{ animationDuration: '3s' }}>
+            <div className="absolute -top-6 -right-4 flex items-center gap-1.5 rounded-xl bg-card shadow-md border px-3 py-2 text-xs font-medium z-10 animate-bounce" style={{ animationDuration: '3s' }}>
               <TrendingDown className="h-3.5 w-3.5 text-green-500" />
               <span>Economizou R$ 1.240 em juros</span>
             </div>
             <DashboardMockup />
-            <div className="absolute -bottom-4 -left-4 rounded-xl bg-white shadow-md border px-3 py-2 text-xs z-10" style={{ animation: 'bounce 4s ease-in-out infinite', animationDelay: '1.5s' }}>
+            <div className="absolute -bottom-4 -left-4 rounded-xl bg-card shadow-md border px-3 py-2 text-xs z-10" style={{ animation: 'bounce 4s ease-in-out infinite', animationDelay: '1.5s' }}>
               <div className="font-bold text-green-600">✓ Saldo Total: R$ 36.218</div>
               <div className="text-muted-foreground">3 contas vinculadas</div>
             </div>
