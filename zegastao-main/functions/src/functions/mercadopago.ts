@@ -144,6 +144,21 @@ export const handleMPWebhook = onRequest(
         source: 'mp_webhook',
       });
 
+      // Mark referral conversion using reverse index (cheap single-doc lookup)
+      try {
+        const indexDoc = await db.collection('referral_index').doc(userId).get();
+        if (indexDoc.exists) {
+          const { referralPath } = indexDoc.data() as { referralPath: string };
+          const referralRef = db.doc(referralPath);
+          const referral = await referralRef.get();
+          if (referral.exists && !referral.data()?.convertedAt) {
+            await referralRef.update({ convertedAt: new Date(), plan: 'paid' });
+          }
+        }
+      } catch (e) {
+        console.warn('Referral conversion update failed (non-critical):', e);
+      }
+
       res.status(200).send('ok');
     } catch (err) {
       console.error('Webhook error:', err);

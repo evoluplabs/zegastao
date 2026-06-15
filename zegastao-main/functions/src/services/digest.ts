@@ -15,9 +15,21 @@ import {
 import { updateCopilotNotes } from './personal-context';
 import { detectNegotiationAlerts } from './negotiation';
 
-export async function runUserDigest(userId: string): Promise<void> {
+export async function runUserDigest(userId: string, forceRegenerate = false): Promise<void> {
   const db = getFirestore();
   const userRef = db.collection('users').doc(userId);
+
+  // Cache guard: skip if insights were generated less than 23h ago (nightly job may run twice)
+  if (!forceRegenerate) {
+    try {
+      const insightsDoc = await userRef.collection('insights').doc('latest').get();
+      const lastGenerated = insightsDoc.data()?.generatedAt?.toDate?.();
+      if (lastGenerated && Date.now() - lastGenerated.getTime() < 23 * 3_600_000) {
+        console.log(`runUserDigest: skipping ${userId} — insights generated <23h ago`);
+        return;
+      }
+    } catch { /* proceed if check fails */ }
+  }
 
   const snapshot = await buildUserSnapshot(userId);
   const phase = calculatePhase(snapshot.phaseInput);

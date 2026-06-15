@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   CreditCard,
@@ -10,6 +10,7 @@ import {
   Gift,
   FileSpreadsheet,
   HelpCircle,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -142,6 +143,13 @@ export function Sidebar() {
           <Gift className="h-4 w-4 shrink-0" />
           Indicar um amigo
         </button>
+        <Link
+          to="/referrals"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <Users className="h-4 w-4 shrink-0" />
+          Ver indicados
+        </Link>
         {!isPaid && (
           <NavLink
             to="/pricing"

@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { useState, type FormEvent, useEffect } from 'react';
+import { Navigate, Link, useSearchParams } from 'react-router-dom';
 import { FirebaseError } from 'firebase/app';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { auth, functions } from '@/firebase';
 import { authActions } from '@/hooks/useAuth';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/ui/Logo';
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+
+const recordReferralFn = httpsCallable<{ referralCode: string }, { ok: boolean }>(
+  functions, 'recordReferral'
+);
+
+async function maybeRecordReferral() {
+  const pending = sessionStorage.getItem('pendingRef');
+  if (!pending) return;
+  sessionStorage.removeItem('pendingRef');
+  try {
+    await recordReferralFn({ referralCode: pending });
+  } catch { /* silently ignore — referral tracking is non-critical */ }
+}
 
 const ERRORS: Record<string, string> = {
   'auth/invalid-credential': 'E-mail ou senha incorretos.',
@@ -82,6 +96,7 @@ type Mode = 'login' | 'register' | 'reset';
 
 export function Login() {
   const { user, authLoading } = useStore();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -90,6 +105,13 @@ export function Login() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Capture referral code from URL and store it for post-login processing
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) sessionStorage.setItem('pendingRef', ref);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!authLoading && user) return <Navigate to="/dashboard" replace />;
 
@@ -126,6 +148,7 @@ export function Login() {
     try {
       if (mode === 'login') await authActions.loginEmail(email, password);
       else await authActions.registerEmail(email, password);
+      await maybeRecordReferral();
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : '';
       setError(ERRORS[code] || 'Algo deu errado. Tente de novo.');
@@ -138,6 +161,7 @@ export function Login() {
     setError('');
     try {
       await authActions.loginGoogle();
+      await maybeRecordReferral();
     } catch {
       setError('Não foi possível entrar com o Google.');
     }

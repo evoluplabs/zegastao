@@ -161,16 +161,25 @@ export function UploadPage() {
       uploadedAt: new Date(),
     });
 
-    const unsub = onSnapshot(uploadDocRef, (snap) => {
+    let unsub: () => void;
+    const timeoutId = setTimeout(() => {
+      unsub?.();
+      setStatus('error');
+      setError('O processamento está demorando mais que o esperado. Tente novamente em alguns minutos.');
+    }, 90_000);
+
+    unsub = onSnapshot(uploadDocRef, (snap) => {
       if (!snap.exists()) return;
       const data = { id: snap.id, ...snap.data() } as Upload;
       setStatus(data.status);
       if (data.status === 'done') {
+        clearTimeout(timeoutId);
         setResult(data);
         track(Events.UPLOAD_COMPLETED, { fileType: ext, statementType: docType });
         unsub();
       }
       if (data.status === 'error') {
+        clearTimeout(timeoutId);
         setResult(data);
         setError(ERROR_MESSAGES[data.errorCode || 'generic'] || data.errorMessage || ERROR_MESSAGES.generic);
         unsub();

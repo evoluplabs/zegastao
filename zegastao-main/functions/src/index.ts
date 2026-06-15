@@ -34,3 +34,4 @@ export { generateInsightsNow } from './functions/generateInsightsNow';
 export { weeklyDigest } from './functions/weeklyDigest';
 export { linkPartner } from './functions/linkPartner';
 export { extractTaxData } from './functions/extractTaxData';
+export { recordReferral } from './functions/recordReferral';

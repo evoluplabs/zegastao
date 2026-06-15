@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target, Wallet, CalendarClock, Clock, CalendarCheck2 } from 'lucide-react';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target, Wallet, CalendarClock, Clock, CalendarCheck2, Users } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
@@ -10,6 +11,8 @@ import { useInsights } from '@/hooks/useInsights';
 import { useDailyTasks } from '@/hooks/useJourney';
 import { useGenerateInsights } from '@/hooks/useGenerateInsights';
 import { useAccounts } from '@/hooks/useAccounts';
+import { useSharedFinances } from '@/hooks/useSharedFinances';
+import { usePartnerData } from '@/hooks/usePartnerData';
 import { AccountWizard } from '@/components/flows/AccountWizard';
 import type { Account } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,7 +97,13 @@ export function Dashboard() {
   const { generating, error: insightError, generate } = useGenerateInsights();
   const { data: accounts } = useAccounts();
 
+  const { isLinked } = useSharedFinances();
+  const { data: partnerData } = usePartnerData();
+
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showCombined, setShowCombined] = useState(() =>
+    localStorage.getItem('dashboard-combined') === '1'
+  );
   const [openDebt, setOpenDebt] = useState(false);
   const [openAccount, setOpenAccount] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
@@ -211,6 +220,31 @@ export function Dashboard() {
   const balance = displayIncome - effectiveExpenses;
   const redirectedThisMonth = rules.reduce((s, r) => s + (r.monthRedirected || 0), 0);
 
+  // Combined (casal) metrics
+  const combinedIncome = displayIncome + (partnerData?.income ?? 0);
+  const combinedExpenses = effectiveExpenses + (partnerData?.expenses ?? 0);
+  const combinedBalance = combinedIncome - combinedExpenses;
+
+  // Monthly spending trend (last 6 months) — derived from allTransactions already loaded
+  const monthlyTrend = useMemo(() => {
+    const map = new Map<string, { income: number; expenses: number }>();
+    for (const t of allTransactions) {
+      const month = t.date.slice(0, 7);
+      const entry = map.get(month) ?? { income: 0, expenses: 0 };
+      if (t.amount > 0) entry.income += t.amount;
+      else entry.expenses += Math.abs(t.amount);
+      map.set(month, entry);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([month, vals]) => ({
+        month: new Date(month + '-15').toLocaleDateString('pt-BR', { month: 'short' }),
+        Receita: Math.round(vals.income),
+        Despesas: Math.round(vals.expenses),
+      }));
+  }, [allTransactions]);
+
   const topDebt = [...debts]
     .filter((d) => d.status === 'active')
     .sort((a, b) => b.interestRateMonthly - a.interestRateMonthly)[0];
@@ -312,6 +346,69 @@ export function Dashboard() {
   return (
     <>
       <div className="space-y-4">
+
+        {/* Banner Modo Casal */}
+        {isLinked && partnerData && (
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-semibold">Modo Casal</span>
+                {partnerData.profile?.name && (
+                  <span className="text-sm text-muted-foreground">· {partnerData.profile.name}</span>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  const next = !showCombined;
+                  setShowCombined(next);
+                  localStorage.setItem('dashboard-combined', next ? '1' : '0');
+                }}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                {showCombined ? 'Ver individual' : 'Ver combinado'}
+              </button>
+            </div>
+            {showCombined && (
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                <div>
+                  <p className="text-muted-foreground">Receita combinada</p>
+                  <p className="font-bold text-success text-sm">{formatBRL(combinedIncome)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Despesas combinadas</p>
+                  <p className="font-bold text-destructive text-sm">{formatBRL(combinedExpenses)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Saldo conjunto</p>
+                  <p className={cn('font-bold text-sm', combinedBalance >= 0 ? 'text-success' : 'text-destructive')}>
+                    {formatBRL(combinedBalance)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {!showCombined && (
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg bg-card px-3 py-2">
+                  <p className="text-muted-foreground">Você — Receita</p>
+                  <p className="font-semibold">{formatBRL(displayIncome)}</p>
+                </div>
+                <div className="rounded-lg bg-card px-3 py-2">
+                  <p className="text-muted-foreground">{partnerData.profile?.name || 'Parceiro'} — Receita</p>
+                  <p className="font-semibold">{formatBRL(partnerData.income)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aviso de histórico truncado */}
+        {allTransactions.length >= 500 && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-50/50 dark:bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Mostrando os 500 registros mais recentes. Para histórico completo, exclua transações antigas ou fale com o suporte.
+          </div>
+        )}
 
         {/* Banner de boas-vindas pós-onboarding */}
         {showWelcome && (
@@ -446,6 +543,29 @@ export function Dashboard() {
 
         {/* 3. Gastos por Categoria */}
         <CategorySpendingPanel byCategory={byCategoryDisplay} income={displayIncome} monthLabel={byCategoryMonth ?? undefined} />
+
+        {/* Gráfico de tendência mensal (últimos 6 meses) */}
+        {monthlyTrend.length >= 2 && (
+          <div className="rounded-2xl border bg-card p-5">
+            <h2 className="text-sm font-semibold mb-4">Tendência dos últimos meses</h2>
+            <ResponsiveContainer width="100%" height={140}>
+              <LineChart data={monthlyTrend} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip
+                  formatter={(v: number) => formatBRL(v)}
+                  contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                />
+                <Line type="monotone" dataKey="Receita" stroke="#10b981" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Despesas" stroke="#ef4444" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-success rounded" /> Receita</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-destructive rounded" /> Despesas</span>
+            </div>
+          </div>
+        )}
 
         {/* 4. Saldo das Contas + Fase */}
         <div className="grid gap-3 sm:grid-cols-2">
