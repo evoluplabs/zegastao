@@ -73,7 +73,11 @@ export const handleMPWebhook = onRequest(
     const paymentId = body.data?.id;
 
     // Validação HMAC-SHA256 da assinatura do MercadoPago (formato: ts=TIMESTAMP,v1=HASH)
-    const xSignature = req.headers['x-signature'] as string || '';
+    const xSignature = (req.headers['x-signature'] as string) || '';
+    const xRequestId = (req.headers['x-request-id'] as string) || '';
+    // O MP assina usando o data.id da query string em minúsculas (fallback ao body)
+    const queryDataId = (req.query['data.id'] as string) || '';
+    const signedId = (queryDataId || paymentId || '').toLowerCase();
     if (MP_WEBHOOK_SECRET && xSignature) {
       const parts: Record<string, string> = {};
       xSignature.split(',').forEach(part => {
@@ -83,9 +87,14 @@ export const handleMPWebhook = onRequest(
       const ts = parts['ts'];
       const v1 = parts['v1'];
       if (ts && v1) {
-        const manifest = `id:${paymentId};request-id:${req.headers['x-request-id'] || ''};ts:${ts};`;
+        // Inclui apenas os segmentos presentes, igual ao spec do MercadoPago
+        let manifest = '';
+        if (signedId) manifest += `id:${signedId};`;
+        if (xRequestId) manifest += `request-id:${xRequestId};`;
+        manifest += `ts:${ts};`;
         const expected = crypto.createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex');
         if (expected !== v1) {
+          console.warn('MP webhook signature mismatch', { hasId: !!signedId, hasReqId: !!xRequestId });
           res.status(401).send('Unauthorized');
           return;
         }
