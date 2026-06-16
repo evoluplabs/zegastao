@@ -66,7 +66,6 @@ export const createMPCheckout = onCall(
     if (!response.ok) {
       const err = await response.text();
       console.error('MP error:', err);
-      console.error('MP preference sent:', JSON.stringify({ back_urls: preference.back_urls, notification_url: preference.notification_url }));
       throw new HttpsError('internal', 'Erro ao criar preferência de pagamento');
     }
 
