@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Upload, TrendingUp, FileText, Trophy, LayoutDashboard } from 'lucide-react';
+import { Bot, Upload, TrendingUp, FileText, Trophy, LayoutDashboard, PiggyBank } from 'lucide-react';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 /* ── Chat Mockup ── */
@@ -280,6 +280,69 @@ function PhaseMockup() {
   );
 }
 
+/* ── Caixinha Mockup ── */
+function CaixinhaMockup() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setProgress(62), 100);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="rounded-xl border bg-background overflow-hidden shadow-sm max-w-sm mx-auto">
+      <div className="px-4 py-3 border-b bg-muted/70 flex items-center justify-between"
+        style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 0ms forwards' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xl">✈️</span>
+          <div>
+            <p className="text-xs font-semibold">Viagem dos Sonhos</p>
+            <p className="text-[10px] text-muted-foreground">R$ 6.200 de R$ 10.000</p>
+          </div>
+        </div>
+        <span className="text-xs font-bold text-primary">62%</span>
+      </div>
+      <div className="p-4 space-y-4">
+        <div style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 200ms forwards' }}>
+          <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-blue-500"
+              style={{ width: `${progress}%`, transition: 'width 1.2s ease-out' }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+            <span>R$ 6.200 guardados</span>
+            <span>Faltam 12 dias</span>
+          </div>
+        </div>
+        <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-center"
+          style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 500ms forwards' }}>
+          <p className="text-[10px] text-muted-foreground mb-0.5">Poupar hoje:</p>
+          <p className="text-2xl font-extrabold text-primary animate-pulse">R$ 54,80</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Recalculado automaticamente</p>
+        </div>
+        <div style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 800ms forwards' }}>
+          <div className="w-full rounded-lg border border-green-500 bg-green-50 py-2.5 text-xs font-semibold text-green-700 flex items-center justify-center gap-2">
+            <span>✓</span> Já poupei hoje!
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1"
+          style={{ opacity: 0, animation: 'chat-appear 0.4s ease-out 1000ms forwards' }}>
+          {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d, i) => (
+            <div
+              key={i}
+              className={`h-6 rounded text-[8px] flex items-center justify-center font-bold ${
+                i < 5 ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground'
+              }`}
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: 'chat', label: 'Chat com IA', icon: Bot, component: ChatMockup, copy: 'Não é chatbot genérico. Ele conhece suas dívidas, sua renda e seu histórico. Pergunte qualquer coisa — ele responde com base na sua realidade.' },
   { id: 'upload', label: 'Upload de extrato', icon: Upload, component: UploadMockup, copy: 'Importou o PDF ou CSV do banco? Em segundos tudo está categorizado. Alimentação, transporte, lazer — sem você tocar em nada.' },
@@ -287,6 +350,7 @@ const TABS = [
   { id: 'contrato', label: 'Análise de contrato', icon: FileText, component: ContractMockup, copy: 'Mande o PDF do contrato. Em segundos o Zé Gastão encontra cláusulas abusivas, explica em português simples e mostra como negociar.' },
   { id: 'jornada', label: 'Jornada de marcos', icon: Trophy, component: JourneyMockup, copy: '10 conquistas no caminho. Cada marco que você alcança te lembra que está avançando — porque avançar é o que importa.' },
   { id: 'dashboard', label: 'Dashboard adaptativo', icon: LayoutDashboard, component: PhaseMockup, copy: 'Quem está em dívida não precisa ver aba de investimento. O app muda conforme a sua fase — você vê só o que é relevante agora.' },
+  { id: 'caixinha', label: 'Caixinha', icon: PiggyBank, component: CaixinhaMockup, copy: 'Quer ir pra Disney? Defina o valor e a data — o Zé Gastão te fala exatamente quanto poupar por dia. Se perder um dia, ele recalcula sozinho. Sem planilha, sem matemática.' },
 ];
 
 export function DemoSection() {
@@ -325,12 +389,16 @@ export function DemoSection() {
 
         {/* Content */}
         <div className="grid md:grid-cols-2 gap-8 items-center">
-          <div className="reveal-left order-2 md:order-1" key={active + '-text'}>
-            <h3 className="text-xl font-bold mb-3">{tab.label}</h3>
-            <p className="text-muted-foreground leading-relaxed">{tab.copy}</p>
+          <div className="reveal-left order-2 md:order-1">
+            <div key={active + '-text'} className="animate-slide-up">
+              <h3 className="text-xl font-bold mb-3">{tab.label}</h3>
+              <p className="text-muted-foreground leading-relaxed">{tab.copy}</p>
+            </div>
           </div>
-          <div className="reveal-right order-1 md:order-2" key={active + '-mockup'}>
-            <MockupComponent />
+          <div className="reveal-right order-1 md:order-2">
+            <div key={active + '-mockup'} className="animate-slide-up">
+              <MockupComponent />
+            </div>
           </div>
         </div>
       </div>

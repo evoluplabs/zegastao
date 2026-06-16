@@ -204,6 +204,24 @@ export interface Goal {
   source?: string; // 'auto-default' = sugestão inicial criada pelo sistema
 }
 
+export interface CaixinhaDeposit {
+  date: string; // YYYY-MM-DD
+  amount: number;
+}
+
+export interface Caixinha {
+  id: string;
+  name: string;
+  emoji: string;
+  targetAmount: number;
+  targetDate: string; // YYYY-MM-DD
+  startDate: string;
+  totalSaved: number;
+  deposits: CaixinhaDeposit[];
+  status: 'active' | 'completed' | 'paused';
+  color?: string;
+}
+
 export type TriggerType =
   | 'transaction_in_category'
   | 'category_monthly_over'

@@ -241,26 +241,6 @@ export function Pricing() {
           </div>
         </div>
 
-        {/* Acesso vitalício — waitlist */}
-        <div className="max-w-2xl mx-auto mt-10">
-          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-8 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background px-3 py-1 text-xs font-medium text-primary mb-3">
-              <Sparkles className="h-3 w-3" />
-              Em breve — primeiros 100 usuários
-            </div>
-            <h3 className="text-xl font-bold mb-2">Acesso Vitalício — R$ 149</h3>
-            <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-              Pague uma vez, use para sempre. Sem mensalidade, sem renovação. Lista de espera aberta agora.
-            </p>
-            <Button variant="outline" className="gap-2" asChild>
-              <a href="mailto:contato@zegastao.com.br?subject=Quero acesso vitalício" target="_blank" rel="noopener noreferrer">
-                <Zap className="h-4 w-4" />
-                Entrar na lista de espera
-              </a>
-            </Button>
-            <p className="text-xs text-muted-foreground mt-3">Sem compromisso — avisamos quando abrir.</p>
-          </div>
-        </div>
       </div>
     </div>
   );

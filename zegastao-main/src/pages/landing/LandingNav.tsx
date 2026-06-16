@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/button';
-import { HOTMART_URL } from '@/lib/features';
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -47,9 +46,9 @@ export function LandingNav() {
             <Link to="/login">Testar grátis</Link>
           </Button>
           <Button asChild size="sm" className="rounded-lg gap-1.5 bg-primary text-white">
-            <a href={HOTMART_URL} target="_blank" rel="noopener noreferrer">
+            <Link to="/pricing">
               Assinar — R$&nbsp;19,90/mês
-            </a>
+            </Link>
           </Button>
         </div>
       </div>

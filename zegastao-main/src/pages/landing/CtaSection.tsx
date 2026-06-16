@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { HOTMART_URL } from '@/lib/features';
 
 export function CtaSection() {
   return (
@@ -41,10 +40,10 @@ export function CtaSection() {
             size="lg"
             className="bg-green-500 hover:bg-green-400 text-white rounded-xl gap-2 px-8 shadow-lg shadow-black/20 font-bold text-base w-full sm:w-auto"
           >
-            <a href={HOTMART_URL} target="_blank" rel="noopener noreferrer">
+            <Link to="/pricing">
               <Zap className="h-4 w-4" />
               Assinar Copiloto — R$ 19,90/mês
-            </a>
+            </Link>
           </Button>
         </div>
 

@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
   HelpCircle,
   Users,
+  PiggyBank,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -73,6 +74,24 @@ export function Sidebar() {
             </div>
           </NavLink>
         ))}
+
+        <NavLink
+          to="/caixinha"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )
+          }
+        >
+          <PiggyBank className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight">Caixinha</p>
+            <p className="text-[10px] leading-tight opacity-60">Cofrinho com meta diária</p>
+          </div>
+        </NavLink>
 
         {/* IR: sempre disponível, destaque em temporada Jan-Abr */}
         <NavLink
