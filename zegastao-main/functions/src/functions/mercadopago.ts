@@ -5,6 +5,12 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
+const MP_APP_URL = process.env.MP_APP_URL || '';
+const WEBHOOK_URL = 'https://handlempwebhook-m6suiv5m4a-rj.a.run.app';
+
+function isDevUrl(url: string) {
+  return url.includes('github.dev') || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('codespace');
+}
 
 const PLAN_DETAILS: Record<string, { title: string; priceReais: number; months: number }> = {
   copiloto_monthly: { title: 'Copiloto Financeiro — Mensal', priceReais: 19.90, months: 1 },
@@ -25,6 +31,10 @@ export const createMPCheckout = onCall(
     if (!details) throw new HttpsError('invalid-argument', 'Plano inválido');
     if (!MP_ACCESS_TOKEN) throw new HttpsError('internal', 'Pagamento não configurado');
 
+    const baseUrl = MP_APP_URL && isDevUrl(successUrl) ? MP_APP_URL : null;
+    const safeSuccessUrl = baseUrl ? `${baseUrl}/dashboard?subscribed=1` : successUrl;
+    const safeFailureUrl = baseUrl ? `${baseUrl}/pricing?error=1` : failureUrl;
+
     const preference = {
       items: [{
         id: plan,
@@ -35,10 +45,11 @@ export const createMPCheckout = onCall(
       }],
       external_reference: `${userId}|${plan}|${Date.now()}`,
       back_urls: {
-        success: successUrl,
-        failure: failureUrl,
-        pending: failureUrl,
+        success: safeSuccessUrl,
+        failure: safeFailureUrl,
+        pending: safeFailureUrl,
       },
+      notification_url: WEBHOOK_URL,
       auto_return: 'approved',
       metadata: { userId, plan },
     };
