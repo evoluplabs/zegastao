@@ -70,7 +70,7 @@ export const createMPCheckout = onCall(
     }
 
     const data = await response.json() as { sandbox_init_point?: string; init_point?: string };
-    const checkoutUrl = data.sandbox_init_point || data.init_point || '';
+    const checkoutUrl = data.init_point || data.sandbox_init_point || '';
     return { checkoutUrl };
   }
 );
