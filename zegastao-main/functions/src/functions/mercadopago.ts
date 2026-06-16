@@ -94,20 +94,9 @@ export const handleMPWebhook = onRequest(
         manifest += `ts:${ts};`;
         const expected = crypto.createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex');
         if (expected !== v1) {
-          // DEBUG temporário — remover após validar o webhook
-          console.warn('MP webhook signature mismatch', {
-            manifest,
-            secretLen: MP_WEBHOOK_SECRET.length,
-            expectedPrefix: expected.slice(0, 12),
-            receivedPrefix: v1.slice(0, 12),
-            signedId,
-            xRequestId,
-            ts,
-          });
           res.status(401).send('Unauthorized');
           return;
         }
-        console.log('MP webhook signature OK');
       }
     }
 
