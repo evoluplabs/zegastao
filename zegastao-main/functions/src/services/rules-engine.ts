@@ -18,6 +18,8 @@ export async function evaluateRules(
 
   // Cache de saldos de metas para não ler/somar a mesma meta várias vezes.
   const goalDeltas: Record<string, number> = {};
+  // Idem para caixinhas (destino alternativo de redirecionamento).
+  const caixinhaDeltas: Record<string, number> = {};
 
   for (const ruleDoc of rulesSnap.docs) {
     const rule = { id: ruleDoc.id, ...ruleDoc.data() } as Rule;
@@ -36,6 +38,10 @@ export async function evaluateRules(
         goalDeltas[rule.actionGoalId] =
           (goalDeltas[rule.actionGoalId] || 0) + result.amountRedirected;
       }
+      if (rule.actionCaixinhaId) {
+        caixinhaDeltas[rule.actionCaixinhaId] =
+          (caixinhaDeltas[rule.actionCaixinhaId] || 0) + result.amountRedirected;
+      }
 
       // Registrar aplicação
       const appRef = db
@@ -46,6 +52,7 @@ export async function evaluateRules(
         appliedAt: new Date(),
         amountRedirected: result.amountRedirected,
         goalId: rule.actionGoalId || null,
+        caixinhaId: rule.actionCaixinhaId || null,
       });
     }
 
@@ -67,6 +74,24 @@ export async function evaluateRules(
     if (snap.exists) {
       batch.update(goalRef, {
         currentAmount: (snap.data()!.currentAmount || 0) + delta,
+      });
+    }
+  }
+
+  // Aplicar os deltas acumulados de cada caixinha (soma no totalSaved + registra depósito).
+  const today = new Date().toISOString().slice(0, 10);
+  for (const [caixinhaId, delta] of Object.entries(caixinhaDeltas)) {
+    const caixRef = db
+      .collection('users').doc(userId).collection('caixinhas').doc(caixinhaId);
+    const snap = await caixRef.get();
+    if (snap.exists) {
+      const data = snap.data()!;
+      const newTotal = (data.totalSaved || 0) + delta;
+      const completed = newTotal >= (data.targetAmount || Infinity);
+      batch.update(caixRef, {
+        totalSaved: newTotal,
+        status: completed ? 'completed' : (data.status || 'active'),
+        deposits: [...(data.deposits || []), { date: today, amount: delta }],
       });
     }
   }

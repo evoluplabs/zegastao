@@ -35,3 +35,5 @@ export { weeklyDigest } from './functions/weeklyDigest';
 export { linkPartner } from './functions/linkPartner';
 export { extractTaxData } from './functions/extractTaxData';
 export { recordReferral } from './functions/recordReferral';
+export { startTrial } from './functions/startTrial';
+export { depositToSharedCaixinha } from './functions/depositToSharedCaixinha';

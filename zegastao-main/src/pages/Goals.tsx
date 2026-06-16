@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Trash2, Target } from 'lucide-react';
 import { useGoals } from '@/hooks/useGoals';
 import { addUserDoc, deleteUserDoc } from '@/lib/firestore';
@@ -54,7 +55,13 @@ export function Goals() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Metas</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Metas</h2>
+          <p className="text-xs text-muted-foreground">
+            Objetivos maiores. Quer um hábito diário de poupar?{' '}
+            <Link to="/caixinha" className="text-primary hover:underline">Crie uma Caixinha</Link>.
+          </p>
+        </div>
         <Button size="sm" onClick={() => setOpen(!open)}>
           <Plus className="h-4 w-4" /> Nova meta
         </Button>

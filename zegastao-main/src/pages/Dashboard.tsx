@@ -1,11 +1,13 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target, Wallet, CalendarClock, Clock, CalendarCheck2, Users } from 'lucide-react';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target, Wallet, CalendarClock, Clock, CalendarCheck2, Users, Bell } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
 import { useGoals } from '@/hooks/useGoals';
+import { useCaixinhas } from '@/hooks/useCaixinhas';
+import { getCaixinhaPlan } from '@/lib/caixinha';
 import { useRules } from '@/hooks/useRules';
 import { useInsights } from '@/hooks/useInsights';
 import { useDailyTasks } from '@/hooks/useJourney';
@@ -91,6 +93,7 @@ export function Dashboard() {
   const { data: allTransactions, loading: txLoading } = useTransactions(false);
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
+  const { data: caixinhas } = useCaixinhas();
   const { data: rules } = useRules();
   const { insights, generatedAt: insightsGeneratedAt } = useInsights();
   const tasks = useDailyTasks();
@@ -377,6 +380,28 @@ export function Dashboard() {
   return (
     <>
       <div className="space-y-4">
+
+        {/* Lembrete da Caixinha — guardar hoje */}
+        {(() => {
+          const pending = caixinhas
+            .filter((c) => c.status !== 'completed')
+            .map((c) => ({ c, plan: getCaixinhaPlan(c) }))
+            .find(({ plan }) => plan.needsDepositToday && plan.dailyTarget > 0);
+          if (!pending) return null;
+          return (
+            <Link
+              to="/caixinha"
+              className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors"
+            >
+              <Bell className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm">
+                Hora de guardar <span className="font-semibold text-primary">{formatBRL(pending.plan.dailyTarget)}</span> em
+                {' '}{pending.c.emoji} {pending.c.name} hoje.
+              </span>
+              <ArrowRight className="h-4 w-4 text-primary ml-auto shrink-0" />
+            </Link>
+          );
+        })()}
 
         {/* Banner Modo Casal */}
         {isLinked && partnerData && (

@@ -32,7 +32,11 @@ async function checkAndIncrementRateLimit(
   userId: string
 ): Promise<{ allowed: boolean; remaining: number; lifetimeLimit: number; isPaid: boolean }> {
   const subDoc = await db.collection('users').doc(userId).collection('subscription').doc('main').get();
-  const plan = subDoc.exists ? (subDoc.data()!.plan as string) : 'free';
+  const subData = subDoc.exists ? subDoc.data()! : null;
+  // Plano efetivo: respeita status e expiração do trial (trial vencido = free).
+  const trialValid = subData?.status === 'trialing' && subData?.trialEndsAt?.toMillis?.() > Date.now();
+  const planActive = subData?.status === 'active' || trialValid;
+  const plan = planActive ? (subData!.plan as string) : 'free';
 
   // Usuários pagos: cap diário de segurança de 200 msgs/dia (evita custo explosivo por abuso)
   if (plan !== 'free') {

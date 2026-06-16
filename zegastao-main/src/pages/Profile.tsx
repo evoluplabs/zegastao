@@ -89,7 +89,7 @@ function MenuRow({
 export function Profile() {
   const profile = useStore((s) => s.profile);
   const user = useStore((s) => s.user);
-  const { plan, isPaid } = useSubscription();
+  const { plan, isPaid, limits } = useSubscription();
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
   const navigate = useNavigate();
@@ -114,8 +114,10 @@ export function Profile() {
 
   const planLabel: Record<string, string> = {
     free: 'Gratuito',
-    copiloto: 'Copiloto',
+    copiloto_monthly: 'Copiloto',
     copiloto_annual: 'Copiloto Anual',
+    casal_familia_monthly: 'Casal/Família',
+    casal_familia_annual: 'Casal/Família Anual',
   };
 
   if (showContext) {
@@ -288,6 +290,20 @@ export function Profile() {
                 <Button variant="ghost" onClick={() => setShowPartnerForm(false)}>Cancelar</Button>
               </div>
             </div>
+          ) : !limits.sharedPartner ? (
+            <Link
+              to="/pricing"
+              className="flex items-center gap-3 rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-500/5 p-3 hover:bg-amber-100/60 dark:hover:bg-amber-500/10 transition-colors"
+            >
+              <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Disponível no plano Casal/Família</p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+                  Vinculem as contas, vejam tudo combinado e poupem juntos.
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            </Link>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">

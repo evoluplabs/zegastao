@@ -31,6 +31,10 @@ export function deleteUserDoc(name: string, id: string) {
   return deleteDoc(doc(db, 'users', uid(), name, id));
 }
 
+export function setUserDoc(name: string, id: string, data: Record<string, unknown>) {
+  return setDoc(doc(db, 'users', uid(), name, id), data, { merge: true });
+}
+
 export function setProfile(data: Record<string, unknown>) {
   return setDoc(doc(db, 'users', uid(), 'profile', 'main'), data, { merge: true });
 }

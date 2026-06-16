@@ -15,6 +15,8 @@ function isDevUrl(url: string) {
 const PLAN_DETAILS: Record<string, { title: string; priceReais: number; months: number }> = {
   copiloto_monthly: { title: 'Copiloto Financeiro — Mensal', priceReais: 19.90, months: 1 },
   copiloto_annual: { title: 'Copiloto Financeiro — Anual', priceReais: 178.80, months: 12 },
+  casal_familia_monthly: { title: 'Casal/Família — Mensal', priceReais: 29.90, months: 1 },
+  casal_familia_annual: { title: 'Casal/Família — Anual', priceReais: 287.00, months: 12 },
 };
 
 export const createMPCheckout = onCall(

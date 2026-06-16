@@ -29,9 +29,15 @@ function AvatarChip({ name }: { name?: string }) {
   );
 }
 
+function planLabel(plan: string): string {
+  if (plan === 'copiloto_annual') return 'Anual';
+  if (plan === 'casal_familia_monthly' || plan === 'casal_familia_annual') return 'Casal';
+  return 'Copiloto';
+}
+
 export function TopBar() {
   const profile = useStore((s) => s.profile);
-  const { isPaid, plan } = useSubscription();
+  const { isPaid, plan, isTrialing, trialDaysLeft } = useSubscription();
   const [showFeedback, setShowFeedback] = useState(false);
 
   return (
@@ -52,10 +58,20 @@ export function TopBar() {
               </Link>
             </Button>
           )}
-          {isPaid && (
+          {isPaid && isTrialing && (
+            <Link
+              to="/pricing"
+              className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+              title="Você está no teste grátis"
+            >
+              <Crown className="h-3 w-3" />
+              Teste — {trialDaysLeft} {trialDaysLeft === 1 ? 'dia' : 'dias'}
+            </Link>
+          )}
+          {isPaid && !isTrialing && (
             <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-primary">
               <Crown className="h-3 w-3" />
-              {plan === 'copiloto_annual' ? 'Anual' : 'Copiloto'}
+              {planLabel(plan)}
             </span>
           )}
           <Button
