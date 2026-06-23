@@ -577,3 +577,28 @@ export interface NegotiationAlert {
   action: string;
   scriptId: string;
 }
+
+// ---- Imposto de Renda ----
+
+export interface TaxSummary {
+  year: number;
+  deductions: {
+    medical: number;
+    education: number;
+    donations: number;
+  };
+  income: {
+    salary: number;
+    investments: number;
+    rental: number;
+    other: number;
+  };
+  highlights: string[];
+  obligations: {
+    type: 'irpf' | 'dasn_mei' | 'carne_leao' | 'darf_ganho_capital';
+    label: string;
+    deadline: string;
+    description: string;
+  }[];
+}
+
