@@ -13,6 +13,16 @@ import { auth, googleProvider, db } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import type { Profile, Subscription } from '@/types';
 
+function hashUid(uid: string): string {
+  let hash = 0;
+  for (let i = 0; i < uid.length; i++) {
+    const char = uid.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36).slice(0, 8);
+}
+
 async function ensureProfile(uid: string, email: string | null, name: string | null) {
   const ref = doc(db, 'users', uid, 'profile', 'main');
   const snap = await getDoc(ref);
@@ -23,10 +33,15 @@ async function ensureProfile(uid: string, email: string | null, name: string | n
       monthlyIncome: 0,
       onboardingDone: false,
     };
-    await setDoc(ref, { ...profile, createdAt: new Date() });
+    await setDoc(ref, { ...profile, referralCode: hashUid(uid), createdAt: new Date() });
     return profile;
   }
-  return snap.data() as Profile;
+  // Backfill referralCode for existing profiles that don't have it
+  const data = snap.data() as Profile;
+  if (!(data as Record<string, unknown>)['referralCode']) {
+    setDoc(ref, { referralCode: hashUid(uid) }, { merge: true }).catch(() => {});
+  }
+  return data;
 }
 
 async function ensureSubscription(uid: string) {

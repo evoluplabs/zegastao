@@ -1,7 +1,16 @@
-import { X, Check, Zap, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { X, Check, Zap, ArrowRight, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useToast } from '@/components/ui/Toast';
+
+const startTrialFn = httpsCallable<Record<string, never>, { ok: boolean; trialEndsAt: number }>(
+  functions,
+  'startTrial'
+);
 
 interface UpgradeModalProps {
   reason: 'chat_limit' | 'chat_lifetime' | 'upload_limit' | 'contract' | 'generic';
@@ -45,6 +54,23 @@ const CHAT_PREVIEW = `"Com base nas suas dívidas, recomendo pagar primeiro o ca
 
 export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
   const { title, desc } = REASONS[reason];
+  const { trialUsed, isPaid } = useSubscription();
+  const { toast } = useToast();
+  const [startingTrial, setStartingTrial] = useState(false);
+  const canTrial = !isPaid && !trialUsed;
+
+  async function handleStartTrial() {
+    setStartingTrial(true);
+    try {
+      await startTrialFn({});
+      toast('🎉 Teste grátis ativado! 7 dias com tudo liberado.');
+      onClose();
+    } catch {
+      toast('Não foi possível iniciar o teste. Tente novamente.', 'error');
+    } finally {
+      setStartingTrial(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -100,16 +126,28 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
           </div>
         </div>
 
-        <div className="flex gap-3 px-6 pb-6">
-          <Button asChild className="flex-1 gap-2">
-            <Link to="/pricing" onClick={onClose}>
-              Ver planos completos
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={onClose} className="shrink-0">
-            Agora não
-          </Button>
+        <div className="px-6 pb-6 space-y-3">
+          {canTrial && (
+            <Button className="w-full gap-2" loading={startingTrial} onClick={handleStartTrial}>
+              <Gift className="h-4 w-4" />
+              Testar 7 dias grátis
+            </Button>
+          )}
+          <div className="flex gap-3">
+            <Button
+              asChild
+              variant={canTrial ? 'outline' : 'default'}
+              className="flex-1 gap-2"
+            >
+              <Link to="/pricing" onClick={onClose}>
+                Ver planos completos
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={onClose} className="shrink-0">
+              Agora não
+            </Button>
+          </div>
         </div>
       </div>
     </div>

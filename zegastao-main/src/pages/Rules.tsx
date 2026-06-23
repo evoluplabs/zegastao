@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Zap } from 'lucide-react';
 import { useRules } from '@/hooks/useRules';
 import { useGoals } from '@/hooks/useGoals';
+import { useCaixinhas } from '@/hooks/useCaixinhas';
 import { addUserDoc, deleteUserDoc, updateUserDoc } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const TRIGGER_LABELS: Record<TriggerType, string> = {
 export function Rules() {
   const { data: rules } = useRules();
   const { data: goals } = useGoals();
+  const { data: caixinhas } = useCaixinhas();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -28,11 +30,12 @@ export function Rules() {
     triggerCategoryName: CATEGORIES[0] as string,
     triggerThreshold: 0,
     actionPercentage: 0.30,
-    actionGoalId: '',
+    actionTarget: '', // 'goal:<id>' ou 'caixinha:<id>'
   });
 
   async function save() {
     if (!form.name) return;
+    const [targetKind, targetId] = form.actionTarget.split(':');
     await addUserDoc('rules', {
       name: form.name,
       isActive: true,
@@ -41,12 +44,13 @@ export function Rules() {
       triggerThreshold: form.triggerThreshold,
       actionType: 'redirect_percentage',
       actionPercentage: form.actionPercentage * 100,
-      actionGoalId: form.actionGoalId || null,
+      actionGoalId: targetKind === 'goal' ? targetId : null,
+      actionCaixinhaId: targetKind === 'caixinha' ? targetId : null,
       timesTriggered: 0,
       totalRedirected: 0,
       monthRedirected: 0,
     });
-    setForm({ ...form, name: '', triggerThreshold: 0 });
+    setForm({ ...form, name: '', triggerThreshold: 0, actionTarget: '' });
     setOpen(false);
   }
 
@@ -105,11 +109,20 @@ export function Rules() {
               <span>para</span>
               <Select
                 className="w-auto"
-                value={form.actionGoalId}
-                onChange={(e) => setForm({ ...form, actionGoalId: e.target.value })}
+                value={form.actionTarget}
+                onChange={(e) => setForm({ ...form, actionTarget: e.target.value })}
               >
-                <option value="">(escolha uma meta)</option>
-                {goals.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                <option value="">(escolha o destino)</option>
+                {goals.length > 0 && (
+                  <optgroup label="Metas">
+                    {goals.map((g) => <option key={g.id} value={`goal:${g.id}`}>{g.name}</option>)}
+                  </optgroup>
+                )}
+                {caixinhas.length > 0 && (
+                  <optgroup label="Caixinhas">
+                    {caixinhas.map((c) => <option key={c.id} value={`caixinha:${c.id}`}>{c.emoji} {c.name}</option>)}
+                  </optgroup>
+                )}
               </Select>
             </div>
             <Button onClick={save} className="w-full">Salvar regra</Button>

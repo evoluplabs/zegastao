@@ -8,6 +8,24 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
 }
 
+function isNew(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() < 30 * 24 * 60 * 60 * 1000;
+}
+
+function DifficultyDots({ minutes }: { minutes: number }) {
+  const level = minutes <= 5 ? 1 : minutes <= 10 ? 2 : 3;
+  return (
+    <span className="flex items-center gap-0.5" title={level === 1 ? 'Básico' : level === 2 ? 'Intermediário' : 'Completo'}>
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={cn('h-1.5 w-1.5 rounded-full', i <= level ? 'bg-primary' : 'bg-muted-foreground/30')}
+        />
+      ))}
+    </span>
+  );
+}
+
 interface Props {
   post: BlogPost;
   featured?: boolean;
@@ -15,9 +33,9 @@ interface Props {
 
 export function BlogCard({ post, featured }: Props) {
   const cover = getCoverConfig(post.category);
+  const _isNew = isNew(post.publishedAt);
 
   if (featured) {
-    // Featured: horizontal layout with large cover on left
     return (
       <Link
         to={`/blog/${post.slug}`}
@@ -25,6 +43,11 @@ export function BlogCard({ post, featured }: Props) {
       >
         <div className={cn('relative sm:w-2/5 flex items-center justify-center p-8 min-h-[140px]', cover.gradient)}>
           <span className="text-5xl">{cover.iconEmoji}</span>
+          {_isNew && (
+            <span className="absolute top-3 right-3 rounded-full bg-white/90 text-primary text-[10px] font-bold px-2 py-0.5">
+              Novo
+            </span>
+          )}
           <div className="absolute bottom-3 left-3">
             <span className="text-[10px] font-bold uppercase tracking-wider text-white/80 bg-black/20 px-2 py-0.5 rounded-full">
               {post.category}
@@ -40,6 +63,7 @@ export function BlogCard({ post, featured }: Props) {
           </p>
           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-auto">
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {post.readMinutes} min</span>
+            <DifficultyDots minutes={post.readMinutes} />
             <span>{formatDate(post.publishedAt)}</span>
           </div>
         </div>
@@ -50,29 +74,34 @@ export function BlogCard({ post, featured }: Props) {
   return (
     <Link
       to={`/blog/${post.slug}`}
-      className="group flex flex-col rounded-2xl overflow-hidden border bg-card hover:shadow-lg transition-all duration-200"
+      className="group relative flex flex-col rounded-2xl overflow-hidden border bg-card hover:shadow-lg hover:border-primary/30 transition-all duration-200"
     >
-      {/* Cover */}
-      <div className={cn('relative flex items-center justify-center py-6', cover.gradient)}>
-        <span className="text-4xl">{cover.iconEmoji}</span>
-        <div className="absolute bottom-2 left-3">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-white/80 bg-black/20 px-2 py-0.5 rounded-full">
-            {post.category}
-          </span>
-        </div>
-      </div>
+      {/* Lateral color bar */}
+      <div className={cn('h-1 w-full', cover.gradient)} />
+
+      {/* New badge */}
+      {_isNew && (
+        <span className="absolute top-3 right-3 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 z-10">
+          Novo
+        </span>
+      )}
 
       {/* Content */}
       <div className="p-4 flex flex-col gap-2 flex-1">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-lg">{cover.iconEmoji}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{post.category}</span>
+        </div>
         <h2 className="font-bold text-sm leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2">
           {post.title}
         </h2>
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
           {post.description}
         </p>
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+        <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground pt-1">
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {post.readMinutes} min</span>
-          <span>{formatDate(post.publishedAt)}</span>
+          <DifficultyDots minutes={post.readMinutes} />
+          <span className="ml-auto">{formatDate(post.publishedAt)}</span>
         </div>
       </div>
     </Link>

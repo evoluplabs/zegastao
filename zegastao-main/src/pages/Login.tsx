@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { useState, type FormEvent, useEffect } from 'react';
+import { Navigate, Link, useSearchParams } from 'react-router-dom';
 import { FirebaseError } from 'firebase/app';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { auth, functions } from '@/firebase';
 import { authActions } from '@/hooks/useAuth';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/ui/Logo';
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+
+const recordReferralFn = httpsCallable<{ referralCode: string }, { ok: boolean }>(
+  functions, 'recordReferral'
+);
+
+async function maybeRecordReferral() {
+  const pending = sessionStorage.getItem('pendingRef');
+  if (!pending) return;
+  sessionStorage.removeItem('pendingRef');
+  try {
+    await recordReferralFn({ referralCode: pending });
+  } catch { /* silently ignore — referral tracking is non-critical */ }
+}
 
 const ERRORS: Record<string, string> = {
   'auth/invalid-credential': 'E-mail ou senha incorretos.',
@@ -82,6 +96,7 @@ type Mode = 'login' | 'register' | 'reset';
 
 export function Login() {
   const { user, authLoading } = useStore();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -90,6 +105,13 @@ export function Login() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Capture referral code from URL and store it for post-login processing
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) sessionStorage.setItem('pendingRef', ref);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!authLoading && user) return <Navigate to="/dashboard" replace />;
 
@@ -126,6 +148,7 @@ export function Login() {
     try {
       if (mode === 'login') await authActions.loginEmail(email, password);
       else await authActions.registerEmail(email, password);
+      await maybeRecordReferral();
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : '';
       setError(ERRORS[code] || 'Algo deu errado. Tente de novo.');
@@ -138,6 +161,7 @@ export function Login() {
     setError('');
     try {
       await authActions.loginGoogle();
+      await maybeRecordReferral();
     } catch {
       setError('Não foi possível entrar com o Google.');
     }
@@ -163,7 +187,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <Link to="/" className="mb-8">
         <Logo size="md" />
       </Link>
@@ -174,11 +198,11 @@ export function Login() {
           <p className="text-sm text-muted-foreground mt-1">{SUBTITLES[mode]}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border shadow-sm p-6 space-y-4">
+        <div className="bg-card rounded-2xl border shadow-sm p-6 space-y-4">
           {/* Google — só em login/register */}
           {mode !== 'reset' && (
             <>
-              <Button variant="outline" className="w-full gap-3 h-12 font-semibold text-base border-2 hover:bg-gray-50 hover:border-gray-300 transition-all" onClick={google}>
+              <Button variant="outline" className="w-full gap-3 h-12 font-semibold text-base border-2 hover:bg-accent hover:border-border transition-all" onClick={google}>
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -193,7 +217,7 @@ export function Login() {
                   <div className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-2 text-muted-foreground">ou com e-mail</span>
+                  <span className="bg-card px-2 text-muted-foreground">ou com e-mail</span>
                 </div>
               </div>
             </>
@@ -275,7 +299,7 @@ export function Login() {
               </p>
             )}
             {success && (
-              <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg px-3 py-2">
                 {success}
               </p>
             )}

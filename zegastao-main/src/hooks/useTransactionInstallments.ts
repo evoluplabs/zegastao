@@ -52,7 +52,9 @@ export function useTransactionInstallments() {
       for (const [group, list] of map.entries()) {
         const first = list[0];
         const total = first.installmentTotal ?? list.length;
-        const paid = list.filter((t) => t.date <= today).length;
+        // Use the highest installmentCurrent found — "Parcela 4/4" means 4 were charged
+        const maxCurrentFound = Math.max(...list.map((t) => t.installmentCurrent ?? 0));
+        const paid = maxCurrentFound > 0 ? maxCurrentFound : list.filter((t) => t.date <= today).length;
         const totalAmount = list.reduce((s, t) => s + Math.abs(t.amount), 0);
 
         result.push({

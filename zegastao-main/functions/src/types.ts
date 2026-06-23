@@ -61,6 +61,7 @@ export interface Rule {
   actionPercentage?: number;
   actionFixedAmount?: number;
   actionGoalId?: string;
+  actionCaixinhaId?: string;
   timesTriggered?: number;
   totalRedirected?: number;
   monthRedirected?: number;

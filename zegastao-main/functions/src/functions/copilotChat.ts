@@ -32,7 +32,11 @@ async function checkAndIncrementRateLimit(
   userId: string
 ): Promise<{ allowed: boolean; remaining: number; lifetimeLimit: number; isPaid: boolean }> {
   const subDoc = await db.collection('users').doc(userId).collection('subscription').doc('main').get();
-  const plan = subDoc.exists ? (subDoc.data()!.plan as string) : 'free';
+  const subData = subDoc.exists ? subDoc.data()! : null;
+  // Plano efetivo: respeita status e expiração do trial (trial vencido = free).
+  const trialValid = subData?.status === 'trialing' && subData?.trialEndsAt?.toMillis?.() > Date.now();
+  const planActive = subData?.status === 'active' || trialValid;
+  const plan = planActive ? (subData!.plan as string) : 'free';
 
   // Usuários pagos: cap diário de segurança de 200 msgs/dia (evita custo explosivo por abuso)
   if (plan !== 'free') {
@@ -79,6 +83,10 @@ export const copilotChat = onCall(
     const userId = request.auth?.uid;
     if (!userId) throw new HttpsError('unauthenticated', 'Não autenticado');
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new HttpsError('internal', 'Serviço de IA temporariamente indisponível. Tente novamente mais tarde.');
+    }
+
     const parsed = ChatSchema.safeParse(request.data);
     if (!parsed.success) {
       throw new HttpsError('invalid-argument', parsed.error.errors[0]?.message || 'Dados inválidos');
@@ -114,10 +122,12 @@ export const copilotChat = onCall(
     // Limitar histórico a 10 mensagens (economiza tokens)
     const recentHistory = history.slice(-10);
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: impulse ? 700 : 600,
-      system: `Você é o copiloto financeiro pessoal do usuário, que o acompanha da fase de
+    let response: Awaited<ReturnType<typeof client.messages.create>>;
+    try {
+      response = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: impulse ? 700 : 600,
+        system: `Você é o copiloto financeiro pessoal do usuário, que o acompanha da fase de
 sobrevivência (endividado) até a de investidor. Fale APENAS do que é relevante para a
 fase atual (descrita no contexto): não mencione investimentos para quem ainda tem dívida cara.
 Responda em português brasileiro, como um amigo que entende de finanças.
@@ -130,11 +140,21 @@ ${impulse ? `\n${impulseGuidance(impulseAmount)}` : ''}
 
 CONTEXTO FINANCEIRO ATUAL (inclui a fase e como agir nela):
 ${contextSnapshot}`,
-      messages: [
-        ...recentHistory.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user' as const, content: message },
-      ],
-    });
+        messages: [
+          ...recentHistory.map((m) => ({ role: m.role, content: m.content })),
+          { role: 'user' as const, content: message },
+        ],
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('401') || msg.includes('authentication') || msg.includes('invalid x-api-key')) {
+        throw new HttpsError('internal', 'Serviço de IA temporariamente indisponível. Tente novamente mais tarde.');
+      }
+      if (msg.includes('529') || msg.includes('overloaded')) {
+        throw new HttpsError('unavailable', 'Serviço de IA sobrecarregado. Tente em alguns minutos.');
+      }
+      throw new HttpsError('internal', 'Não consegui processar sua mensagem. Tente novamente.');
+    }
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
 

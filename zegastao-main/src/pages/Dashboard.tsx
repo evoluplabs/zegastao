@@ -1,14 +1,22 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AlertTriangle, Sparkles, TrendingUp, Upload, ArrowRight, Plus, Zap, TrendingDown, Target, Wallet, CalendarClock, Clock, CalendarCheck2, Users, Bell } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
 import { useGoals } from '@/hooks/useGoals';
+import { useCaixinhas } from '@/hooks/useCaixinhas';
+import { getCaixinhaPlan } from '@/lib/caixinha';
 import { useRules } from '@/hooks/useRules';
 import { useInsights } from '@/hooks/useInsights';
 import { useDailyTasks } from '@/hooks/useJourney';
 import { useGenerateInsights } from '@/hooks/useGenerateInsights';
+import { useAccounts } from '@/hooks/useAccounts';
+import { useSharedFinances } from '@/hooks/useSharedFinances';
+import { usePartnerData } from '@/hooks/usePartnerData';
+import { AccountWizard } from '@/components/flows/AccountWizard';
+import type { Account } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +36,7 @@ import { RecurringExpenses } from '@/components/RecurringExpenses';
 import { SetupChecklist } from '@/components/SetupChecklist';
 import { SpendingAlert } from '@/components/SpendingAlert';
 import { SpendingFocus } from '@/components/SpendingFocus';
+import { CategorySpendingPanel } from '@/components/CategorySpendingPanel';
 import { MonthlyReport, shouldShowMonthlyReport } from '@/components/MonthlyReport';
 import { ProactiveCopilotCards } from '@/components/ProactiveCopilotCards';
 import { useProactiveSuggestions } from '@/hooks/useProactiveSuggestions';
@@ -84,17 +93,36 @@ export function Dashboard() {
   const { data: allTransactions, loading: txLoading } = useTransactions(false);
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
+  const { data: caixinhas } = useCaixinhas();
   const { data: rules } = useRules();
   const { insights, generatedAt: insightsGeneratedAt } = useInsights();
   const tasks = useDailyTasks();
   const { generating, error: insightError, generate } = useGenerateInsights();
+  const { data: accounts } = useAccounts();
 
+  const { isLinked } = useSharedFinances();
+  const { data: partnerData } = usePartnerData();
+
+  const showCombined = useStore((s) => s.showCombined);
+  const toggleCombined = useStore((s) => s.toggleCombined);
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const [openDebt, setOpenDebt] = useState(false);
+  const [openAccount, setOpenAccount] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [openGoal, setOpenGoal] = useState(false);
   const [openTx, setOpenTx] = useState(false);
   const [openSetup, setOpenSetup] = useState(false);
   const [openSimulator, setOpenSimulator] = useState(false);
   const [showMonthlyReport, setShowMonthlyReport] = useState(() => shouldShowMonthlyReport());
+  const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
+
+  useEffect(() => {
+    if (searchParams.get('welcome') === '1') {
+      setSearchParams({}, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const income = profile?.monthlyIncome || 0;
   const phase = profile?.financialPhase;
@@ -112,6 +140,14 @@ export function Dashboard() {
     () => allTransactions.filter((t) => t.date >= monthStart),
     [allTransactions, monthStart]
   );
+
+  // Receita real das transações do mês (positivas); fallback para perfil se sem dados
+  const actualIncome = useMemo(
+    () => currentMonthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
+    [currentMonthTx]
+  );
+  const displayIncome = actualIncome > 0 ? actualIncome : income;
+  const isIncomeEstimate = actualIncome === 0 && income > 0;
 
   // Transactions for previous month
   const prevMonthTx = useMemo(
@@ -135,6 +171,29 @@ export function Dashboard() {
     const debtPayments = debts.reduce((s, d) => s + (d.monthlyPayment || 0), 0);
     return { expenses, byCategory, debtPayments };
   }, [currentMonthTx, debts]);
+
+  // Fallback: se não há gastos no mês atual, usa o mês mais recente com dados
+  const { byCategoryDisplay, byCategoryMonth } = useMemo(() => {
+    if (byCategory.length > 0) return { byCategoryDisplay: byCategory, byCategoryMonth: null };
+    const map: Record<string, number> = {};
+    let refMonth = '';
+    for (const t of allTransactions) {
+      if (t.amount >= 0) continue;
+      const m = t.date.slice(0, 7);
+      if (!refMonth || m > refMonth) refMonth = m;
+    }
+    if (!refMonth) return { byCategoryDisplay: [], byCategoryMonth: null };
+    for (const t of allTransactions) {
+      if (t.amount >= 0) continue;
+      if (t.date.slice(0, 7) !== refMonth) continue;
+      const abs = Math.abs(t.amount);
+      map[t.category] = (map[t.category] || 0) + abs;
+    }
+    const result = Object.entries(map)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount);
+    return { byCategoryDisplay: result, byCategoryMonth: refMonth };
+  }, [byCategory, allTransactions]);
 
   // Categorias do mês anterior (para calcular queda)
   const prevByCategory = useMemo(() => {
@@ -161,8 +220,64 @@ export function Dashboard() {
   // Use fixed expenses from profile if no transaction data yet for this month
   const effectiveExpenses = expenses > 0 ? expenses : (profile?.fixedExpenses || 0);
 
-  const balance = income - expenses;
+  const balance = displayIncome - effectiveExpenses;
   const redirectedThisMonth = rules.reduce((s, r) => s + (r.monthRedirected || 0), 0);
+
+  // Combined (casal) metrics
+  const combinedIncome = displayIncome + (partnerData?.income ?? 0);
+  const combinedExpenses = effectiveExpenses + (partnerData?.expenses ?? 0);
+  const combinedBalance = combinedIncome - combinedExpenses;
+
+  // Quando o modo casal está ativo, os cards/painéis usam os valores combinados
+  const coupleActive = showCombined && isLinked && !!partnerData;
+  const displayedIncome = coupleActive ? combinedIncome : displayIncome;
+  const displayedExpenses = coupleActive ? combinedExpenses : effectiveExpenses;
+  const displayedBalance = coupleActive ? combinedBalance : balance;
+  const partnerName = partnerData?.profile?.name || 'Parceiro(a)';
+
+  // Gasto do parceiro por categoria (mês atual) — para split no painel de categorias
+  const partnerByCategory = useMemo(() => {
+    if (!coupleActive || !partnerData?.transactions) return undefined;
+    const map: Record<string, number> = {};
+    for (const t of partnerData.transactions) {
+      if (t.amount < 0) {
+        const abs = Math.abs(t.amount);
+        map[t.category] = (map[t.category] || 0) + abs;
+      }
+    }
+    return Object.entries(map).map(([name, amount]) => ({ name, amount }));
+  }, [coupleActive, partnerData]);
+
+  // Categorias exibidas: combina minhas + do parceiro quando modo casal ativo
+  const combinedByCategoryDisplay = useMemo(() => {
+    if (!coupleActive || !partnerByCategory) return byCategoryDisplay;
+    const map: Record<string, number> = {};
+    for (const c of byCategoryDisplay) map[c.name] = (map[c.name] || 0) + c.amount;
+    for (const c of partnerByCategory) map[c.name] = (map[c.name] || 0) + c.amount;
+    return Object.entries(map)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [coupleActive, partnerByCategory, byCategoryDisplay]);
+
+  // Monthly spending trend (last 6 months) — derived from allTransactions already loaded
+  const monthlyTrend = useMemo(() => {
+    const map = new Map<string, { income: number; expenses: number }>();
+    for (const t of allTransactions) {
+      const month = t.date.slice(0, 7);
+      const entry = map.get(month) ?? { income: 0, expenses: 0 };
+      if (t.amount > 0) entry.income += t.amount;
+      else entry.expenses += Math.abs(t.amount);
+      map.set(month, entry);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([month, vals]) => ({
+        month: new Date(month + '-15').toLocaleDateString('pt-BR', { month: 'short' }),
+        Receita: Math.round(vals.income),
+        Despesas: Math.round(vals.expenses),
+      }));
+  }, [allTransactions]);
 
   const topDebt = [...debts]
     .filter((d) => d.status === 'active')
@@ -190,6 +305,30 @@ export function Dashboard() {
       .map((c) => ({ ...c, pct: income > 0 ? (c.amount / income) * 100 : 0, ideal: BENCH[c.name] || 0 }))
       .filter((c) => c.ideal > 0 && c.pct > c.ideal * 1.1);
   }, [byCategory, income]);
+
+  // Saldo total das contas bancárias
+  const totalAccountBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+
+  // Vencidos / Vencendo / Futuro — baseado em dueDay das dívidas ativas
+  const { overdue, dueSoon, future: futureDue } = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    let overdue = 0, dueSoon = 0, future = 0;
+    for (const d of debts) {
+      if (d.status !== 'active') continue;
+      const dueThisMonth = new Date(year, month, d.dueDay);
+      const daysThisMonth = Math.ceil((dueThisMonth.getTime() - now.getTime()) / 86_400_000);
+      // Se o vencimento já passou há mais de 5 dias neste mês, trata como próximo mês
+      const daysUntil = daysThisMonth < -5
+        ? Math.ceil((new Date(year, month + 1, d.dueDay).getTime() - now.getTime()) / 86_400_000)
+        : daysThisMonth;
+      if (daysUntil < 0) overdue += d.monthlyPayment;
+      else if (daysUntil <= 7) dueSoon += d.monthlyPayment;
+      else future += d.monthlyPayment;
+    }
+    return { overdue, dueSoon, future };
+  }, [debts]);
 
   const hasAnyData = income > 0 || debts.length > 0 || allTransactions.length > 0 || goals.length > 0;
   const hasCurrentMonthTx = currentMonthTx.length > 0;
@@ -242,131 +381,208 @@ export function Dashboard() {
     <>
       <div className="space-y-4">
 
-        {/* 1. Checklist de ativação (aparece até o usuário completar os 5 passos) */}
-        <SetupChecklist
-          hasIncome={income > 0}
-          hasDebts={debts.filter((d) => d.status === 'active').length > 0}
-          hasUpload={allTransactions.length > 0}
-          hasGoals={goals.filter((g) => g.status === 'active').length > 0}
-        />
-
-        {/* 2. Anel de progresso do perfil */}
-        <ProfileCompletionRing
-          profile={profile}
-          debts={debts}
-          goals={goals}
-          transactions={allTransactions}
-          onSetupWizard={() => setOpenSetup(true)}
-        />
-
-        {/* Alerta de gastos não-essenciais acima de 30% da renda */}
-        <SpendingAlert income={income} byCategory={byCategory} />
-
-        {/* Sugestões proativas do copiloto (rule-based, sem custo de IA) */}
-        {hasAnyData && <ProactiveCopilotCards suggestions={proactiveSuggestions} />}
-
-        {/* 2. Diagnóstico financeiro — hero da página */}
-        <FinancialDiagnostic
-          income={income}
-          expenses={effectiveExpenses}
-          debts={debts}
-          goals={goals}
-          hasRealTransactions={hasCurrentMonthTx}
-        />
-
-        {/* 3. Hero: Saldo + Fase */}
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="sm:col-span-2 rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
-              {hasCurrentMonthTx ? 'Saldo este mês' : 'Estimativa do mês'}
-            </p>
-            <p className={cn(
-              'text-4xl font-bold tracking-tight',
-              income === 0 ? 'text-muted-foreground' : balance >= 0 ? 'text-success' : 'text-destructive'
-            )}>
-              {income === 0 ? '—' : formatBRL(balance)}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-              <span className="text-muted-foreground">
-                Renda <span className="font-semibold text-success">{income > 0 ? formatBRL(income) : '—'}</span>
-              </span>
-              <span className="text-muted-foreground">
-                Gastos <span className="font-semibold">{effectiveExpenses > 0 ? formatBRL(effectiveExpenses) : '—'}</span>
-              </span>
-              {debtPayments > 0 && (
-                <span className="text-muted-foreground">
-                  Parcelas <span className="font-semibold text-amber-600">{formatBRL(debtPayments)}</span>
-                </span>
-              )}
-            </div>
-            {!hasCurrentMonthTx && hasAnyTx && (
-              <p className="mt-2 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-1.5">
-                Transações de meses anteriores encontradas. Importe o extrato atual para ver o saldo deste mês.
-              </p>
-            )}
-            {!hasCurrentMonthTx && !hasAnyTx && income > 0 && (
-              <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
-                Importe seu extrato bancário para ver gastos reais deste mês.
-              </p>
-            )}
-            {hasCurrentMonthTx && balance < 0 && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                Você gastou mais do que ganhou. O Copiloto pode ajudar a reverter isso.
-              </div>
-            )}
-          </div>
-
-          {phase ? (
-            <div className={cn('rounded-2xl border p-4 flex flex-col justify-between', PHASE_COLORS[phase])}>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-1">Sua fase</p>
-                <p className="text-lg font-bold">{PHASE_LABELS[phase]}</p>
-                <p className="text-xs mt-1 opacity-70 leading-relaxed">{PHASE_DESCRIPTIONS[phase]}</p>
-              </div>
-              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100">
-                Ver trilha <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          ) : (
-            <div className="rounded-2xl border bg-card p-4 flex flex-col items-start justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Fase financeira</p>
-                <p className="text-sm font-semibold">Calculando…</p>
-                <p className="text-xs text-muted-foreground mt-1">Análise gerada à meia-noite</p>
-              </div>
-              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-                Ver jornada <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Card de IR sazonal: Janeiro a Abril */}
+        {/* Lembrete da Caixinha — guardar hoje */}
         {(() => {
-          const m = new Date().getMonth() + 1;
-          if (m < 1 || m > 4) return null;
+          const pending = caixinhas
+            .filter((c) => c.status !== 'completed')
+            .map((c) => ({ c, plan: getCaixinhaPlan(c) }))
+            .find(({ plan }) => plan.needsDepositToday && plan.dailyTarget > 0);
+          if (!pending) return null;
           return (
             <Link
-              to="/ir"
-              className="flex items-center gap-3 rounded-xl border border-blue-300/50 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20 px-4 py-3 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-colors"
+              to="/caixinha"
+              className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors"
             >
-              <span className="text-2xl">📋</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Temporada de IR</p>
-                <p className="text-xs text-blue-700/70 dark:text-blue-400/70">
-                  Deduções, checklist e relatório para sua declaração
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-blue-500 shrink-0" />
+              <Bell className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm">
+                Hora de guardar <span className="font-semibold text-primary">{formatBRL(pending.plan.dailyTarget)}</span> em
+                {' '}{pending.c.emoji} {pending.c.name} hoje.
+              </span>
+              <ArrowRight className="h-4 w-4 text-primary ml-auto shrink-0" />
             </Link>
           );
         })()}
 
-        {/* Mini-vitória */}
-        <ShareWinBanner wins={wins} />
+        {/* Banner Modo Casal */}
+        {isLinked && partnerData && (
+          <div className="overflow-hidden rounded-2xl border bg-card">
+            {/* Faixa de topo */}
+            <div className="flex items-center justify-between gap-3 border-b bg-primary/5 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">💑</span>
+                <span className="text-sm font-semibold">Modo Casal</span>
+                {coupleActive && (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+                    combinado ativo
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={toggleCombined}
+                role="switch"
+                aria-checked={showCombined}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
+                  showCombined ? 'bg-primary' : 'bg-muted-foreground/30'
+                )}
+                title={showCombined ? 'Ver individual' : 'Combinar tudo'}
+              >
+                <span
+                  className={cn(
+                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                    showCombined ? 'translate-x-6' : 'translate-x-1'
+                  )}
+                />
+              </button>
+            </div>
 
-        {/* 4. Quick Actions */}
+            {/* Duas colunas: você | parceiro */}
+            <div className="grid grid-cols-2 divide-x">
+              <div className="px-4 py-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Você
+                </p>
+                <p className="mt-1 text-sm font-bold text-success tabular-nums">{formatBRL(displayIncome)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">− {formatBRL(effectiveExpenses)} despesas</p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <span className="inline-block h-2 w-2 rounded-full bg-sky-500" /> {partnerName}
+                </p>
+                <p className="mt-1 text-sm font-bold text-success tabular-nums">{formatBRL(partnerData.income)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">− {formatBRL(partnerData.expenses)} despesas</p>
+              </div>
+            </div>
+
+            {/* Linha combinada */}
+            {coupleActive && (
+              <div className="flex items-center justify-between gap-3 border-t bg-secondary/30 px-4 py-2.5 text-xs">
+                <span className="font-medium text-muted-foreground">Combinado</span>
+                <span className="flex items-center gap-3">
+                  <span className="text-success tabular-nums">{formatBRL(combinedIncome)}</span>
+                  <span className="text-destructive tabular-nums">−{formatBRL(combinedExpenses)}</span>
+                  <span className={cn('font-bold tabular-nums', combinedBalance >= 0 ? 'text-success' : 'text-destructive')}>
+                    = {formatBRL(combinedBalance)}
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aviso de histórico truncado */}
+        {allTransactions.length >= 500 && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-50/50 dark:bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Mostrando os 500 registros mais recentes. Para histórico completo, exclua transações antigas ou fale com o suporte.
+          </div>
+        )}
+
+        {/* Banner de boas-vindas pós-onboarding */}
+        {showWelcome && (
+          <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 flex items-start gap-4">
+            <div className="text-3xl shrink-0">🎉</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-base">
+                Bem-vindo{profile?.name ? `, ${profile.name}` : ''}! Seu plano foi criado.
+              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                O próximo passo é importar seu extrato bancário para o Copiloto te dar insights reais.
+              </p>
+              <Button size="sm" className="mt-3 gap-1.5" asChild>
+                <Link to="/upload"><Upload className="h-3.5 w-3.5" /> Importar extrato agora</Link>
+              </Button>
+            </div>
+            <button
+              onClick={() => setShowWelcome(false)}
+              className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0"
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* 1. Hero Row: Saldo Total + Receitas + Despesas */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {/* Saldo do mês (receitas − despesas) */}
+          <div className="sm:col-span-1 rounded-2xl border bg-card p-5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saldo do mês</p>
+              {coupleActive && (
+                <span className="text-[10px] font-bold text-primary border border-primary/30 rounded px-1">casal</span>
+              )}
+              {isIncomeEstimate && !coupleActive && (
+                <span className="text-[10px] text-muted-foreground/60 border rounded px-1">est.</span>
+              )}
+            </div>
+            <p className={cn(
+              'text-3xl font-bold tracking-tight tabular-nums',
+              displayedIncome === 0 && displayedExpenses === 0
+                ? 'text-muted-foreground'
+                : displayedBalance >= 0 ? 'text-success' : 'text-destructive'
+            )}>
+              {displayedIncome === 0 && displayedExpenses === 0 ? '—' : formatBRL(displayedBalance)}
+            </p>
+            {displayedBalance < 0 && displayedExpenses > 0 && (
+              <p className="mt-1 text-xs text-destructive">Despesas acima da renda</p>
+            )}
+            {displayedBalance >= 0 && displayedExpenses > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">{coupleActive ? 'Sobra conjunta' : 'Sobra do mês'}</p>
+            )}
+          </div>
+
+          {/* Receitas no mês */}
+          <div className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Receitas no mês</p>
+              {coupleActive && (
+                <span className="text-[10px] font-bold text-primary border border-primary/30 rounded px-1">casal</span>
+              )}
+              {isIncomeEstimate && !coupleActive && (
+                <span className="text-[10px] text-muted-foreground/70 border rounded px-1">estimado</span>
+              )}
+            </div>
+            <p className="text-3xl font-bold tracking-tight tabular-nums text-success">
+              {displayedIncome > 0 ? formatBRL(displayedIncome) : '—'}
+            </p>
+            {hasCurrentMonthTx && actualIncome > 0 && !coupleActive && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {currentMonthTx.filter((t) => t.amount > 0).length} entrada{currentMonthTx.filter((t) => t.amount > 0).length !== 1 ? 's' : ''}
+              </p>
+            )}
+            {coupleActive && (
+              <p className="mt-1 text-xs text-muted-foreground">Você + {partnerName}</p>
+            )}
+          </div>
+
+          {/* Despesas no mês */}
+          <div className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Despesas no mês</p>
+              {coupleActive && (
+                <span className="text-[10px] font-bold text-primary border border-primary/30 rounded px-1">casal</span>
+              )}
+            </div>
+            <p className={cn(
+              'text-3xl font-bold tracking-tight tabular-nums',
+              displayedExpenses > 0 ? 'text-destructive' : 'text-muted-foreground'
+            )}>
+              {displayedExpenses > 0 ? formatBRL(displayedExpenses) : '—'}
+            </p>
+            {hasCurrentMonthTx && displayedBalance < 0 && (
+              <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                <AlertTriangle className="h-3 w-3" /> Acima da renda
+              </div>
+            )}
+            {hasCurrentMonthTx && displayedBalance >= 0 && displayedExpenses > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Sobra: {formatBRL(displayedBalance)}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Ações rápidas */}
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenDebt(true)}>
             <Plus className="h-3.5 w-3.5" /> Dívida
@@ -392,7 +608,248 @@ export function Dashboard() {
           </Button>
         </div>
 
-        {/* 5. CTA de importação quando não tem transações */}
+        {/* Tarefas de hoje */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Ações de hoje
+            </h2>
+            <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
+              ver todas →
+            </Link>
+          </div>
+          {tasks.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {tasks.slice(0, 2).map((t, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
+                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm leading-snug">{t.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      ⏱ {t.estimatedTime}
+                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Vencimentos */}
+        {debts.filter(d => d.status === 'active').length > 0 && (
+          <div className="grid gap-3 grid-cols-3">
+            {/* Vencidos */}
+            <div className={cn('rounded-2xl border p-4', overdue > 0 ? 'border-destructive/30 bg-destructive/5' : 'bg-card')}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className={cn('h-4 w-4', overdue > 0 ? 'text-destructive' : 'text-muted-foreground')} />
+                <p className="text-xs font-semibold">Vencidos</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Passados</p>
+              <p className={cn('text-lg font-bold tabular-nums', overdue > 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                {overdue > 0 ? formatBRL(overdue) : '0,00'}
+              </p>
+            </div>
+
+            {/* Vencendo */}
+            <div className={cn('rounded-2xl border p-4', dueSoon > 0 ? 'border-amber-300/40 bg-amber-50/50 dark:bg-amber-500/5' : 'bg-card')}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <CalendarCheck2 className={cn('h-4 w-4', dueSoon > 0 ? 'text-amber-600' : 'text-muted-foreground')} />
+                <p className="text-xs font-semibold">Vencendo</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Próx. 7 dias</p>
+              <p className={cn('text-lg font-bold tabular-nums', dueSoon > 0 ? 'text-amber-600' : 'text-muted-foreground')}>
+                {dueSoon > 0 ? formatBRL(dueSoon) : '0,00'}
+              </p>
+            </div>
+
+            {/* Futuro */}
+            <div className="rounded-2xl border bg-card p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs font-semibold">Futuro</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Próx. 30 dias</p>
+              <p className="text-lg font-bold tabular-nums text-muted-foreground">
+                {futureDue > 0 ? formatBRL(futureDue) : '0,00'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Gastos por Categoria */}
+        <CategorySpendingPanel
+          byCategory={coupleActive ? combinedByCategoryDisplay : byCategoryDisplay}
+          income={displayedIncome}
+          monthLabel={byCategoryMonth ?? undefined}
+          partnerByCategory={coupleActive ? partnerByCategory : undefined}
+          partnerName={partnerName}
+        />
+
+        {/* Gráfico de tendência mensal (últimos 6 meses) */}
+        {monthlyTrend.length >= 2 && (
+          <div className="rounded-2xl border bg-card p-5">
+            <h2 className="text-sm font-semibold mb-4">Tendência dos últimos meses</h2>
+            <ResponsiveContainer width="100%" height={140}>
+              <LineChart data={monthlyTrend} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip
+                  formatter={(v: number) => formatBRL(v)}
+                  contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                />
+                <Line type="monotone" dataKey="Receita" stroke="#10b981" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Despesas" stroke="#ef4444" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-success rounded" /> Receita</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-destructive rounded" /> Despesas</span>
+            </div>
+          </div>
+        )}
+
+        {/* 4. Saldo das Contas + Fase */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {/* Saldo das Contas */}
+          <div className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold flex items-center gap-1.5">
+                <Wallet className="h-4 w-4 text-primary" /> Saldo das contas
+              </h2>
+              <button
+                onClick={() => setOpenAccount(true)}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                + Adicionar
+              </button>
+            </div>
+            {accounts.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-2">Nenhuma conta cadastrada</p>
+                <button
+                  onClick={() => setOpenAccount(true)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Adicionar minha primeira conta →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {accounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    onClick={() => { setEditingAccount(acc); setOpenAccount(true); }}
+                    className="flex items-center justify-between w-full hover:bg-accent/50 rounded-lg px-1 py-1 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{acc.emoji ?? '🏦'}</span>
+                      <div className="text-left">
+                        <p className="text-sm font-medium leading-tight">{acc.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{acc.type === 'checking' ? 'Conta corrente' : acc.type === 'savings' ? 'Poupança' : acc.type === 'wallet' ? 'Carteira' : 'Conta'}</p>
+                      </div>
+                    </div>
+                    <span className={cn('text-sm font-bold tabular-nums', acc.balance >= 0 ? 'text-success' : 'text-destructive')}>
+                      {formatBRL(acc.balance)}
+                    </span>
+                  </button>
+                ))}
+                {accounts.length > 1 && (
+                  <div className="border-t pt-2 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className={cn('text-sm font-bold tabular-nums', totalAccountBalance >= 0 ? 'text-success' : 'text-destructive')}>
+                      {formatBRL(totalAccountBalance)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Fase financeira */}
+          {phase ? (
+            <div className={cn('rounded-2xl border p-5 flex flex-col justify-between', PHASE_COLORS[phase])}>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider opacity-70 mb-1">Sua fase financeira</p>
+                <p className="text-xl font-bold">{PHASE_LABELS[phase]}</p>
+                <p className="text-xs mt-1 opacity-70 leading-relaxed">{PHASE_DESCRIPTIONS[phase]}</p>
+              </div>
+              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100">
+                Ver trilha completa <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-card p-5 flex flex-col items-start justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Fase financeira</p>
+                <p className="text-sm font-semibold">Calculando…</p>
+                <p className="text-xs text-muted-foreground mt-1">Análise gerada à meia-noite</p>
+              </div>
+              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                Ver jornada <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Checklist de ativação */}
+        <SetupChecklist
+          hasIncome={income > 0}
+          hasDebts={debts.filter((d) => d.status === 'active').length > 0}
+          hasUpload={allTransactions.length > 0}
+          hasGoals={goals.filter((g) => g.status === 'active').length > 0}
+        />
+
+        {/* Anel de progresso do perfil */}
+        <ProfileCompletionRing
+          profile={profile}
+          debts={debts}
+          goals={goals}
+          transactions={allTransactions}
+          onSetupWizard={() => setOpenSetup(true)}
+        />
+
+        {/* Alerta de gastos não-essenciais acima de 30% da renda */}
+        <SpendingAlert income={income} byCategory={byCategory} />
+
+        {/* Sugestões proativas do copiloto (rule-based, sem custo de IA) */}
+        {hasAnyData && <ProactiveCopilotCards suggestions={proactiveSuggestions} />}
+
+        {/* Diagnóstico financeiro */}
+        <FinancialDiagnostic
+          income={income}
+          expenses={effectiveExpenses}
+          debts={debts}
+          goals={goals}
+          hasRealTransactions={hasCurrentMonthTx}
+        />
+
+        {/* Card de IR sazonal: Janeiro a Abril */}
+        {(() => {
+          const m = new Date().getMonth() + 1;
+          if (m < 1 || m > 4) return null;
+          return (
+            <Link
+              to="/ir"
+              className="flex items-center gap-3 rounded-xl border border-blue-300/50 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20 px-4 py-3 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-colors"
+            >
+              <span className="text-2xl">📋</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Temporada de IR</p>
+                <p className="text-xs text-blue-700/70 dark:text-blue-400/70">
+                  Deduções, checklist e relatório para sua declaração
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-blue-500 shrink-0" />
+            </Link>
+          );
+        })()}
+
+        {/* Mini-vitória */}
+        <ShareWinBanner wins={wins} />
+
+        {/* CTA de importação quando não tem transações */}
         {!hasAnyTx && income > 0 && (
           <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -412,36 +869,7 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* 6. Tarefas de hoje */}
-        {tasks.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold flex items-center gap-2">
-                <Zap className="h-4 w-4 text-amber-500" />
-                Ações de hoje
-              </h2>
-              <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
-                ver todas →
-              </Link>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {tasks.slice(0, 2).map((t, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
-                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm leading-snug">{t.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      ⏱ {t.estimatedTime}
-                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 7. Dívida + Meta */}
+        {/* 5. Dívida + Meta */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
@@ -547,10 +975,9 @@ export function Dashboard() {
           </Card>
         </div>
 
-        {/* 8. Análise de gastos (só com transações) */}
+        {/* 8. Fluxo + Donut — complementam o CategorySpendingPanel acima */}
         {(byCategory.length > 0 || hasCurrentMonthTx) && (
           <div className="space-y-3">
-            {/* Destaque: para onde foi mais dinheiro */}
             <SpendingFocus byCategory={byCategory} income={income} />
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -561,9 +988,8 @@ export function Dashboard() {
                 <CardContent>
                   <FlowChart
                     data={[
-                      { label: 'Renda', value: income, color: '#10b981' },
+                      { label: 'Renda', value: displayIncome, color: '#10b981' },
                       { label: 'Gastos', value: expenses, color: '#ef4444' },
-                      // Parcelas já estão em "Gastos" quando há transações reais — não dobrar
                       ...(!hasCurrentMonthTx && debtPayments > 0
                         ? [{ label: 'Parcelas', value: debtPayments, color: '#f59e0b' }]
                         : []),
@@ -574,18 +1000,11 @@ export function Dashboard() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Análise por categoria</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Por categoria</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {byCategory.length > 0 ? (
-                    <div className="space-y-3">
-                      <CategoryBreakdown data={byCategory.slice(0, 5)} />
-                      <CategoryAnalysis
-                        categories={byCategory.slice(0, 6)}
-                        income={income}
-                        transactions={currentMonthTx}
-                      />
-                    </div>
+                    <CategoryBreakdown data={byCategory.slice(0, 5)} />
                   ) : (
                     <p className="text-sm text-muted-foreground">Sem gastos registrados este mês.</p>
                   )}
@@ -711,6 +1130,12 @@ export function Dashboard() {
       {openGoal && <GoalWizard onClose={() => setOpenGoal(false)} />}
       {openTx && <TransactionWizard onClose={() => setOpenTx(false)} />}
       {openSetup && <FinancialSetupWizard onClose={() => setOpenSetup(false)} />}
+      {openAccount && (
+        <AccountWizard
+          onClose={() => { setOpenAccount(false); setEditingAccount(undefined); }}
+          existing={editingAccount}
+        />
+      )}
       {openSimulator && (
         <FinancialSimulator
           income={income}

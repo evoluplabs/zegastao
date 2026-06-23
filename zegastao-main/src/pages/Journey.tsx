@@ -29,6 +29,7 @@ const MILESTONE_EMOJIS: Record<string, string> = {
   invested_10k: '🚀',
   passive_10: '💰',
   passive_100: '🏆',
+  caixinha_completed: '🐷',
 };
 
 const TASK_CATEGORY_ICONS: Record<string, string> = {
@@ -46,6 +47,7 @@ function CelebrationModal({
   onClose: () => void;
 }) {
   const milestoneInfo = MILESTONE_ORDER.find((m) => m.id === milestone.id);
+  const milestoneName = milestoneInfo?.name || milestone.name || 'Conquista!';
   const emoji = MILESTONE_EMOJIS[milestone.id] || '🎯';
   const { referralUrl, share: shareReferral } = useReferral();
   const [referred, setReferred] = useState(false);
@@ -67,9 +69,9 @@ function CelebrationModal({
           {/* Card compartilhável como IMAGEM (alavanca 1) */}
           <ShareableCard
             emoji={emoji}
-            title={milestoneInfo?.name || 'Conquista!'}
+            title={milestoneName}
             subtitle="Conquista na minha jornada financeira"
-            shareText={`Conquistei "${milestoneInfo?.name}" no Zé Gastão! ${emoji} Saindo do vermelho à liberdade.`}
+            shareText={`Conquistei "${milestoneName}" no Zé Gastão! ${emoji} Saindo do vermelho à liberdade.`}
             shareUrl={referralUrl || window.location.origin}
             analyticsId={Events.MILESTONE_SHARED}
           />

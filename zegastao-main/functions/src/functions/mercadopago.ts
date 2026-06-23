@@ -5,10 +5,18 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
+const MP_APP_URL = process.env.MP_APP_URL || '';
+const WEBHOOK_URL = 'https://handlempwebhook-m6suiv5m4a-rj.a.run.app';
+
+function isDevUrl(url: string) {
+  return url.includes('github.dev') || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('codespace');
+}
 
 const PLAN_DETAILS: Record<string, { title: string; priceReais: number; months: number }> = {
   copiloto_monthly: { title: 'Copiloto Financeiro — Mensal', priceReais: 19.90, months: 1 },
   copiloto_annual: { title: 'Copiloto Financeiro — Anual', priceReais: 178.80, months: 12 },
+  casal_familia_monthly: { title: 'Casal/Família — Mensal', priceReais: 29.90, months: 1 },
+  casal_familia_annual: { title: 'Casal/Família — Anual', priceReais: 287.00, months: 12 },
 };
 
 export const createMPCheckout = onCall(
@@ -25,6 +33,10 @@ export const createMPCheckout = onCall(
     if (!details) throw new HttpsError('invalid-argument', 'Plano inválido');
     if (!MP_ACCESS_TOKEN) throw new HttpsError('internal', 'Pagamento não configurado');
 
+    const baseUrl = MP_APP_URL && isDevUrl(successUrl) ? MP_APP_URL : null;
+    const safeSuccessUrl = baseUrl ? `${baseUrl}/dashboard?subscribed=1` : successUrl;
+    const safeFailureUrl = baseUrl ? `${baseUrl}/pricing?error=1` : failureUrl;
+
     const preference = {
       items: [{
         id: plan,
@@ -35,10 +47,11 @@ export const createMPCheckout = onCall(
       }],
       external_reference: `${userId}|${plan}|${Date.now()}`,
       back_urls: {
-        success: successUrl,
-        failure: failureUrl,
-        pending: failureUrl,
+        success: safeSuccessUrl,
+        failure: safeFailureUrl,
+        pending: safeFailureUrl,
       },
+      notification_url: WEBHOOK_URL,
       auto_return: 'approved',
       metadata: { userId, plan },
     };
@@ -59,7 +72,7 @@ export const createMPCheckout = onCall(
     }
 
     const data = await response.json() as { sandbox_init_point?: string; init_point?: string };
-    const checkoutUrl = data.sandbox_init_point || data.init_point || '';
+    const checkoutUrl = data.init_point || data.sandbox_init_point || '';
     return { checkoutUrl };
   }
 );
@@ -73,7 +86,11 @@ export const handleMPWebhook = onRequest(
     const paymentId = body.data?.id;
 
     // Validação HMAC-SHA256 da assinatura do MercadoPago (formato: ts=TIMESTAMP,v1=HASH)
-    const xSignature = req.headers['x-signature'] as string || '';
+    const xSignature = (req.headers['x-signature'] as string) || '';
+    const xRequestId = (req.headers['x-request-id'] as string) || '';
+    // O MP assina usando o data.id da query string em minúsculas (fallback ao body)
+    const queryDataId = (req.query['data.id'] as string) || '';
+    const signedId = (queryDataId || paymentId || '').toLowerCase();
     if (MP_WEBHOOK_SECRET && xSignature) {
       const parts: Record<string, string> = {};
       xSignature.split(',').forEach(part => {
@@ -83,7 +100,11 @@ export const handleMPWebhook = onRequest(
       const ts = parts['ts'];
       const v1 = parts['v1'];
       if (ts && v1) {
-        const manifest = `id:${paymentId};request-id:${req.headers['x-request-id'] || ''};ts:${ts};`;
+        // Inclui apenas os segmentos presentes, igual ao spec do MercadoPago
+        let manifest = '';
+        if (signedId) manifest += `id:${signedId};`;
+        if (xRequestId) manifest += `request-id:${xRequestId};`;
+        manifest += `ts:${ts};`;
         const expected = crypto.createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex');
         if (expected !== v1) {
           res.status(401).send('Unauthorized');
@@ -143,6 +164,21 @@ export const handleMPWebhook = onRequest(
         timestamp: new Date(),
         source: 'mp_webhook',
       });
+
+      // Mark referral conversion using reverse index (cheap single-doc lookup)
+      try {
+        const indexDoc = await db.collection('referral_index').doc(userId).get();
+        if (indexDoc.exists) {
+          const { referralPath } = indexDoc.data() as { referralPath: string };
+          const referralRef = db.doc(referralPath);
+          const referral = await referralRef.get();
+          if (referral.exists && !referral.data()?.convertedAt) {
+            await referralRef.update({ convertedAt: new Date(), plan: 'paid' });
+          }
+        }
+      } catch (e) {
+        console.warn('Referral conversion update failed (non-critical):', e);
+      }
 
       res.status(200).send('ok');
     } catch (err) {

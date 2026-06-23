@@ -70,6 +70,13 @@ export function calcAmortization(
   advancePayments: AdvancePayment[] = [],
   type: 'price' | 'sac' = 'price'
 ): AmortizationResult {
+  if (totalInstallments <= 0) {
+    return {
+      originalSchedule: [],
+      acceleratedSchedule: [],
+      savings: { interestSaved: 0, monthsSaved: 0, newEndDate: '', roi: '' },
+    };
+  }
   const build = type === 'sac' ? buildSac : buildPrice;
   const originalSchedule = build(principal, monthlyRate, totalInstallments, []);
   const acceleratedSchedule = build(principal, monthlyRate, totalInstallments, advancePayments);

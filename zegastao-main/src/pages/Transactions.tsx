@@ -7,18 +7,19 @@ import {
 } from 'lucide-react';
 import { writeBatch, collection, query, where, getDocs, doc } from 'firebase/firestore';
 import { db, auth, functions } from '@/firebase';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useCombinedTransactions, type TaggedTransaction } from '@/hooks/useCombinedTransactions';
 import { useUploads } from '@/hooks/useUploads';
 import { useCategories } from '@/hooks/useCategories';
+import { useStore } from '@/store/useStore';
+import { useSharedFinances } from '@/hooks/useSharedFinances';
 import { deleteUserDoc, updateUserDoc } from '@/lib/firestore';
-import type { Transaction } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
-import { formatBRL, formatDateBR } from '@/lib/utils';
+import { formatBRL, formatDateBR, cn } from '@/lib/utils';
 
 const categorizeManual = httpsCallable(functions, 'categorizeManual');
 const SUPPORTED_BANKS = ['Nubank', 'Inter', 'Itaú', 'Bradesco', 'BB', 'Santander', 'C6', 'Caixa'];
@@ -28,13 +29,13 @@ interface MonthGroup {
   label: string;   // 'maio de 2026'
   net: number;
   count: number;
-  txs: Transaction[];
+  txs: TaggedTransaction[];
 }
 
 // Agrupa as transações por mês no cliente (1 leitura da coleção, sem agregação
 // server-side nem índice composto). A lista de um mês fica em memória e é
 // filtrada localmente ao abrir o card — sem novas queries.
-function groupByMonth(txs: Transaction[]): MonthGroup[] {
+function groupByMonth(txs: TaggedTransaction[]): MonthGroup[] {
   const map = new Map<string, MonthGroup>();
   for (const t of txs) {
     const month = (t.date || '').slice(0, 7); // 'YYYY-MM'
@@ -55,8 +56,11 @@ function groupByMonth(txs: Transaction[]): MonthGroup[] {
 }
 
 export function Transactions() {
-  const { data: transactions, loading } = useTransactions(false);
+  const { data: transactions, loading } = useCombinedTransactions(false);
   const { data: uploads } = useUploads();
+  const showCombined = useStore((s) => s.showCombined);
+  const { isLinked } = useSharedFinances();
+  const coupleActive = showCombined && isLinked;
   const navigate = useNavigate();
 
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -91,7 +95,7 @@ export function Transactions() {
   if (current) {
     return (
       <>
-        <MonthDetail group={current} onBack={() => setSelectedMonth(null)} />
+        <MonthDetail group={current} onBack={() => setSelectedMonth(null)} coupleActive={coupleActive} />
         {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
       </>
     );
@@ -213,7 +217,7 @@ export function Transactions() {
 
 /* ───────────────── Detalhe: lista de UM mês (em memória) ───────────────── */
 
-function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void }) {
+function MonthDetail({ group, onBack, coupleActive }: { group: MonthGroup; onBack: () => void; coupleActive: boolean }) {
   const { all: allCategories, custom: customCategories, add: addCategory, remove: removeCategory } = useCategories();
 
   const [search, setSearch] = useState('');
@@ -359,24 +363,37 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
             </p>
           )}
           <ul className="divide-y">
-            {filtered.map((t) => (
-              <li key={t.id} className="p-3 space-y-2 border-b last:border-0">
+            {filtered.map((t) => {
+              const isPartner = t._owner === 'partner';
+              return (
+              <li key={`${t._owner}-${t.id}`} className="p-3 space-y-2 border-b last:border-0">
                 {/* Linha 1: checkbox + descrição + valor + lixeira */}
                 <div className="flex items-start gap-2">
-                  {selectMode && (
+                  {selectMode && !isPartner && (
                     <button onClick={() => toggleSelect(t.id)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-primary">
                       {selected.has(t.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
                     </button>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-snug break-words">{t.description}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {coupleActive && (
+                        <span className={cn(
+                          'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                          isPartner ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        )}>
+                          <span className={cn('inline-block h-1.5 w-1.5 rounded-full', isPartner ? 'bg-sky-500' : 'bg-emerald-500')} />
+                          {t._ownerName}
+                        </span>
+                      )}
+                      <p className="text-sm font-medium leading-snug break-words">{t.description}</p>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatDateBR(t.date)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
                     <span className={`text-sm font-semibold whitespace-nowrap ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
                       {formatBRL(t.amount)}
                     </span>
-                    {!selectMode && (
+                    {!selectMode && !isPartner && (
                       <button
                         onClick={() => deleteUserDoc('transactions', t.id)}
                         className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
@@ -389,14 +406,18 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
                 </div>
                 {/* Linha 2: select de categoria + badge IA */}
                 <div className="flex items-center gap-2">
-                  <Select
-                    className="h-7 flex-1 text-xs min-w-0"
-                    value={t.category}
-                    onChange={(e) => changeCategory(t.id, e.target.value)}
-                  >
-                    {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-                    <option value="__new__">+ Nova categoria…</option>
-                  </Select>
+                  {isPartner ? (
+                    <span className="flex-1 text-xs text-muted-foreground italic">{t.category} · somente leitura</span>
+                  ) : (
+                    <Select
+                      className="h-7 flex-1 text-xs min-w-0"
+                      value={t.category}
+                      onChange={(e) => changeCategory(t.id, e.target.value)}
+                    >
+                      {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+                      <option value="__new__">+ Nova categoria…</option>
+                    </Select>
+                  )}
                   {t.aiCategorized && !t.userCorrected && t.aiConfidence > 0 && (
                     <Badge variant="outline" className="shrink-0 text-[10px] whitespace-nowrap">
                       IA {Math.round(t.aiConfidence * 100)}%
@@ -404,7 +425,8 @@ function MonthDetail({ group, onBack }: { group: MonthGroup; onBack: () => void 
                   )}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </CardContent>
       </Card>

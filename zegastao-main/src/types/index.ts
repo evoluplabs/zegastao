@@ -124,6 +124,24 @@ export const BETTING_MARKET_LABELS: Record<string, string> = {
 export const BETTING_DISCLAIMER =
   'Esta análise é educacional e não garante resultados. Apostas esportivas envolvem risco de perda total do valor apostado. Aposte com responsabilidade e dentro do seu limite semanal configurado com o Copiloto.';
 
+export interface CategoryBudget {
+  id: string;
+  category: string;
+  monthlyLimit: number;
+}
+
+export type AccountType = 'checking' | 'savings' | 'wallet' | 'investment' | 'other';
+
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  institution?: string;
+  balance: number;
+  emoji?: string;
+  color?: string;
+}
+
 export type TransactionType = 'in' | 'out';
 
 export interface Transaction {
@@ -186,6 +204,28 @@ export interface Goal {
   source?: string; // 'auto-default' = sugestão inicial criada pelo sistema
 }
 
+export interface CaixinhaDeposit {
+  date: string; // YYYY-MM-DD
+  amount: number;
+  by?: string;       // uid de quem depositou (caixinha compartilhada)
+  byName?: string;   // nome de quem depositou
+}
+
+export interface Caixinha {
+  id: string;
+  name: string;
+  emoji: string;
+  targetAmount: number;
+  targetDate: string; // YYYY-MM-DD
+  startDate: string;
+  totalSaved: number;
+  deposits: CaixinhaDeposit[];
+  status: 'active' | 'completed' | 'paused';
+  color?: string;
+  shared?: boolean;   // caixinha compartilhada do casal (plano Casal/Família)
+  ownerUid?: string;  // dono da caixinha compartilhada
+}
+
 export type TriggerType =
   | 'transaction_in_category'
   | 'category_monthly_over'
@@ -202,6 +242,7 @@ export interface Rule {
   actionPercentage?: number;
   actionFixedAmount?: number;
   actionGoalId?: string;
+  actionCaixinhaId?: string; // destino alternativo: redireciona para uma caixinha
   timesTriggered?: number;
   totalRedirected?: number;
   monthRedirected?: number;
@@ -460,7 +501,12 @@ export interface ImpulseItem {
 
 // ---- Assinaturas e Planos ----
 
-export type PlanId = 'free' | 'copiloto_monthly' | 'copiloto_annual';
+export type PlanId =
+  | 'free'
+  | 'copiloto_monthly'
+  | 'copiloto_annual'
+  | 'casal_familia_monthly'
+  | 'casal_familia_annual';
 
 export interface PlanLimits {
   chatMessagesPerDay: number;
@@ -470,7 +516,21 @@ export interface PlanLimits {
   contractAnalysis: boolean;
   pushNotifications: boolean;
   dailyInsights: boolean;
+  caixinhasTotal: number;       // 1 para free, Infinity para pago
+  sharedPartner: boolean;       // modo casal / caixinha compartilhada (só plano Casal/Família)
 }
+
+const PAID_LIMITS: PlanLimits = {
+  chatMessagesPerDay: Infinity,
+  chatMessagesLifetime: Infinity,
+  uploadsPerMonth: Infinity,
+  uploadsTotal: Infinity,
+  contractAnalysis: true,
+  pushNotifications: true,
+  dailyInsights: true,
+  caixinhasTotal: Infinity,
+  sharedPartner: false,
+};
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
@@ -481,31 +541,21 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     contractAnalysis: false,
     pushNotifications: false,
     dailyInsights: false,
+    caixinhasTotal: 1,
+    sharedPartner: false,
   },
-  copiloto_monthly: {
-    chatMessagesPerDay: Infinity,
-    chatMessagesLifetime: Infinity,
-    uploadsPerMonth: Infinity,
-    uploadsTotal: Infinity,
-    contractAnalysis: true,
-    pushNotifications: true,
-    dailyInsights: true,
-  },
-  copiloto_annual: {
-    chatMessagesPerDay: Infinity,
-    chatMessagesLifetime: Infinity,
-    uploadsPerMonth: Infinity,
-    uploadsTotal: Infinity,
-    contractAnalysis: true,
-    pushNotifications: true,
-    dailyInsights: true,
-  },
+  copiloto_monthly: { ...PAID_LIMITS },
+  copiloto_annual: { ...PAID_LIMITS },
+  casal_familia_monthly: { ...PAID_LIMITS, sharedPartner: true },
+  casal_familia_annual: { ...PAID_LIMITS, sharedPartner: true },
 };
 
 export const PLAN_PRICES: Record<PlanId, { label: string; monthly: number; yearly?: number }> = {
   free: { label: 'Gratuito', monthly: 0 },
   copiloto_monthly: { label: 'Copiloto', monthly: 1990 },
   copiloto_annual: { label: 'Copiloto Anual', monthly: 1490, yearly: 17880 },
+  casal_familia_monthly: { label: 'Casal/Família', monthly: 2990 },
+  casal_familia_annual: { label: 'Casal/Família Anual', monthly: 2390, yearly: 28700 },
 };
 
 export interface Subscription {
@@ -514,6 +564,8 @@ export interface Subscription {
   mpSubscriptionId?: string;
   currentPeriodEnd?: { toDate: () => Date };
   uploadsThisMonth?: number;
+  trialStartedAt?: { toDate: () => Date };
+  trialEndsAt?: { toDate: () => Date };
 }
 
 // ---- Negociação ----

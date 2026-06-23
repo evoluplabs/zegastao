@@ -20,7 +20,7 @@ export const generateInsightsNow = onCall(
       }
     }
 
-    await runUserDigest(uid);
+    await runUserDigest(uid, true); // force: user explicitly requested regeneration
     await usageRef.set({ lastRun: new Date() }, { merge: true });
     return { success: true };
   }

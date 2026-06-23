@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   CreditCard,
@@ -9,6 +9,9 @@ import {
   Dices,
   Gift,
   FileSpreadsheet,
+  HelpCircle,
+  Users,
+  PiggyBank,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -16,6 +19,7 @@ import { useReferral } from '@/hooks/useReferral';
 import { useStore } from '@/store/useStore';
 import { Logo } from '@/components/ui/Logo';
 import { FEATURES } from '@/lib/features';
+import { useToast } from '@/components/ui/Toast';
 
 const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
@@ -23,6 +27,7 @@ export function Sidebar() {
   const { isPaid } = useSubscription();
   const referral = useReferral();
   const { profile } = useStore();
+  const { toast } = useToast();
 
   const phase = profile?.financialPhase;
   // Em modo de teste (VITE_FEATURE_ZE_APOSTADOR=true), mostra para qualquer fase.
@@ -34,11 +39,11 @@ export function Sidebar() {
   const isIRSeason = irMonth >= 1 && irMonth <= 4;
 
   const NAV = [
-    { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
-    { to: '/financas', label: 'Finanças', icon: CreditCard },
-    { to: '/transactions', label: 'Transações', icon: Receipt },
-    { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
-    { to: '/journey', label: 'Jornada', icon: Trophy },
+    { to: '/dashboard', label: 'Início', sub: 'Visão geral', icon: LayoutDashboard, end: true },
+    { to: '/financas', label: 'Finanças', sub: 'Dívidas, metas, regras', icon: CreditCard },
+    { to: '/transactions', label: 'Transações', sub: 'Histórico e extratos', icon: Receipt },
+    { to: '/copilot', label: 'Copiloto', sub: 'Análise com IA', icon: MessageCircle },
+    { to: '/journey', label: 'Jornada', sub: 'Trilha e tarefas', icon: Trophy },
   ];
 
   return (
@@ -48,24 +53,45 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {NAV.map(({ to, label, sub, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )
             }
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
+            <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">{label}</p>
+              <p className="text-[10px] leading-tight opacity-60">{sub}</p>
+            </div>
           </NavLink>
         ))}
+
+        <NavLink
+          to="/caixinha"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )
+          }
+        >
+          <PiggyBank className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight">Caixinha</p>
+            <p className="text-[10px] leading-tight opacity-60">Cofrinho com meta diária</p>
+          </div>
+        </NavLink>
 
         {/* IR: sempre disponível, destaque em temporada Jan-Abr */}
         <NavLink
@@ -112,13 +138,39 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t p-3 space-y-0.5">
+        <NavLink
+          to="/ajuda"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )
+          }
+        >
+          <HelpCircle className="h-4 w-4 shrink-0" />
+          Ajuda
+        </NavLink>
         <button
-          onClick={() => referral.share('sidebar')}
+          onClick={async () => {
+            const result = await referral.share('sidebar');
+            if (result === 'copied') toast('Link copiado! Cole para indicar um amigo 🎉');
+            else if (result === 'shared') toast('Indicação compartilhada! Obrigado 🎉');
+            else if (result === 'fallback') toast(`Copie seu link: ${referral.referralUrl}`);
+          }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
         >
           <Gift className="h-4 w-4 shrink-0" />
           Indicar um amigo
         </button>
+        <Link
+          to="/referrals"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <Users className="h-4 w-4 shrink-0" />
+          Ver indicados
+        </Link>
         {!isPaid && (
           <NavLink
             to="/pricing"

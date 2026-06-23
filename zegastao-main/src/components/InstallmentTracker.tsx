@@ -110,12 +110,16 @@ export function InstallmentTracker({ debt, onDebtUpdated }: Props) {
       const newBalance = Math.max(0, balance - extra);
       // Recalculate remaining installments if we have a payment and rate
       let newRemaining = remaining;
-      if (currentInstallment && rate > 0 && newBalance > 0) {
-        const pmt = currentInstallment.payment;
-        newRemaining = Math.ceil(-Math.log(1 - newBalance * rate / pmt) / Math.log(1 + rate));
-        newRemaining = Math.max(1, newRemaining);
-      } else if (newBalance <= 0) {
+      if (newBalance <= 0) {
         newRemaining = 0;
+      } else if (currentInstallment && rate > 0) {
+        const pmt = currentInstallment.payment;
+        const ratio = newBalance * rate / pmt;
+        // Guard: if interest >= payment the loan never pays off — keep current count
+        if (ratio < 1 && ratio > 0) {
+          const calc = Math.ceil(-Math.log(1 - ratio) / Math.log(1 + rate));
+          if (isFinite(calc) && calc > 0) newRemaining = calc;
+        }
       }
 
       const patch: Record<string, unknown> = {
@@ -128,7 +132,7 @@ export function InstallmentTracker({ debt, onDebtUpdated }: Props) {
       await batch.commit();
       toast(`Pagamento de ${formatBRL(extra)} registrado!`);
       setShowAdvance(false);
-      setExtraAmount('');
+      setExtraAmount(0);
       onDebtUpdated?.();
     } catch {
       toast('Erro ao registrar pagamento', 'error');

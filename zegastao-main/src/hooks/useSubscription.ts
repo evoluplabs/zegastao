@@ -21,9 +21,18 @@ export function useSubscription() {
     return unsub;
   }, [user?.uid]);
 
-  const plan: PlanId = sub.status === 'active' || sub.status === 'trialing' ? sub.plan : 'free';
+  // Trial expira: se está em 'trialing' mas já passou de trialEndsAt, trata como free.
+  const trialEndsAtMs = sub.trialEndsAt ? sub.trialEndsAt.toDate().getTime() : 0;
+  const isTrialing = sub.status === 'trialing' && trialEndsAtMs > Date.now();
+  const trialUsed = !!sub.trialStartedAt;
+  const trialDaysLeft = isTrialing
+    ? Math.max(0, Math.ceil((trialEndsAtMs - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const isActive = sub.status === 'active' || isTrialing;
+  const plan: PlanId = isActive ? sub.plan : 'free';
   const limits = PLAN_LIMITS[plan];
   const isPaid = plan !== 'free';
 
-  return { sub, plan, limits, isPaid, loading };
+  return { sub, plan, limits, isPaid, isTrialing, trialUsed, trialDaysLeft, loading };
 }

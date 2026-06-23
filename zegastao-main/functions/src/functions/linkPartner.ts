@@ -31,6 +31,17 @@ export const linkPartner = onCall(
     // action === 'link'
     const { partnerEmail } = parsed.data;
 
+    // Modo Casal exige o plano Casal/Família ativo (ou em trial válido)
+    const subSnap = await db.collection('users').doc(uid).collection('subscription').doc('main').get();
+    const subData = subSnap.exists ? subSnap.data() : null;
+    const trialValid = subData?.status === 'trialing'
+      && subData?.trialEndsAt?.toMillis?.() > Date.now();
+    const isActive = subData?.status === 'active' || trialValid;
+    const isCasalPlan = subData?.plan === 'casal_familia_monthly' || subData?.plan === 'casal_familia_annual';
+    if (!isActive || !isCasalPlan) {
+      throw new Error('O Modo Casal está disponível no plano Casal/Família. Faça upgrade para vincular seu parceiro(a).');
+    }
+
     // Não pode vincular a si mesmo
     if (partnerEmail === request.auth.token.email) {
       throw new Error('Você não pode vincular com seu próprio e-mail.');
