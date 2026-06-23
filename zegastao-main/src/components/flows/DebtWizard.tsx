@@ -135,8 +135,8 @@ export function DebtWizard({ onClose }: Props) {
                       <Label>Como você usa esse cartão?</Label>
                       <div className="grid grid-cols-2 gap-2">
                         {([
-                          { id: 'parcelado', label: '📦 Parcelado', sub: 'Rastreia parcelas fixas' },
-                          { id: 'fatura', label: '💳 Fatura integral', sub: 'Pago todo mês no vencimento' },
+                          { id: 'parcelado', label: '📦 Parcelas fixas', sub: 'Rastreia cada parcela' },
+                          { id: 'fatura', label: '💳 Pago mensalmente', sub: 'Paga a fatura todo mês' },
                         ] as const).map((opt) => (
                           <button
                             key={opt.id}
@@ -178,13 +178,13 @@ export function DebtWizard({ onClose }: Props) {
               {step === 2 && (
                 <div className="space-y-4">
                   <PercentInput
-                    label="Taxa de juros (opcional)"
+                    label="Juros ao mês (opcional)"
                     value={form.rate}
                     onChange={(v) => setForm({ ...form, rate: v })}
                     autoFocus
                   />
                   <p className="text-xs text-muted-foreground">
-                    💡 Você acha no contrato, fatura ou no app do credor. Se não souber, deixe em branco.
+                    💡 Está no contrato, na fatura ou no app do banco. Se não souber, deixe em branco.
                   </p>
                 </div>
               )}

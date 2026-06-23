@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, ChevronRight, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
-import { addUserDoc } from '@/lib/firestore';
+import { addUserDoc, updateUserDoc } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,8 +8,17 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { CATEGORIES } from '@/types';
 import { cn } from '@/lib/utils';
 
+interface ExistingTransaction {
+  id: string;
+  amount: number;
+  date: string;
+  description: string;
+  category: string;
+}
+
 interface Props {
   onClose: () => void;
+  existing?: ExistingTransaction;
 }
 
 const EXPENSE_CATEGORIES = CATEGORIES.filter(
@@ -18,35 +27,43 @@ const EXPENSE_CATEGORIES = CATEGORIES.filter(
 
 const INCOME_CATEGORIES = ['Salário', 'Renda extra', 'Transferência', 'Outros'];
 
-export function TransactionWizard({ onClose }: Props) {
-  const [step, setStep] = useState(0);
+export function TransactionWizard({ onClose, existing }: Props) {
+  const isEditing = !!existing;
+  const [step, setStep] = useState(isEditing ? 1 : 0);
   const [form, setForm] = useState({
-    type: 'out' as 'in' | 'out',
-    amount: 0,
-    date: new Date().toISOString().substring(0, 10),
-    description: '',
-    category: '',
+    type: (existing ? (existing.amount >= 0 ? 'in' : 'out') : 'out') as 'in' | 'out',
+    amount: existing ? Math.abs(existing.amount) : 0,
+    date: existing?.date ?? new Date().toISOString().substring(0, 10),
+    description: existing?.description ?? '',
+    category: existing?.category ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
 
-  const steps = ['Valor', 'Detalhes'];
+  const steps = isEditing ? ['Editar'] : ['Valor', 'Detalhes'];
   const categories = form.type === 'in' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   async function save() {
     if (form.amount <= 0 || !form.description) return;
     setSaving(true);
-    await addUserDoc('transactions', {
+    const data = {
       date: form.date,
       description: form.description,
       amount: form.type === 'out' ? -Math.abs(form.amount) : Math.abs(form.amount),
       type: form.type,
       category: form.category || (form.type === 'out' ? 'Outros' : 'Renda extra'),
-      aiConfidence: 1,
-      aiCategorized: false,
       userCorrected: true,
-      source: 'manual',
-    });
+    };
+    if (isEditing) {
+      await updateUserDoc('transactions', existing.id, data);
+    } else {
+      await addUserDoc('transactions', {
+        ...data,
+        aiConfidence: 1,
+        aiCategorized: false,
+        source: 'manual',
+      });
+    }
     setSaving(false);
     setDone(true);
     setTimeout(onClose, 1200);
@@ -67,9 +84,9 @@ export function TransactionWizard({ onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b">
           <div>
-            <h2 className="font-semibold text-base">Lançar transação</h2>
+            <h2 className="font-semibold text-base">{isEditing ? 'Editar transação' : 'Lançar transação'}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Passo {step + 1} de {steps.length}
+              {isEditing ? 'Altere os dados e salve' : `Passo ${step + 1} de ${steps.length}`}
             </p>
           </div>
           <button onClick={onClose} className="rounded-full p-1.5 hover:bg-accent transition-colors">
@@ -91,11 +108,11 @@ export function TransactionWizard({ onClose }: Props) {
         </div>
 
         {/* Conteúdo */}
-        <div className="px-5 py-5 space-y-4 min-h-[220px]">
+        <div className="px-5 py-5 space-y-4 min-h-[220px] max-h-[60vh] overflow-y-auto">
           {done ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <div className="text-3xl">{form.type === 'in' ? '💚' : '🔴'}</div>
-              <p className="font-medium text-sm">Transação registrada!</p>
+              <p className="font-medium text-sm">{isEditing ? 'Transação atualizada!' : 'Transação registrada!'}</p>
             </div>
           ) : (
             <>
@@ -247,7 +264,7 @@ export function TransactionWizard({ onClose }: Props) {
                 loading={saving}
                 onClick={save}
               >
-                Registrar
+                {isEditing ? 'Salvar' : 'Registrar'}
               </Button>
             )}
           </div>
