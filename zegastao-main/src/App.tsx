@@ -67,6 +67,8 @@ import { Login } from '@/pages/Login';
 import { Onboarding } from '@/pages/Onboarding';
 import { Dashboard } from '@/pages/Dashboard';
 import { Financas } from '@/pages/Financas';
+import { Carteira } from '@/pages/Carteira';
+import { CreditCardDetail } from '@/pages/CreditCardDetail';
 import { Transactions } from '@/pages/Transactions';
 import { Copilot } from '@/pages/Copilot';
 import { Journey } from '@/pages/Journey';
@@ -119,17 +121,19 @@ export default function App() {
           }
         >
           <Route path="/dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
-          <Route path="/financas" element={<ErrorBoundary><Financas /></ErrorBoundary>} />
+          <Route path="/carteira" element={<ErrorBoundary><Carteira /></ErrorBoundary>} />
+          <Route path="/carteira/cartoes/:id" element={<ErrorBoundary><CreditCardDetail /></ErrorBoundary>} />
+          <Route path="/financas" element={<Navigate to="/carteira" replace />} />
           <Route path="/transactions" element={<ErrorBoundary><Transactions /></ErrorBoundary>} />
           <Route path="/copilot" element={<ErrorBoundary><Copilot /></ErrorBoundary>} />
           <Route path="/journey" element={<ErrorBoundary><Journey /></ErrorBoundary>} />
 
           {/* Rotas legadas → redirects para nova arquitetura */}
-          <Route path="/debts" element={<Navigate to="/financas?tab=debts" replace />} />
-          <Route path="/goals" element={<Navigate to="/financas?tab=goals" replace />} />
-          <Route path="/rules" element={<Navigate to="/financas?tab=rules" replace />} />
-          <Route path="/investments" element={<Navigate to="/financas?tab=investments" replace />} />
-          <Route path="/projection" element={<Navigate to="/financas?tab=projection" replace />} />
+          <Route path="/debts" element={<Navigate to="/carteira" replace />} />
+          <Route path="/goals" element={<Navigate to="/carteira" replace />} />
+          <Route path="/rules" element={<Navigate to="/carteira" replace />} />
+          <Route path="/investments" element={<Navigate to="/carteira" replace />} />
+          <Route path="/projection" element={<Navigate to="/carteira" replace />} />
           <Route path="/documents" element={<Navigate to="/copilot?tab=documentos" replace />} />
           <Route path="/context" element={<Navigate to="/copilot?tab=historico" replace />} />
           <Route path="/upload" element={<ErrorBoundary><UploadPage /></ErrorBoundary>} />

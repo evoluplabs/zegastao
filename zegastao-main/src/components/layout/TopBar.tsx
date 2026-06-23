@@ -7,13 +7,6 @@ import { monthLabel } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { FeedbackModal } from '@/components/FeedbackModal';
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Bom dia';
-  if (h < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
-
 function AvatarChip({ name }: { name?: string }) {
   const initials = name
     ? name.split(' ').slice(0, 2).map((w) => w[0].toUpperCase()).join('')
@@ -43,11 +36,12 @@ export function TopBar() {
   return (
     <>
       <header className="flex items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 md:px-6 py-3 sticky top-0 z-30">
-        <div>
-          <p className="text-xs text-muted-foreground capitalize">{monthLabel()}</p>
-          <h1 className="text-sm font-semibold">
-            {getGreeting()}, {profile?.name || 'amigo'} 👋
-          </h1>
+        <div className="flex items-center gap-2.5">
+          <Link to="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold shrink-0">Z</Link>
+          <div>
+            <p className="text-sm font-semibold leading-tight">Zé Gastão</p>
+            <p className="text-[10px] text-muted-foreground capitalize leading-tight">{monthLabel()}</p>
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           {!isPaid && (

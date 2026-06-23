@@ -577,3 +577,48 @@ export interface NegotiationAlert {
   action: string;
   scriptId: string;
 }
+
+// ---- Cartões de Crédito ----
+
+export type CreditCardBank =
+  | 'nubank' | 'inter' | 'itau' | 'bradesco' | 'santander'
+  | 'caixa' | 'bb' | 'c6' | 'xp' | 'btg' | 'outro';
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  bank: CreditCardBank;
+  color: string;
+  limit: number;
+  dueDay: number;
+  closingDay: number;
+  emoji: string;
+  createdAt: string;
+}
+
+export interface CardInstallment {
+  id: string;
+  cardId: string;
+  description: string;
+  store?: string;
+  totalAmount: number;
+  installments: number;
+  paidInstallments: number;
+  monthlyAmount: number;
+  firstDueDate: string;
+  status: 'active' | 'paid';
+}
+
+export const CREDIT_CARD_BANKS: Record<CreditCardBank, { label: string; emoji: string; color: string }> = {
+  nubank:    { label: 'Nubank',    emoji: '💜', color: '#8B5CF6' },
+  inter:     { label: 'Inter',     emoji: '🟠', color: '#F97316' },
+  itau:      { label: 'Itaú',      emoji: '🟠', color: '#F59E0B' },
+  bradesco:  { label: 'Bradesco',  emoji: '🔴', color: '#EF4444' },
+  santander: { label: 'Santander', emoji: '🔴', color: '#DC2626' },
+  caixa:     { label: 'Caixa',     emoji: '🔵', color: '#3B82F6' },
+  bb:        { label: 'Banco do Brasil', emoji: '🟡', color: '#EAB308' },
+  c6:        { label: 'C6 Bank',   emoji: '⚫', color: '#374151' },
+  xp:        { label: 'XP',        emoji: '🟤', color: '#92400E' },
+  btg:       { label: 'BTG',       emoji: '🔷', color: '#1D4ED8' },
+  outro:     { label: 'Outro',     emoji: '💳', color: '#6B7280' },
+};

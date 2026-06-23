@@ -11,7 +11,7 @@ import { useStore } from '@/store/useStore';
 import { useDebts } from '@/hooks/useDebts';
 import { useGoals } from '@/hooks/useGoals';
 import { useTransactions } from '@/hooks/useTransactions';
-import type { TaxSummary } from '../../functions/src/functions/extractTaxData';
+import type { TaxSummary } from '@/types';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const TAX_YEAR = CURRENT_YEAR - 1; // IRPF é sobre o ano anterior

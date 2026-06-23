@@ -172,7 +172,7 @@ export function Onboarding() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 p-4 gap-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5 p-4 gap-6">
       <Link to="/"><Logo size="sm" /></Link>
       {/* Progress indicator */}
       <div className="w-full max-w-md">

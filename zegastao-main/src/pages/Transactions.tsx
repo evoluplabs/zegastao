@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, Upload, Plus, FileUp, ArrowRight, Trash2, ArrowLeft,
   CheckSquare, Square, ChevronDown, ChevronUp, FileText, Tag, ChevronRight,
+  Pencil, RefreshCw,
 } from 'lucide-react';
 import { writeBatch, collection, query, where, getDocs, doc } from 'firebase/firestore';
 import { db, auth, functions } from '@/firebase';
@@ -19,7 +20,10 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
+import { RecurringExpenses } from '@/components/RecurringExpenses';
 import { formatBRL, formatDateBR, cn } from '@/lib/utils';
+
+type MainTab = 'lancamentos' | 'recorrentes';
 
 const categorizeManual = httpsCallable(functions, 'categorizeManual');
 const SUPPORTED_BANKS = ['Nubank', 'Inter', 'Itaú', 'Bradesco', 'BB', 'Santander', 'C6', 'Caixa'];
@@ -63,6 +67,7 @@ export function Transactions() {
   const coupleActive = showCombined && isLinked;
   const navigate = useNavigate();
 
+  const [mainTab, setMainTab] = useState<MainTab>('lancamentos');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [openWizard, setOpenWizard] = useState(false);
   const [batchesOpen, setBatchesOpen] = useState(false);
@@ -104,6 +109,39 @@ export function Transactions() {
   // ── Visão geral: cards por mês ──
   return (
     <div className="space-y-4 pb-12">
+      {/* Tabs principais */}
+      <div className="flex gap-1 rounded-2xl bg-muted/50 p-1">
+        <button
+          onClick={() => setMainTab('lancamentos')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-medium transition-colors',
+            mainTab === 'lancamentos' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Lançamentos
+        </button>
+        <button
+          onClick={() => setMainTab('recorrentes')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-medium transition-colors',
+            mainTab === 'recorrentes' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Recorrentes
+        </button>
+      </div>
+
+      {/* Tab: Recorrentes */}
+      {mainTab === 'recorrentes' && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground px-1">
+            Gastos que aparecem em 2 ou mais meses — provavelmente assinaturas ou contas fixas.
+          </p>
+          <RecurringExpenses transactions={transactions} />
+        </div>
+      )}
+
+      {mainTab === 'lancamentos' && <>
       {/* Banner importar */}
       <div
         className="flex flex-col sm:flex-row items-center gap-3 rounded-xl border border-dashed bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
@@ -211,6 +249,7 @@ export function Transactions() {
       </div>
 
       {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
+      </>}
     </div>
   );
 }
@@ -223,6 +262,7 @@ function MonthDetail({ group, onBack, coupleActive }: { group: MonthGroup; onBac
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [openWizard, setOpenWizard] = useState(false);
+  const [editingTx, setEditingTx] = useState<TaggedTransaction | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [newCategoryInput, setNewCategoryInput] = useState('');
@@ -367,14 +407,18 @@ function MonthDetail({ group, onBack, coupleActive }: { group: MonthGroup; onBac
               const isPartner = t._owner === 'partner';
               return (
               <li key={`${t._owner}-${t.id}`} className="p-3 space-y-2 border-b last:border-0">
-                {/* Linha 1: checkbox + descrição + valor + lixeira */}
+                {/* Linha 1: checkbox + descrição + valor + ações */}
                 <div className="flex items-start gap-2">
                   {selectMode && !isPartner && (
                     <button onClick={() => toggleSelect(t.id)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-primary">
                       {selected.has(t.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
                     </button>
                   )}
-                  <div className="min-w-0 flex-1">
+                  <button
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => !isPartner && !selectMode && setEditingTx(t)}
+                    disabled={isPartner || selectMode}
+                  >
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {coupleActive && (
                         <span className={cn(
@@ -388,19 +432,28 @@ function MonthDetail({ group, onBack, coupleActive }: { group: MonthGroup; onBac
                       <p className="text-sm font-medium leading-snug break-words">{t.description}</p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatDateBR(t.date)}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     <span className={`text-sm font-semibold whitespace-nowrap ${t.amount < 0 ? 'text-foreground' : 'text-success'}`}>
                       {formatBRL(t.amount)}
                     </span>
                     {!selectMode && !isPartner && (
-                      <button
-                        onClick={() => deleteUserDoc('transactions', t.id)}
-                        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                        title="Excluir transação"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setEditingTx(t)}
+                          className="shrink-0 text-muted-foreground hover:text-primary transition-colors p-1"
+                          title="Editar transação"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => deleteUserDoc('transactions', t.id)}
+                          className="shrink-0 text-muted-foreground hover:text-destructive transition-colors p-1"
+                          title="Excluir transação"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -444,6 +497,12 @@ function MonthDetail({ group, onBack, coupleActive }: { group: MonthGroup; onBac
       )}
 
       {openWizard && <TransactionWizard onClose={() => setOpenWizard(false)} />}
+      {editingTx && (
+        <TransactionWizard
+          existing={editingTx}
+          onClose={() => setEditingTx(null)}
+        />
+      )}
     </div>
   );
 }
