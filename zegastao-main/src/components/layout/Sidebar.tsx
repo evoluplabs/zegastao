@@ -40,7 +40,7 @@ export function Sidebar() {
 
   const NAV = [
     { to: '/dashboard', label: 'Início', sub: 'Visão geral', icon: LayoutDashboard, end: true },
-    { to: '/financas', label: 'Finanças', sub: 'Dívidas, metas, regras', icon: CreditCard },
+    { to: '/carteira', label: 'Carteira', sub: 'Contas, cartões, dívidas', icon: CreditCard },
     { to: '/transactions', label: 'Transações', sub: 'Histórico e extratos', icon: Receipt },
     { to: '/copilot', label: 'Copiloto', sub: 'Análise com IA', icon: MessageCircle },
     { to: '/journey', label: 'Jornada', sub: 'Trilha e tarefas', icon: Trophy },

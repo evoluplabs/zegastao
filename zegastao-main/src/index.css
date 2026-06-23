@@ -146,6 +146,27 @@
     50% { opacity: 0.6; }
   }
 
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .animate-sheet-up {
+    animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   @keyframes confetti-fall {
     0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
     100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }

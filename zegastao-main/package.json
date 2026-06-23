@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-  "dev": "vite",
-  "build": "tsc -p tsconfig.app.json && vite build",
-  "preview": "vite preview",
-  "lint": "tsc -p tsconfig.app.json --noEmit"
-},
+    "dev": "vite",
+    "build": "tsc -p tsconfig.app.json && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
   "dependencies": {
     "@sentry/react": "^8.0.0",
     "class-variance-authority": "^0.7.0",
