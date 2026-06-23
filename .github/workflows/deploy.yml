@@ -5,13 +5,12 @@ on:
     branches: [main]
 
 jobs:
-  # ── 1. Build e testes das Cloud Functions ─────────────────────────────────
   functions-build:
     name: Functions — build e testes
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: functions
+        working-directory: zegastao-main/functions
     steps:
       - uses: actions/checkout@v4
 
@@ -19,7 +18,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: functions/package-lock.json
+          cache-dependency-path: zegastao-main/functions/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -32,10 +31,12 @@ jobs:
         env:
           NODE_ENV: test
 
-  # ── 2. Build do frontend ───────────────────────────────────────────────────
   frontend-build:
     name: Frontend — build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zegastao-main
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +44,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: zegastao-main/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -66,14 +68,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: dist/
+          path: zegastao-main/dist/
           retention-days: 1
 
-  # ── 3. Deploy no Firebase ──────────────────────────────────────────────────
   firebase-deploy:
     name: Deploy para Firebase
     runs-on: ubuntu-latest
     needs: [functions-build, frontend-build]
+    defaults:
+      run:
+        working-directory: zegastao-main
     steps:
       - uses: actions/checkout@v4
 
@@ -81,22 +85,23 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: zegastao-main/package-lock.json
 
       - name: Download frontend build
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: dist/
+          path: zegastao-main/dist/
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Install functions dependencies
-        working-directory: functions
+        working-directory: zegastao-main/functions
         run: npm ci
 
       - name: Build functions
-        working-directory: functions
+        working-directory: zegastao-main/functions
         run: npm run build
 
       - name: Deploy Hosting + Functions + Firestore rules
