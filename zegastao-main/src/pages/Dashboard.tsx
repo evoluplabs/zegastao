@@ -582,7 +582,62 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* 2. Agenda de Vencimentos */}
+        {/* Ações rápidas */}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenDebt(true)}>
+            <Plus className="h-3.5 w-3.5" /> Dívida
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenGoal(true)}>
+            <Plus className="h-3.5 w-3.5" /> Meta
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenTx(true)}>
+            <Plus className="h-3.5 w-3.5" /> Transação
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" asChild>
+            <Link to="/upload">
+              <Upload className="h-3.5 w-3.5" /> Importar extrato
+            </Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 rounded-full border-amber-400/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+            onClick={() => setOpenSimulator(true)}
+          >
+            <Zap className="h-3.5 w-3.5" /> E se eu…
+          </Button>
+        </div>
+
+        {/* Tarefas de hoje */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Ações de hoje
+            </h2>
+            <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
+              ver todas →
+            </Link>
+          </div>
+          {tasks.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {tasks.slice(0, 2).map((t, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
+                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm leading-snug">{t.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      ⏱ {t.estimatedTime}
+                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Vencimentos */}
         {debts.filter(d => d.status === 'active').length > 0 && (
           <div className="grid gap-3 grid-cols-3">
             {/* Vencidos */}
@@ -738,73 +793,7 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* 2. Quick Actions */}
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenDebt(true)}>
-            <Plus className="h-3.5 w-3.5" /> Dívida
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenGoal(true)}>
-            <Plus className="h-3.5 w-3.5" /> Meta
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpenTx(true)}>
-            <Plus className="h-3.5 w-3.5" /> Transação
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 rounded-full" asChild>
-            <Link to="/upload">
-              <Upload className="h-3.5 w-3.5" /> Importar extrato
-            </Link>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 rounded-full border-amber-400/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
-            onClick={() => setOpenSimulator(true)}
-          >
-            <Zap className="h-3.5 w-3.5" /> E se eu…
-          </Button>
-        </div>
-
-        {/* 3. Tarefas de hoje */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-500" />
-              Ações de hoje
-            </h2>
-            <Link to="/journey" className="text-xs text-muted-foreground hover:text-foreground">
-              ver todas →
-            </Link>
-          </div>
-          {tasks.length > 0 ? (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {tasks.slice(0, 2).map((t, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 transition-all">
-                  <span className="text-xl shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm leading-snug">{t.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      ⏱ {t.estimatedTime}
-                      {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border bg-card/50 p-5 text-center">
-              <Zap className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm font-semibold">Nenhuma tarefa para hoje</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-                Suas tarefas personalizadas são geradas toda meia-noite com base na sua situação financeira atual.
-              </p>
-              <Link to="/journey" className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-                Ver sua jornada <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* 4. Checklist de ativação */}
+        {/* Checklist de ativação */}
         <SetupChecklist
           hasIncome={income > 0}
           hasDebts={debts.filter((d) => d.status === 'active').length > 0}
