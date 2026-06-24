@@ -31,6 +31,8 @@ export { betAnalysis } from './functions/betAnalysis';
 export { bettingProfile } from './functions/bettingProfile';
 // Zé Apostador 2.0
 export { zeMandate, zeCycle, zeRecalcCard, zeFeedback, zeScan, zeLearnNightly } from './functions/zeApostador';
+// Zé Apostador 2.1 — Vision-first (extração de print, desmascarador de guru)
+export { zeExtractOdds, zeGuruAudit } from './functions/zeVision';
 export { whatsappWebhook } from './functions/whatsappWebhook';
 export { generateInsightsNow } from './functions/generateInsightsNow';
 export { weeklyDigest } from './functions/weeklyDigest';

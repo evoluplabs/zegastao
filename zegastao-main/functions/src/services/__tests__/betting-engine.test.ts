@@ -6,6 +6,8 @@ import { assess, blendProb } from '../betting/engine/value';
 import { combineLegs, buildRound, Candidate, RoundPlan } from '../betting/engine/multiples';
 import { cycleStake } from '../betting/kelly';
 import { composeCard, recalcOnRealOdd } from '../betting/card';
+import { poissonOverUnder, estimateTotalLambda, DEFAULT_LINES } from '../betting/engine/markets';
+import { parseBetanoText, MIN_CONFIDENCE } from '../betting/odds-extractor';
 
 describe('poisson', () => {
   it('PMF soma ~1 sobre o suporte', () => {
@@ -159,6 +161,69 @@ describe('cycleStake', () => {
 
   it('banca zerada → stake zero', () => {
     expect(cycleStake({ probability: 0.6, odd: 2, bankroll: 0, riskLevel: 1 })).toBe(0);
+  });
+});
+
+describe('markets (multi-mercado)', () => {
+  it('over + under da mesma linha somam ~1', () => {
+    const r = poissonOverUnder(9.5, [8.5, 9.5, 10.5]);
+    expect(r.over['9.5'] + r.under['9.5']).toBeCloseTo(1, 4);
+  });
+
+  it('lambda maior → mais chance de over', () => {
+    const baixo = poissonOverUnder(7, [9.5]);
+    const alto = poissonOverUnder(12, [9.5]);
+    expect(alto.over['9.5']).toBeGreaterThan(baixo.over['9.5']);
+  });
+
+  it('estimateTotalLambda soma as médias dos times', () => {
+    expect(estimateTotalLambda(5, 4)).toBeCloseTo(9, 4);
+    // multiplicador de contexto (ex: jogo decisivo → mais faltas)
+    expect(estimateTotalLambda(5, 4, 1.2)).toBeCloseTo(10.8, 4);
+  });
+
+  it('escanteios: ~10 esperados dá over 9.5 perto de 50%', () => {
+    const r = poissonOverUnder(estimateTotalLambda(5.2, 5.0), DEFAULT_LINES.corners);
+    expect(r.over['9.5']).toBeGreaterThan(0.4);
+    expect(r.over['9.5']).toBeLessThan(0.7);
+  });
+});
+
+describe('odds-extractor (Tier 1 OCR→regex)', () => {
+  const sample = `Flamengo x Vasco
+Brasileirao Serie A
+Resultado Final
+Flamengo 1.85
+Empate 3.40
+Vasco 4.20
+Escanteios - Total
+Mais de 9.5 1.90
+Menos de 9.5 1.90
+Ambas Marcam
+Sim 1.72
+Nao 2.05`;
+
+  it('extrai times, mercados e odds de um print limpo', () => {
+    const slip = parseBetanoText(sample);
+    expect(slip.homeTeam).toMatch(/Flamengo/);
+    expect(slip.awayTeam).toMatch(/Vasco/);
+    const markets = new Set(slip.markets.map((m) => m.market));
+    expect(markets.has('h2h')).toBe(true);
+    expect(markets.has('corners')).toBe(true);
+    expect(markets.has('btts')).toBe(true);
+    expect(slip.confidence).toBeGreaterThanOrEqual(MIN_CONFIDENCE);
+  });
+
+  it('odds extraídas são números plausíveis', () => {
+    const slip = parseBetanoText(sample);
+    expect(slip.markets.every((m) => m.odd > 1 && m.odd < 1000)).toBe(true);
+    const corners = slip.markets.filter((m) => m.market === 'corners');
+    expect(corners.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('texto vazio/ruído → confiança baixa (cai pro Vision)', () => {
+    expect(parseBetanoText('').confidence).toBeLessThan(MIN_CONFIDENCE);
+    expect(parseBetanoText('asdf qwer').confidence).toBeLessThan(MIN_CONFIDENCE);
   });
 });
 
