@@ -104,6 +104,7 @@ export interface BettingHistory {
 
 // Ligas populares para o MVP
 export const BETTING_LEAGUES = [
+  { key: 'soccer_fifa_world_cup', label: 'Copa do Mundo 🏆' },
   { key: 'soccer_brazil_serie_a', label: 'Brasileirão Série A' },
   { key: 'soccer_brazil_serie_b', label: 'Brasileirão Série B' },
   { key: 'soccer_epl', label: 'Premier League' },
@@ -123,6 +124,91 @@ export const BETTING_MARKET_LABELS: Record<string, string> = {
 
 export const BETTING_DISCLAIMER =
   'Esta análise é educacional e não garante resultados. Apostas esportivas envolvem risco de perda total do valor apostado. Aposte com responsabilidade e dentro do seu limite semanal configurado com o Copiloto.';
+
+// ===== Zé Apostador 2.0 (mandato / ciclos / card guiado) =====
+
+export type ZeRiskLevel = 0 | 1 | 2 | 3;
+
+export interface ZeMandate {
+  cycleBudget: number;
+  growthTargetPct: number;
+  stopLossPct: number;
+  preferredLeagues: string[];
+  preferredTeams: string[];
+  blockedTeams: string[];
+  maxAutoRiskLevel: ZeRiskLevel;
+  preauthorizedScope: { maxStakePerCycle: number; allowMultiples: boolean };
+  acceptedRiskDisclaimer: boolean;
+  selfExclusionUntil?: { toDate: () => Date };
+  activeCycleId?: string | null;
+}
+
+export interface ZeCycle {
+  id: string;
+  status: 'planning' | 'awaiting_games' | 'placed' | 'settling' | 'won' | 'lost' | 'aborted';
+  budget: number;
+  growthTargetPct: number;
+  stopLossPct: number;
+  currentBankroll: number;
+  riskLevel: ZeRiskLevel;
+}
+
+export interface ZeCardLeg {
+  fixtureId: number;
+  homeTeam: string;
+  awayTeam: string;
+  league: string;
+  kickoff: string;
+  market: string;
+  marketLabel: string;
+  selection: string;
+  modelProbPct: number;
+  recommendedOdd: number;
+  minOdd: number;
+  fairOdd: number;
+  steps: string[];
+}
+
+export interface ZeGuidedCard {
+  type: 'single' | 'multiple';
+  legs: ZeCardLeg[];
+  combinedOdd: number;
+  combinedProbPct: number;
+  evPct: number;
+  authLevel: ZeRiskLevel;
+  needsSeal: boolean;
+  seal?: string;
+  reasoning: string;
+  steps: string[];
+  suggestedStake: number;
+  potentialReturn: number;
+  skip: boolean;
+}
+
+export interface ZeRound {
+  id: string;
+  type: 'single' | 'multiple';
+  legs: ZeCardLeg[];
+  combinedOdd: number;
+  combinedProb: number;
+  ev: number;
+  card: ZeGuidedCard;
+  authLevel: ZeRiskLevel;
+  suggestedStake: number;
+  placed: boolean;
+  outcome: 'pending' | 'won' | 'lost';
+  skip: boolean;
+  reasonCode: string;
+  stake?: number;
+  payout?: number;
+}
+
+export const ZE_RISK_LEVELS: Array<{ level: ZeRiskLevel; label: string; emoji: string; desc: string }> = [
+  { level: 0, label: 'Conservador', emoji: '🟢', desc: 'Só apostas com valor real. O jeito mais seguro de jogar.' },
+  { level: 1, label: 'Moderado', emoji: '🟡', desc: 'Múltiplas curtas, só com pernas de valor. Equilíbrio.' },
+  { level: 2, label: 'Agressivo', emoji: '🟠', desc: 'Fézinha de sorte: paga alto, mas a chance é baixa. Pede confirmação.' },
+  { level: 3, label: 'Pré-autorizado', emoji: '🔵', desc: 'O Zé monta e avisa sozinho. Você só dá o toque final.' },
+];
 
 export interface CategoryBudget {
   id: string;

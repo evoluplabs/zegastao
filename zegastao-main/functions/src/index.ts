@@ -29,6 +29,8 @@ export { categorizeManual } from './functions/categorizeManual';
 export { createMPCheckout, handleMPWebhook } from './functions/mercadopago';
 export { betAnalysis } from './functions/betAnalysis';
 export { bettingProfile } from './functions/bettingProfile';
+// Zé Apostador 2.0
+export { zeMandate, zeCycle, zeRecalcCard, zeFeedback, zeScan, zeLearnNightly } from './functions/zeApostador';
 export { whatsappWebhook } from './functions/whatsappWebhook';
 export { generateInsightsNow } from './functions/generateInsightsNow';
 export { weeklyDigest } from './functions/weeklyDigest';
