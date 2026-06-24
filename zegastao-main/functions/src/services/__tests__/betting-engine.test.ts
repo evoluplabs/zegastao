@@ -3,11 +3,12 @@ import { poissonPmf, estimateLambdas, matchProbabilities } from '../betting/engi
 import { elo1x2, expectedScore, updateRating } from '../betting/engine/elo';
 import { devig, impliedProb, overround } from '../betting/engine/devig';
 import { assess, blendProb } from '../betting/engine/value';
-import { combineLegs, buildRound, Candidate, RoundPlan } from '../betting/engine/multiples';
+import { combineLegs, buildRound, Candidate, RoundPlan, correlationHaircut, combineSameGame, buildSameGameMultiple } from '../betting/engine/multiples';
 import { cycleStake } from '../betting/kelly';
 import { composeCard, recalcOnRealOdd } from '../betting/card';
 import { poissonOverUnder, estimateTotalLambda, DEFAULT_LINES } from '../betting/engine/markets';
 import { parseBetanoText, MIN_CONFIDENCE } from '../betting/odds-extractor';
+import { parseOverUnder, analyzeExtractedSlip } from '../betting/slip-analyzer';
 
 describe('poisson', () => {
   it('PMF soma ~1 sobre o suporte', () => {
@@ -279,5 +280,84 @@ describe('recalcOnRealOdd', () => {
     const r = recalcOnRealOdd({ ...base, userOdd: 1.7 });
     expect(r.status).toBe('lost');
     expect(r.newStake).toBe(0);
+  });
+});
+
+describe('SGM (múltipla no mesmo jogo)', () => {
+  it('haircut de correlação cresce com pernas e satura em 25%', () => {
+    expect(correlationHaircut(1)).toBe(0);
+    expect(correlationHaircut(2)).toBeCloseTo(0.06, 4);
+    expect(correlationHaircut(3)).toBeCloseTo(0.12, 4);
+    expect(correlationHaircut(10)).toBe(0.25); // saturado
+  });
+
+  it('combineSameGame puxa a prob. para baixo vs. independência', () => {
+    const legs = [cand({ marketOdd: 2, modelProb: 0.5 }), cand({ marketOdd: 2, modelProb: 0.5 })];
+    const indep = combineLegs(legs);
+    const sgm = combineSameGame(legs);
+    expect(sgm.combinedProb).toBeLessThan(indep.combinedProb); // honestidade da correlação
+  });
+
+  it('usa a odd final da Betano quando fornecida (verdade do mercado)', () => {
+    const legs = [cand({ marketOdd: 2, modelProb: 0.5 }), cand({ marketOdd: 3, modelProb: 0.4 })];
+    const sgm = combineSameGame(legs, 4.5); // Betano deu 4.5 (não os 6.0 do produto)
+    expect(sgm.combinedOdd).toBe(4.5);
+  });
+
+  it('buildSameGameMultiple marca sameGame e exige selo no card', () => {
+    const legs = [
+      cand({ fixtureId: 7, market: 'corners', selection: 'Mais de 9.5', marketOdd: 1.9, modelProb: 0.55 }),
+      cand({ fixtureId: 7, market: 'cards', selection: 'Mais de 4.5', marketOdd: 2.1, modelProb: 0.5 }),
+    ];
+    const plan = buildSameGameMultiple(legs, { betanoFinalOdd: 3.6 });
+    expect(plan.reasonCode).toBe('sgm');
+    expect(plan.sameGame).toBe(true);
+    expect(plan.usedBetanoOdd).toBe(true);
+    const card = composeCard(plan, { authLevel: 1, bankroll: 50 });
+    expect(card.needsSeal).toBe(true); // SGM sempre pede selo
+    expect(card.seal).toBeTruthy();
+  });
+});
+
+describe('slip-analyzer (orquestração multi-mercado a partir do print)', () => {
+  it('parseOverUnder lê lado e linha em pt-BR e inglês', () => {
+    expect(parseOverUnder('Mais de 9.5')).toEqual({ side: 'over', line: 9.5 });
+    expect(parseOverUnder('Menos de 2.5 gols')).toEqual({ side: 'under', line: 2.5 });
+    expect(parseOverUnder('Over 24.5')).toEqual({ side: 'over', line: 24.5 });
+    expect(parseOverUnder('Vencedor: Flamengo')).toBeNull();
+  });
+
+  it('gera candidatos de escanteios/cartões com EV a partir de médias reais', () => {
+    const slip = {
+      homeTeam: 'Flamengo', awayTeam: 'Vasco', league: 'Brasileirão',
+      markets: [
+        { market: 'corners', selection: 'Mais de 9.5', odd: 1.9 },
+        { market: 'corners', selection: 'Menos de 9.5', odd: 1.9 },
+        { market: 'cards', selection: 'Mais de 4.5', odd: 2.2 },
+        { market: 'h2h', selection: 'Flamengo', odd: 1.7 }, // ignorado (vai no pipeline de gols)
+      ],
+      confidence: 0.9,
+    };
+    const avgs = { corners: 6, cards: 2.5, shots: 13, fouls: 14, games: 5 };
+    const cands = analyzeExtractedSlip({
+      slip, fixtureId: 1, homeAvgs: avgs, awayAvgs: avgs,
+      context: { goals: 1, corners: 1, cards: 1, shots: 1, fouls: 1 },
+    });
+    // só mercados estatísticos modeláveis (corners x2 + cards x1), h2h fica de fora
+    expect(cands.length).toBe(3);
+    expect(cands.every((c) => ['corners', 'cards'].includes(c.market))).toBe(true);
+    expect(cands.every((c) => c.modelProb > 0 && c.modelProb < 1)).toBe(true);
+  });
+
+  it('multiplicador de contexto > 1 aumenta a prob. de over de cartões', () => {
+    const slip = {
+      homeTeam: 'A', awayTeam: 'B',
+      markets: [{ market: 'cards', selection: 'Mais de 4.5', odd: 2.0 }],
+      confidence: 0.9,
+    };
+    const avgs = { corners: 5, cards: 2.5, shots: 12, fouls: 13, games: 5 };
+    const neutro = analyzeExtractedSlip({ slip, fixtureId: 1, homeAvgs: avgs, awayAvgs: avgs, context: { goals: 1, corners: 1, cards: 1, shots: 1, fouls: 1 } });
+    const decisivo = analyzeExtractedSlip({ slip, fixtureId: 1, homeAvgs: avgs, awayAvgs: avgs, context: { goals: 1, corners: 1, cards: 1.18, shots: 1, fouls: 1 } });
+    expect(decisivo[0].modelProb).toBeGreaterThan(neutro[0].modelProb);
   });
 });

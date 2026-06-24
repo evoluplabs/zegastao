@@ -76,7 +76,8 @@ export function composeCard(plan: RoundPlan, opts: { authLevel: RiskLevel; bankr
     };
   });
 
-  const needsSeal = opts.authLevel === 2;
+  // Nível 2 (moonshot) sempre pede selo; SGM também — a correlação merece o aviso.
+  const needsSeal = opts.authLevel === 2 || plan.sameGame === true;
 
   return {
     type: plan.type,

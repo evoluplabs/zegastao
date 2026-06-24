@@ -35,6 +35,58 @@ export function combineLegs(legs: Candidate[]): CombinedResult {
   };
 }
 
+// ---- SGM (múltipla no mesmo jogo) ----
+// Pernas do MESMO jogo não são independentes. Tratar como independentes
+// superestima a probabilidade combinada (logo, o valor). Aplicamos um haircut
+// documentado e conservador na probabilidade — nunca a favor da casa, sempre a
+// favor da honestidade com o apostador. A odd: se a Betano fornece a odd FINAL da
+// SGM (lida do print), usamos ela (verdade do mercado); senão multiplicamos as
+// pernas (aproximação) e deixamos o haircut puxar o EV para baixo.
+
+/** Haircut de correlação: cresce com o nº de pernas, limitado a 25%. */
+export function correlationHaircut(numLegs: number): number {
+  if (numLegs <= 1) return 0;
+  return Math.min(0.25, 0.06 * (numLegs - 1));
+}
+
+export function combineSameGame(legs: Candidate[], betanoFinalOdd?: number): CombinedResult {
+  if (legs.length === 0) return { combinedOdd: 0, combinedProb: 0, ev: -1 };
+  const indepProb = legs.reduce((acc, l) => acc * l.modelProb, 1);
+  const adjProb = indepProb * (1 - correlationHaircut(legs.length));
+  const combinedOdd =
+    betanoFinalOdd && betanoFinalOdd > 1
+      ? betanoFinalOdd
+      : legs.reduce((acc, l) => acc * l.marketOdd, 1);
+  return {
+    combinedOdd: round2(combinedOdd),
+    combinedProb: round4(adjProb),
+    ev: round4(adjProb * combinedOdd - 1),
+  };
+}
+
+/**
+ * Monta uma SGM a partir de pernas do MESMO jogo (mesmo fixtureId). Sempre exige
+ * o selo de entendimento (sameGame=true) — a correlação é explicada ao usuário.
+ */
+export function buildSameGameMultiple(
+  legs: Candidate[],
+  opts: { betanoFinalOdd?: number } = {},
+): RoundPlan {
+  if (legs.length < 2) return emptyPlan('no_candidates');
+  const combined = combineSameGame(legs, opts.betanoFinalOdd);
+  return {
+    type: 'multiple',
+    legs,
+    combinedOdd: combined.combinedOdd,
+    combinedProb: combined.combinedProb,
+    ev: combined.ev,
+    skip: false,
+    reasonCode: 'sgm',
+    sameGame: true,
+    usedBetanoOdd: !!(opts.betanoFinalOdd && opts.betanoFinalOdd > 1),
+  };
+}
+
 export type RiskLevel = 0 | 1 | 2 | 3;
 
 export interface RoundPlan {
@@ -49,7 +101,10 @@ export interface RoundPlan {
     | 'value_multiple'
     | 'moonshot'
     | 'moonshot_capped'
+    | 'sgm'
     | 'no_candidates';
+  sameGame?: boolean;     // múltipla no mesmo jogo (correlação aplicada)
+  usedBetanoOdd?: boolean; // odd final veio do print da Betano
 }
 
 const MAX_LEGS: Record<number, number> = { 0: 1, 1: 3, 2: 6, 3: 3 };

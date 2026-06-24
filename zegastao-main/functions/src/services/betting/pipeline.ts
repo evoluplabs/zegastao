@@ -13,6 +13,10 @@ import { devig, impliedProb } from './engine/devig';
 import { assess, blendProb } from './engine/value';
 import { Candidate } from './engine/multiples';
 import { GlobalModel, IndividualModel, ratingOf, calibratedProb, individualMultiplier } from './learning';
+import { MarketMultipliers } from './context-agent';
+
+// Reexporta o analisador de print (orquestração multi-mercado a partir da Betano).
+export { analyzeExtractedSlip, parseOverUnder } from './slip-analyzer';
 
 interface GoalAverages {
   scored: number;
@@ -73,8 +77,9 @@ export async function analyzeFixture(params: {
   oddsEvents: OddsEvent[];
   model: GlobalModel;
   individual: IndividualModel;
+  context?: MarketMultipliers; // ajuste qualitativo (peso do jogo, lesões, árbitro)
 }): Promise<Candidate[]> {
-  const { db, fixture, sportKey, oddsEvents, model, individual } = params;
+  const { db, fixture, sportKey, oddsEvents, model, individual, context } = params;
   const { homeTeam, awayTeam, homeTeamId, awayTeamId, kickoff, leagueName } = fixture;
 
   const event = findEvent(oddsEvents, homeTeam, awayTeam);
@@ -85,9 +90,10 @@ export async function analyzeFixture(params: {
     teamAverages(db, awayTeamId, fixture.kickoff.slice(0, 10)),
   ]);
 
+  const goalsMult = context?.goals ?? 1;
   const lambdas = estimateLambdas({
-    homeAvgScored: home.scored, homeAvgConceded: home.conceded,
-    awayAvgScored: away.scored, awayAvgConceded: away.conceded,
+    homeAvgScored: home.scored * goalsMult, homeAvgConceded: home.conceded,
+    awayAvgScored: away.scored * goalsMult, awayAvgConceded: away.conceded,
     leagueAvgGoals: leagueAvgGoals(sportKey),
   });
   const mp = matchProbabilities(lambdas);

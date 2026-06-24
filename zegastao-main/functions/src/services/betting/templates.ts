@@ -9,6 +9,10 @@ export const MARKET_LABELS: Record<string, string> = {
   totals: 'Total de Gols',
   btts: 'Ambas Marcam',
   spreads: 'Handicap',
+  corners: 'Escanteios',
+  cards: 'Cartões',
+  shots: 'Finalizações',
+  fouls: 'Faltas',
 };
 
 export function marketLabel(key: string): string {
@@ -55,6 +59,10 @@ export function roundReasoning(plan: RoundPlan): string {
       return `Essa é a fézinha de sorte 🎲. Pra chegar no alvo que você pediu, juntei ${plan.legs.length} jogos. Paga alto, mas a chance é baixa — joga só com o que não vai fazer falta.`;
     case 'moonshot_capped':
       return `Montei a maior múltipla que deu com os jogos do dia (${plan.legs.length} pernas). Não cheguei no alvo cheio, mas é o teto seguro de pernas. Quanto mais jogo, mais difícil.`;
+    case 'sgm':
+      return plan.usedBetanoOdd
+        ? `Múltipla no mesmo jogo (${plan.legs.length} seleções). Usei a odd final que a própria Betano te deu no print — essa é a verdade do mercado. Lembra: quanto mais coisa no mesmo jogo, mais a casa embute margem.`
+        : `Múltipla no mesmo jogo (${plan.legs.length} seleções). Como as seleções são do mesmo jogo, elas "andam juntas" — ajustei a conta pra baixo (correlação) pra não te enganar com chance inflada. Quanto mais coisa no mesmo jogo, mais a casa lucra.`;
     case 'no_candidates':
     default:
       return `Hoje não achei nada que valha a pena de verdade. Melhor guardar a grana — não existe aposta boa todo dia, e isso é parte de jogar com cabeça.`;
