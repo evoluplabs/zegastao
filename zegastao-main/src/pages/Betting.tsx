@@ -6,9 +6,11 @@ import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { MandateOnboarding } from './betting/MandateOnboarding';
 import { GuidedBetCard } from './betting/GuidedBetCard';
+import { UploadOdds } from './betting/UploadOdds';
+import { GuruAudit } from './betting/GuruAudit';
 import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel } from '@/types';
 import { cn, formatBRL } from '@/lib/utils';
-import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy } from 'lucide-react';
+import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, Camera, Search } from 'lucide-react';
 
 const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: boolean }>(functions, 'zeMandate');
 const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functions, 'zeCycle');
@@ -29,6 +31,7 @@ export function Betting() {
   const [error, setError] = useState('');
   const [riskLevel, setRiskLevel] = useState<ZeRiskLevel>(1);
   const [targetMultiplier, setTargetMultiplier] = useState(25);
+  const [tool, setTool] = useState<'none' | 'upload' | 'guru'>('none');
 
   const loadCycle = useCallback(async () => {
     setLoading(true);
@@ -195,6 +198,23 @@ export function Betting() {
             <button onClick={abortCycle} className="w-full rounded-xl border border-slate-800 py-2 text-xs text-slate-500 hover:text-slate-300">Encerrar ciclo</button>
           </>
         )}
+
+        {/* Ferramentas: print da Betano (Waze das Odds) e desmascarador de guru */}
+        <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <h3 className="text-sm font-semibold text-slate-400">Ferramentas do Zé</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setTool(tool === 'upload' ? 'none' : 'upload')}
+              className={cn('flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'upload' ? 'border-emerald-400 bg-emerald-400/10 text-emerald-300' : 'border-slate-700 text-slate-300')}>
+              <Camera className="h-4 w-4" /> Ler print da Betano
+            </button>
+            <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
+              className={cn('flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-slate-700 text-slate-300')}>
+              <Search className="h-4 w-4" /> Desmascarar guru
+            </button>
+          </div>
+          {tool === 'upload' && <UploadOdds />}
+          {tool === 'guru' && <GuruAudit />}
+        </div>
 
         <p className="px-2 text-center text-[11px] leading-relaxed text-slate-600">
           Análise educacional, sem garantia de resultado. Apostas têm risco de perda total. +18. Jogue com responsabilidade.
