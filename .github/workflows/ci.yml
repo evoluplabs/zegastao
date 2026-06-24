@@ -1,0 +1,48 @@
+name: CI — build e testes
+
+# Validação (sem deploy) para Pull Requests e branches de trabalho.
+# O deploy.yml continua responsável pelo deploy, só em push para main.
+on:
+  pull_request:
+  push:
+    branches:
+      - 'claude/**'
+
+jobs:
+  functions:
+    name: Functions — build e testes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zegastao-main/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+
+  frontend:
+    name: Frontend — type check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zegastao-main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: zegastao-main/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run lint
