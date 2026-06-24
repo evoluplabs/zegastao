@@ -17,7 +17,7 @@ import {
   getGlobalModel, getIndividual, saveGlobalModel, saveIndividual,
   applyResultToCalibration, applyResultToIndividual, GlobalModel,
 } from '../services/betting/learning';
-import { crossOverNote } from '../services/betting/templates';
+import { crossOverNote, dopamineLockMessage, ouvidoriaDoFumo } from '../services/betting/templates';
 import { suggestBettingBudget } from './bettingProfile';
 
 const ZE_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
@@ -59,6 +59,8 @@ interface Mandate {
   acceptedRiskDisclaimer: boolean;
   selfExclusionUntil?: Timestamp;
   activeCycleId?: string;
+  dopamineLock?: boolean; // ganhou e ainda não comprovou o saque
+  karma?: number;         // anti-carona (atrás de flag, liga com volume)
 }
 
 interface Cycle {
@@ -306,6 +308,10 @@ export const zeCycle = onCall({ region: REGION, timeoutSeconds: 120 }, async (re
   }
 
   if (parsed.data.action === 'start') {
+    // Trava de dopamina: ganhou o ciclo anterior? Só libera novo após comprovar o saque.
+    if (mandate.dopamineLock) {
+      throw new HttpsError('failed-precondition', 'Antes de um novo ciclo, comprove o saque do seu lucro (manda o print do "Saque solicitado"). Dinheiro na conta > número na tela.');
+    }
     const existing = await activeCycle();
     if (existing && ['planning', 'awaiting_games', 'placed', 'settling'].includes(existing.status)) {
       throw new HttpsError('failed-precondition', 'Você já tem um ciclo em andamento.');
@@ -486,7 +492,17 @@ export const zeFeedback = onCall({ region: REGION }, async (request) => {
   const patch: Partial<Cycle> = { currentBankroll: bankroll, status };
   if (status === 'won' || status === 'lost') {
     patch.closedAt = Timestamp.now();
-    await db.collection('users').doc(userId).collection('betting_mandate').doc('main').set({ activeCycleId: null }, { merge: true });
+    // Ao ganhar, arma a trava de dopamina (libera só após comprovar o saque).
+    const mandatePatch: Record<string, unknown> = { activeCycleId: null };
+    if (status === 'won') mandatePatch.dopamineLock = true;
+    await db.collection('users').doc(userId).collection('betting_mandate').doc('main').set(mandatePatch, { merge: true });
+    if (status === 'won') {
+      const profit = round2(bankroll - cycle.budget);
+      await sendPush(db, userId, '🎉 Ciclo no azul! Hora de sacar', dopamineLockMessage(profit > 0 ? profit : bankroll));
+    } else {
+      const leg0 = round.legs[0];
+      await sendPush(db, userId, 'Não foi dessa vez 😮‍💨', ouvidoriaDoFumo(leg0?.homeTeam, leg0?.awayTeam));
+    }
   }
   await cycleRef.set(patch, { merge: true });
 

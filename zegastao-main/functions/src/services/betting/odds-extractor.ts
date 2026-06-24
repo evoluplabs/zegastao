@@ -15,6 +15,7 @@ export interface ExtractedSlip {
   league?: string;
   markets: ExtractedMarket[];
   confidence: number; // 0-1 — abaixo de MIN_CONFIDENCE, use o Vision
+  superOdds?: boolean; // print traz "SuperOdds"/"SO" — sinal forte (turbinado), não verdade absoluta
 }
 
 export const MIN_CONFIDENCE = 0.6;
@@ -62,6 +63,9 @@ export function parseBetanoText(text: string): ExtractedSlip {
   }
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const { home, away } = findTeams(text);
+  // SuperOdds: a Betano turbina algumas odds ("SuperOdds"/"SO"). É sinal forte de
+  // valor, mas NÃO verdade absoluta — captado para futura recalibração de λ.
+  const superOdds = /\bsuper\s*odds?\b|\bsuperodds?\b/i.test(text);
 
   const markets: ExtractedMarket[] = [];
   let current = 'other';
@@ -98,7 +102,7 @@ export function parseBetanoText(text: string): ExtractedSlip {
   if (totalOddTokens > 0 && plausibleOdds / totalOddTokens > 0.8) confidence += 0.15;
   confidence = Math.min(1, Math.round(confidence * 100) / 100);
 
-  return { homeTeam: home, awayTeam: away, markets, confidence };
+  return { homeTeam: home, awayTeam: away, markets, confidence, superOdds };
 }
 
 function cleanSel(s: string): string {

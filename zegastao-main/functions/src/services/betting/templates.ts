@@ -130,6 +130,29 @@ export function crossOverNote(phase: string, cappedStake: number, originalStake:
   return `Dei uma passada no balcão do Zé Gastão 🧮: como ${motivo}, segurei a aposta em ${fmtBRL(cappedStake)} (em vez de ${fmtBRL(originalStake)}). Fézinha é com o que sobra, nunca com o que faz falta.`;
 }
 
+// ---- Trava de dopamina (saque após ganhar) ----
+export function dopamineLockMessage(wonAmount: number): string {
+  return [
+    `🎉 Ciclo fechado no azul: ${fmtBRL(wonAmount)}!`,
+    `Antes de começar outro, faz o saque desse lucro e me manda o print do "Saque solicitado".`,
+    `É a parte chata que separa quem ganha de quem devolve tudo pra casa. Dinheiro na conta > número na tela.`,
+  ].join(' ');
+}
+
+export function withdrawalConfirmed(): string {
+  return `Saque confirmado! 💚 Esse é o gosto de ganhar de verdade. Quando quiser, a gente abre um novo ciclo com a cabeça fria.`;
+}
+
+// ---- Ouvidoria do Fumo (perda, push empático e honesto) ----
+export function ouvidoriaDoFumo(homeTeam?: string, awayTeam?: string): string {
+  const jogo = homeTeam && awayTeam ? `${homeTeam} x ${awayTeam}` : 'o jogo';
+  return [
+    `Pô, ${jogo} não saiu como a conta apontava. 😮‍💨`,
+    `A matemática estava do nosso lado — o futebol é que foi cruel dessa vez.`,
+    `Isso acontece com todo mundo da nossa turma que joga com cabeça. Faz parte do ciclo. Bora pra próxima com disciplina, sem correr atrás do prejuízo.`,
+  ].join(' ');
+}
+
 // ---- Card de compartilhamento (member-to-member) ----
 
 export function shareWinText(homeTeam: string, awayTeam: string, profit: number, referralCode?: string): string {
