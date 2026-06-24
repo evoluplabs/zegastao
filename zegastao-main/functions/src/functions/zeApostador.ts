@@ -17,10 +17,20 @@ import {
   getGlobalModel, getIndividual, saveGlobalModel, saveIndividual,
   applyResultToCalibration, applyResultToIndividual, GlobalModel,
 } from '../services/betting/learning';
+import { crossOverNote } from '../services/betting/templates';
+import { suggestBettingBudget } from './bettingProfile';
 
 const ZE_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
 const REGION = 'southamerica-east1';
 const BLOCKED_PHASES = ['survival', 'reorganizing'];
+
+// Cross-over com o Zé Gastão: teto do stake (fração do orçamento) por fase financeira.
+// As fases bloqueadas nem chegam aqui (guardResponsible barra antes).
+const PHASE_STAKE_CEILING: Record<string, number> = {
+  stabilizing: 0.5,   // montando reserva — cautela
+  accumulating: 0.75, // já investindo — proteger progresso
+  growing: 1.0,       // carteira diversificada — sem trava extra
+};
 
 function ensureEnabled() {
   if (!ZE_ENABLED) throw new HttpsError('not-found', 'Zé Apostador ainda não está disponível.');
@@ -39,6 +49,7 @@ function today(): string {
 interface Mandate {
   cycleBudget: number;
   growthTargetPct: number;
+  growthTargetAmount?: number; // meta em R$ (ex: de R$15 chegar a R$200)
   stopLossPct: number;
   preferredLeagues: string[];
   preferredTeams: string[];
@@ -82,6 +93,22 @@ async function guardResponsible(db: Firestore, userId: string): Promise<Mandate>
   return mandate;
 }
 
+/** Lê a fase financeira do usuário (cross-over com o Zé Gastão). */
+async function getPhase(db: Firestore, userId: string): Promise<string | undefined> {
+  try {
+    const snap = await db.collection('users').doc(userId).collection('insights').doc('latest').get();
+    return snap.exists ? (snap.data()?.phase as string | undefined) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Teto do stake (R$) pela fase financeira. Sem fase conhecida, usa 0.75 (moderado). */
+function stakeCeilingFor(phase: string | undefined, budget: number): number {
+  const fraction = phase && PHASE_STAKE_CEILING[phase] !== undefined ? PHASE_STAKE_CEILING[phase] : 0.75;
+  return round2(budget * fraction);
+}
+
 // ---------- Helper compartilhado: monta uma rodada para o ciclo ----------
 
 async function buildRoundForCycle(
@@ -120,9 +147,23 @@ async function buildRoundForCycle(
     }
   }
 
-  const targetMultiplier = opts.targetMultiplier ?? 10;
+  // Meta em R$ vira multiplicador-alvo do moonshot (de R$budget chegar a R$meta).
+  const derivedTarget = mandate.growthTargetAmount && mandate.growthTargetAmount > cycle.budget
+    ? mandate.growthTargetAmount / cycle.budget
+    : undefined;
+  const targetMultiplier = clampTarget(opts.targetMultiplier ?? derivedTarget ?? 10);
   const plan = buildRound(allCands, { riskLevel, targetMultiplier });
   const card = composeCard(plan, { authLevel: riskLevel, bankroll: cycle.currentBankroll });
+
+  // Cross-over com o Zé Gastão: trava o stake pela fase financeira.
+  const phase = await getPhase(db, userId);
+  const ceiling = stakeCeilingFor(phase, cycle.budget);
+  let crossOver = '';
+  if (!card.skip && card.suggestedStake > ceiling) {
+    crossOver = crossOverNote(phase || '', ceiling, card.suggestedStake);
+    card.suggestedStake = ceiling;
+    card.potentialReturn = round2(ceiling * (card.combinedOdd - 1));
+  }
 
   const roundRef = db.collection('users').doc(userId).collection('betting_cycles').doc(cycle.id).collection('rounds').doc();
   await roundRef.set({
@@ -134,6 +175,7 @@ async function buildRoundForCycle(
     card,
     authLevel: riskLevel,
     suggestedStake: card.suggestedStake,
+    crossOver: crossOver || null,
     placed: false,
     outcome: 'pending',
     skip: card.skip,
@@ -141,7 +183,7 @@ async function buildRoundForCycle(
     createdAt: Timestamp.now(),
   });
 
-  return { roundId: roundRef.id, card, empty: false };
+  return { roundId: roundRef.id, card, crossOver, empty: false };
 }
 
 function composeSkip(riskLevel: RiskLevel) {
@@ -155,10 +197,12 @@ function composeSkip(riskLevel: RiskLevel) {
 
 const MandateSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('get') }),
+  z.object({ action: z.literal('suggest_budget') }),
   z.object({
     action: z.literal('save'),
     cycleBudget: z.number().min(2).max(200),
-    growthTargetPct: z.number().min(5).max(500),
+    growthTargetPct: z.number().min(5).max(5000).optional(),
+    growthTargetAmount: z.number().min(2).max(100000).optional(),
     stopLossPct: z.number().min(10).max(100),
     preferredLeagues: z.array(z.string()).min(1),
     preferredTeams: z.array(z.string()).optional().default([]),
@@ -183,11 +227,35 @@ export const zeMandate = onCall({ region: REGION }, async (request) => {
     return { mandate: snap.exists ? snap.data() : null };
   }
 
+  // Orçamento sugerido pelo perfil financeiro (reusa a lógica do Zé Gastão).
+  if (parsed.data.action === 'suggest_budget') {
+    const insights = await db.collection('users').doc(userId).collection('insights').doc('latest').get();
+    const contextSnapshot = insights.exists ? (insights.data()?.contextSnapshot as string) : 'Contexto não disponível';
+    try {
+      const s = await suggestBettingBudget(contextSnapshot);
+      return { budget: s.budget, reasoning: s.reasoning };
+    } catch {
+      return { budget: 10, reasoning: 'Sugestão padrão — não consegui ler seu perfil agora. Você pode ajustar o valor.' };
+    }
+  }
+
   if (parsed.data.action === 'save') {
     const d = parsed.data;
+    // Meta: aceita % OU R$. Normaliza para ter sempre os dois (a meta em R$ guia o moonshot).
+    let growthTargetPct = d.growthTargetPct;
+    let growthTargetAmount = d.growthTargetAmount;
+    if (growthTargetAmount && growthTargetAmount > d.cycleBudget) {
+      growthTargetPct = Math.round((growthTargetAmount / d.cycleBudget - 1) * 100);
+    } else if (growthTargetPct && !growthTargetAmount) {
+      growthTargetAmount = round2(d.cycleBudget * (1 + growthTargetPct / 100));
+    }
+    if (!growthTargetPct || growthTargetPct < 5) {
+      throw new HttpsError('invalid-argument', 'Informe a meta em % ou em R$ (acima do orçamento).');
+    }
     const mandate: Mandate = {
       cycleBudget: d.cycleBudget,
-      growthTargetPct: d.growthTargetPct,
+      growthTargetPct,
+      growthTargetAmount,
       stopLossPct: d.stopLossPct,
       preferredLeagues: d.preferredLeagues,
       preferredTeams: d.preferredTeams,
@@ -494,4 +562,9 @@ async function sendPush(db: Firestore, userId: string, title: string, body: stri
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+function clampTarget(t: number): number {
+  if (!isFinite(t) || t < 1.1) return 1.1;
+  return Math.min(1000, t);
 }

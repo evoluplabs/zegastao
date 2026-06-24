@@ -31,7 +31,7 @@ const BettingProfileSchema = z.discriminatedUnion('action', [
 const client = new Anthropic();
 
 // Sugere budget de apostas com base no contexto financeiro do usuário
-async function suggestBettingBudget(contextSnapshot: string): Promise<{ budget: number; reasoning: string }> {
+export async function suggestBettingBudget(contextSnapshot: string): Promise<{ budget: number; reasoning: string }> {
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,

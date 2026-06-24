@@ -117,6 +117,19 @@ export function cycleProgress(currentBankroll: number, budget: number, targetPct
   return `Banca em ${fmtBRL(currentBankroll)} (${Math.round(growthNow)}%). Faz parte — o ciclo é de vários jogos. Mantém a disciplina e não corre atrás do prejuízo.`;
 }
 
+// ---- Cross-over com o Zé Gastão (trava da fatura) ----
+// Quando a fase financeira pede cautela, o Zé limita o valor da aposta e explica.
+export function crossOverNote(phase: string, cappedStake: number, originalStake: number): string {
+  if (cappedStake >= originalStake) return '';
+  const motivo =
+    phase === 'stabilizing'
+      ? 'você ainda tá montando sua reserva de emergência'
+      : phase === 'accumulating'
+      ? 'você tá começando a investir e é hora de proteger esse progresso'
+      : 'seu momento financeiro pede um pouco mais de cautela';
+  return `Dei uma passada no balcão do Zé Gastão 🧮: como ${motivo}, segurei a aposta em ${fmtBRL(cappedStake)} (em vez de ${fmtBRL(originalStake)}). Fézinha é com o que sobra, nunca com o que faz falta.`;
+}
+
 // ---- Card de compartilhamento (member-to-member) ----
 
 export function shareWinText(homeTeam: string, awayTeam: string, profit: number, referralCode?: string): string {

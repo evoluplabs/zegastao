@@ -6,7 +6,10 @@ import { cn, formatBRL } from '@/lib/utils';
 import { BETTING_LEAGUES, ZE_RISK_LEVELS, ZeRiskLevel } from '@/types';
 import { ShieldCheck, AlertTriangle, Sparkles, Target, Wallet, Trophy, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
-const zeMandate = httpsCallable<unknown, { success: boolean }>(functions, 'zeMandate');
+const zeMandate = httpsCallable<
+  { action: string; [k: string]: unknown },
+  { success?: boolean; budget?: number; reasoning?: string }
+>(functions, 'zeMandate');
 
 interface Props {
   onComplete: () => void;
@@ -26,12 +29,16 @@ export function MandateOnboarding({ onComplete }: Props) {
   const [step, setStep] = useState(0);
   const [budget, setBudget] = useState(10);
   const [growth, setGrowth] = useState(50);
+  const [goalMode, setGoalMode] = useState<'pct' | 'amount'>('pct');
+  const [goalAmount, setGoalAmount] = useState(0);
   const [stopLoss, setStopLoss] = useState(50);
   const [leagues, setLeagues] = useState<string[]>([BETTING_LEAGUES[0].key]);
   const [teamsText, setTeamsText] = useState('');
   const [riskLevel, setRiskLevel] = useState<ZeRiskLevel>(1);
   const [accepted, setAccepted] = useState<boolean[]>(CLAUSES.map(() => false));
   const [saving, setSaving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestion, setSuggestion] = useState('');
 
   const allAccepted = accepted.every(Boolean);
 
@@ -39,13 +46,26 @@ export function MandateOnboarding({ onComplete }: Props) {
     setLeagues((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
 
+  // Orçamento sugerido pelo perfil financeiro (Zé Gastão).
+  async function askSuggestion() {
+    setSuggesting(true);
+    try {
+      const res = await zeMandate({ action: 'suggest_budget' });
+      const b = res.data?.budget;
+      if (typeof b === 'number') setBudget(Math.min(100, Math.max(2, Math.round(b))));
+      if (res.data?.reasoning) setSuggestion(res.data.reasoning);
+    } catch {
+      setSuggestion('Não consegui puxar seu perfil agora — escolha um valor com que se sinta confortável.');
+    }
+    setSuggesting(false);
+  }
+
   async function save() {
     setSaving(true);
     try {
-      await zeMandate({
+      const payload: { action: string; [k: string]: unknown } = {
         action: 'save',
         cycleBudget: budget,
-        growthTargetPct: growth,
         stopLossPct: stopLoss,
         preferredLeagues: leagues,
         preferredTeams: teamsText.split(',').map((t) => t.trim()).filter(Boolean),
@@ -53,15 +73,20 @@ export function MandateOnboarding({ onComplete }: Props) {
         maxAutoRiskLevel: riskLevel,
         allowMultiples: true,
         acceptedRiskDisclaimer: true,
-      });
+      };
+      if (goalMode === 'amount' && goalAmount > budget) payload.growthTargetAmount = goalAmount;
+      else payload.growthTargetPct = growth;
+      await zeMandate(payload);
       onComplete();
     } catch {
       setSaving(false);
     }
   }
 
-  const canAdvance = step === 2 ? leagues.length > 0 : step === 4 ? allAccepted : true;
-  const target = budget * (1 + growth / 100);
+  const goalReady = goalMode === 'pct' || goalAmount > budget;
+  const canAdvance = step === 1 ? goalReady : step === 2 ? leagues.length > 0 : step === 4 ? allAccepted : true;
+  const target = goalMode === 'amount' && goalAmount > budget ? goalAmount : budget * (1 + growth / 100);
+  const amountPresets = [2, 5, 10, 25].map((m) => Math.round(budget * m));
 
   return (
     <div className="mx-auto max-w-md space-y-6 p-4">
@@ -98,6 +123,10 @@ export function MandateOnboarding({ onComplete }: Props) {
             <div className="text-3xl font-extrabold text-emerald-400">{formatBRL(budget)}</div>
             <input type="range" min={2} max={100} step={1} value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="w-full accent-emerald-500" />
             <div className="flex justify-between text-xs text-slate-500"><span>R$ 2</span><span>R$ 100</span></div>
+            <button onClick={askSuggestion} disabled={suggesting} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 disabled:opacity-50">
+              <Sparkles className="h-3.5 w-3.5" /> {suggesting ? 'Consultando seu perfil…' : 'Pedir sugestão do Zé Gastão'}
+            </button>
+            {suggestion && <p className="rounded-lg bg-slate-800/60 px-3 py-2 text-[11px] leading-relaxed text-slate-400">{suggestion}</p>}
           </div>
         )}
 
@@ -105,11 +134,28 @@ export function MandateOnboarding({ onComplete }: Props) {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-100"><Target className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Meta do ciclo</h3></div>
             <p className="text-sm text-slate-400">Quanto você quer fazer a banca crescer antes de sacar?</p>
-            <div className="flex gap-2 flex-wrap">
-              {[20, 50, 100, 200].map((v) => (
-                <button key={v} onClick={() => setGrowth(v)} className={cn('rounded-full border px-3 py-1.5 text-sm', growth === v ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300' : 'border-slate-700 text-slate-300')}>+{v}%</button>
-              ))}
+            {/* Alterna entre meta em % e meta em R$ */}
+            <div className="flex rounded-xl border border-slate-700 p-0.5 text-xs">
+              <button onClick={() => setGoalMode('pct')} className={cn('flex-1 rounded-lg py-1.5 font-semibold', goalMode === 'pct' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400')}>Em %</button>
+              <button onClick={() => { setGoalMode('amount'); if (goalAmount <= budget) setGoalAmount(Math.round(budget * 5)); }} className={cn('flex-1 rounded-lg py-1.5 font-semibold', goalMode === 'amount' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400')}>Em R$</button>
             </div>
+            {goalMode === 'pct' ? (
+              <div className="flex gap-2 flex-wrap">
+                {[20, 50, 100, 200].map((v) => (
+                  <button key={v} onClick={() => setGrowth(v)} className={cn('rounded-full border px-3 py-1.5 text-sm', growth === v ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300' : 'border-slate-700 text-slate-300')}>+{v}%</button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2 flex-wrap">
+                  {amountPresets.map((v) => (
+                    <button key={v} onClick={() => setGoalAmount(v)} className={cn('rounded-full border px-3 py-1.5 text-sm', goalAmount === v ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300' : 'border-slate-700 text-slate-300')}>{formatBRL(v)}</button>
+                  ))}
+                </div>
+                <input type="number" min={budget + 1} value={goalAmount || ''} onChange={(e) => setGoalAmount(Number(e.target.value))} placeholder={`Ex: ${formatBRL(Math.round(budget * 10))}`} className="h-10 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 text-slate-100 placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none" />
+                {goalAmount > 0 && goalAmount <= budget && <p className="text-[11px] text-amber-400">A meta precisa ser maior que o orçamento ({formatBRL(budget)}).</p>}
+              </div>
+            )}
             <p className="rounded-lg bg-slate-800/60 px-3 py-2 text-xs text-slate-400">
               Sai de {formatBRL(budget)} mirando {formatBRL(target)}. Stop-loss em {stopLoss}%: se a banca cair pra {formatBRL(budget * (1 - stopLoss / 100))}, o Zé encerra pra te proteger.
             </p>
