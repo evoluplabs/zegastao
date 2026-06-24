@@ -67,7 +67,8 @@ describe('devig', () => {
 
   it('de-vig normaliza para somar 1', () => {
     const clean = devig([2.0, 3.5, 4.0]);
-    expect(clean.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 4);
+    // cada prob é arredondada a 4 casas, então a soma pode desviar ~0.0001
+    expect(clean.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 3);
   });
 
   it('overround positivo quando a casa embute margem', () => {
