@@ -440,3 +440,31 @@ Tempo real / cashout (feeds enterprise, milhares/mês) permanece **fora de escop
 
 > **Próximo passo:** aprovado este documento, inicio pela **F0** (fundação + motor
 > determinístico com testes), sem ativar a feature em produção (segue atrás da flag).
+
+---
+
+## Adendo 2.1 — Vision-first + Orquestração real (entregue)
+
+Evolução implementada sobre o 2.0, mantendo todos os princípios (custo ~R$ 0, número
+nenhum de LLM, jogo responsável, atrás da flag) e adicionando a pirâmide **"código antes
+de API/IA"** (Tier 0 código → Tier 1 OCR grátis → Tier 2 Vision → web search por último).
+
+- **Motor multi-mercado** (`engine/markets.ts`): Poisson para escanteios, cartões, chutes
+  e faltas (over/under por linha), além de gols.
+- **Extração Vision-first** (`odds-extractor.ts` + `zeVision.ts`): lê o print da Betano por
+  OCR+regex (grátis) e só usa Claude Vision no fallback. **Waze das Odds** (cache coletivo)
+  faz o 2º usuário do mesmo jogo reaproveitar a leitura. Detecta **SuperOdds**.
+- **Orquestração** (`stats-multi.ts`, `context-agent.ts`, `slip-analyzer.ts`, `pipeline.ts`):
+  médias reais por time (API) + contexto qualitativo (peso do jogo determinístico; web
+  search opcional para lesões/árbitro/clima atrás de `ZE_WEB_SEARCH_ENABLED`) → EV em todos
+  os mercados a partir do print.
+- **SGM** (múltipla no mesmo jogo) com **haircut de correlação** honesto e selo obrigatório;
+  usa a odd final da Betano quando o print a traz.
+- **Formulário**: meta em **R$** (vira o multiplicador-alvo do moonshot) + **orçamento
+  sugerido** pelo perfil financeiro (`suggest_budget`).
+- **Cross-over com o Zé Gastão**: teto de stake por fase financeira (trava da fatura).
+- **Fases B/C**: Desmascarador de Guru, **Trava de Dopamina** (saque comprovado por print
+  libera novo ciclo), **Liquidação expressa por print**, **Ouvidoria do Fumo** (push
+  empático na perda) e **Karma** anti-carona (atrás de `ZE_KARMA_ENABLED`).
+- **Telas**: `UploadOdds` (fotografa a Betano) e `GuruAudit` (desmascarador), acessíveis em
+  "Ferramentas do Zé" na página de apostas.
