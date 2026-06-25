@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import { findFixturesForObjective, getSportKey, FixtureSummary } from '../services/betting/fixtures-finder';
 import { analyzeFixture, getCachedOdds } from '../services/betting/pipeline';
+import { OddsEvent } from '../services/betting/sports-api';
 import { buildRound, Candidate, RiskLevel } from '../services/betting/engine/multiples';
 import { composeCard, recalcOnRealOdd } from '../services/betting/card';
 import { cycleStake } from '../services/betting/kelly';
@@ -111,32 +112,96 @@ function stakeCeilingFor(phase: string | undefined, budget: number): number {
   return round2(budget * fraction);
 }
 
+// ---------- Fixture extraída de print da Betano ----------
+
+interface PrintFixtureInput {
+  homeTeam: string;
+  awayTeam: string;
+  league?: string;
+  markets: Array<{ market: string; selection: string; odd: number }>;
+}
+
+/** Converte os mercados extraídos do print em um OddsEvent sintético para o pipeline. */
+function slipToOddsEvent(fix: PrintFixtureInput): OddsEvent {
+  const marketMap = new Map<string, Array<{ name: string; price: number }>>();
+  for (const mk of fix.markets) {
+    let name = mk.selection;
+    if (mk.market === 'totals') {
+      const s = name.toLowerCase();
+      if (/mais de|over|\+/.test(s)) name = 'Over';
+      else if (/menos de|under/.test(s)) name = 'Under';
+    } else if (mk.market === 'btts') {
+      const s = name.toLowerCase();
+      if (/sim|yes/.test(s)) name = 'Yes';
+      else if (/n[aã]o|no/.test(s)) name = 'No';
+    }
+    const list = marketMap.get(mk.market) || [];
+    list.push({ name, price: mk.odd });
+    marketMap.set(mk.market, list);
+  }
+  return {
+    id: `print_${Date.now()}`,
+    sport_key: 'soccer_fifa_world_cup',
+    commence_time: new Date().toISOString(),
+    home_team: fix.homeTeam,
+    away_team: fix.awayTeam,
+    bookmakers: [{
+      key: 'betano',
+      title: 'Betano',
+      markets: Array.from(marketMap.entries()).map(([key, outcomes]) => ({
+        key,
+        title: key,
+        outcomes,
+      })),
+    }],
+  };
+}
+
 // ---------- Helper compartilhado: monta uma rodada para o ciclo ----------
 
 async function buildRoundForCycle(
   db: Firestore, userId: string, mandate: Mandate, cycle: Cycle,
-  opts: { date?: string; riskLevel?: RiskLevel; targetMultiplier?: number },
+  opts: { date?: string; riskLevel?: RiskLevel; targetMultiplier?: number; printFixture?: PrintFixtureInput },
 ) {
   const date = opts.date || today();
   const riskLevel: RiskLevel = (opts.riskLevel ?? cycle.riskLevel ?? mandate.maxAutoRiskLevel ?? 0) as RiskLevel;
   const sportKeys = mandate.preferredLeagues?.length ? mandate.preferredLeagues : ['soccer_fifa_world_cup'];
 
-  let fixtures = await findFixturesForObjective(sportKeys, date, mandate.preferredTeams);
-  const blocked = (mandate.blockedTeams || []).map((t) => t.toLowerCase());
-  if (blocked.length) {
-    fixtures = fixtures.filter((f) =>
-      !blocked.some((b) => f.homeTeam.toLowerCase().includes(b) || f.awayTeam.toLowerCase().includes(b)));
+  let fixtures: FixtureSummary[];
+  const oddsBySport: Record<string, Awaited<ReturnType<typeof getCachedOdds>>> = {};
+
+  if (opts.printFixture) {
+    // Print-first: usa o jogo extraído do print, sem chamar API-Football nem Odds API.
+    // homeTeamId/awayTeamId = 0 → teamAverages usa defaults (1.2 gols/jogo), justo para Copa.
+    fixtures = [{
+      fixtureId: 0,
+      homeTeam: opts.printFixture.homeTeam,
+      homeTeamId: 0,
+      awayTeam: opts.printFixture.awayTeam,
+      awayTeamId: 0,
+      kickoff: new Date().toISOString(),
+      leagueId: 1, // FIFA World Cup
+      leagueName: opts.printFixture.league || 'Copa do Mundo',
+    }];
+    oddsBySport['soccer_fifa_world_cup'] = [slipToOddsEvent(opts.printFixture)];
+  } else {
+    fixtures = await findFixturesForObjective(sportKeys, date, mandate.preferredTeams);
+    const blocked = (mandate.blockedTeams || []).map((t) => t.toLowerCase());
+    if (blocked.length) {
+      fixtures = fixtures.filter((f) =>
+        !blocked.some((b) => f.homeTeam.toLowerCase().includes(b) || f.awayTeam.toLowerCase().includes(b)));
+    }
+    if (fixtures.length > 0) {
+      const uniqueSports = [...new Set(fixtures.map((f) => getSportKey(f.leagueId) || sportKeys[0]))];
+      await Promise.all(uniqueSports.map(async (sk) => { oddsBySport[sk] = await getCachedOdds(db, sk, date); }));
+    }
   }
+
   if (fixtures.length === 0) {
     return { roundId: null as string | null, card: composeSkip(riskLevel), empty: true };
   }
 
   const [model, individual] = await Promise.all([getGlobalModel(db), getIndividual(db, userId)]);
-
-  // Odds por liga (cacheadas)
-  const uniqueSports = [...new Set(fixtures.map((f) => getSportKey(f.leagueId) || sportKeys[0]))];
-  const oddsBySport: Record<string, Awaited<ReturnType<typeof getCachedOdds>>> = {};
-  await Promise.all(uniqueSports.map(async (sk) => { oddsBySport[sk] = await getCachedOdds(db, sk, date); }));
 
   const allCands: Candidate[] = [];
   for (const fx of fixtures) {
@@ -287,6 +352,17 @@ const CycleSchema = z.discriminatedUnion('action', [
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     riskLevel: z.number().int().min(0).max(3).optional(),
     targetMultiplier: z.number().min(1.1).max(1000).optional(),
+    // Print-first: fixture extraída do print da Betano (bypassa API-Football + Odds API).
+    printFixture: z.object({
+      homeTeam: z.string().min(1),
+      awayTeam: z.string().min(1),
+      league: z.string().optional(),
+      markets: z.array(z.object({
+        market: z.string(),
+        selection: z.string(),
+        odd: z.number().positive(),
+      })).min(1),
+    }).optional(),
   }),
   z.object({ action: z.literal('abort') }),
 ]);
@@ -357,6 +433,7 @@ export const zeCycle = onCall({ region: REGION, timeoutSeconds: 120 }, async (re
     date: parsed.data.date,
     riskLevel: parsed.data.riskLevel as RiskLevel | undefined,
     targetMultiplier: parsed.data.targetMultiplier,
+    printFixture: parsed.data.printFixture,
   });
   if (cycle.status === 'planning') {
     await cyclesCol.doc(cycle.id).set({ status: 'awaiting_games' }, { merge: true });

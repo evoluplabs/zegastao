@@ -36,15 +36,15 @@ const STEPS: TourStep[] = [
   {
     selector: '[data-tour="build"]',
     requiresClick: true,
-    emoji: '👇',
-    title: 'Agora toca neste botão',
-    body: 'O Zé vai buscar os jogos de hoje, analisar as odds e te mostrar uma sugestão pronta. Você não precisa enviar foto nem fazer mais nada — só tocar aqui.',
+    emoji: '📸',
+    title: 'Fotografe um jogo na Betano',
+    body: 'Abre a Betano, escolhe qualquer jogo e tira um print. Manda o print — o Zé lê as odds na hora. Quando aparecer o nome do jogo, o botão fica verde: toca nele pra montar sua aposta.',
   },
   {
     selector: '[data-tour="tools"]',
-    emoji: '📸',
-    title: 'Isso aqui é extra, não é obrigatório',
-    body: 'Se quiser conferir a odd exata da Betano agora (ela pode variar alguns centavos), manda um print. Ou joga um palpite de guru pra ver se vale. Mas pode ignorar — o Zé já tem as odds por aqui.',
+    emoji: '🔍',
+    title: 'Desmascarador de guru · extra',
+    body: 'Tem alguém mandando bilhete com odds mirabolantes? Cola o print aqui e o Zé mostra a chance real. Não é obrigatório — pode ignorar.',
   },
   {
     selector: '[data-tour="pause"]',

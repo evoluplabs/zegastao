@@ -11,13 +11,15 @@ import { GuruAudit } from './betting/GuruAudit';
 import { BettingTour } from './betting/BettingTour';
 import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel, ZeGuidedCard } from '@/types';
 import { cn, formatBRL } from '@/lib/utils';
-import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, Camera, Search } from 'lucide-react';
+import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, CheckCircle2, Search } from 'lucide-react';
 
 const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: boolean }>(functions, 'zeMandate');
 const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functions, 'zeCycle');
 
 interface CycleGetResponse { cycle: ZeCycle | null; rounds: ZeRound[] }
 interface BuildResponse { roundId?: string | null; empty?: boolean; card?: ZeGuidedCard }
+interface ExtractedMarket { market: string; selection: string; odd: number; }
+interface ExtractedSlip { homeTeam?: string; awayTeam?: string; league?: string; markets: ExtractedMarket[]; confidence: number; }
 
 const TARGET_OPTIONS = [10, 25, 50, 100];
 
@@ -33,7 +35,8 @@ export function Betting() {
   const [noBetMsg, setNoBetMsg] = useState('');
   const [riskLevel, setRiskLevel] = useState<ZeRiskLevel>(1);
   const [targetMultiplier, setTargetMultiplier] = useState(25);
-  const [tool, setTool] = useState<'none' | 'upload' | 'guru'>('none');
+  const [tool, setTool] = useState<'none' | 'guru'>('none');
+  const [extractedSlip, setExtractedSlip] = useState<ExtractedSlip | null>(null);
 
   const loadCycle = useCallback(async () => {
     setLoading(true);
@@ -81,21 +84,34 @@ export function Betting() {
     }
   }
 
-  async function buildRound() {
+  async function buildRound(slip?: ExtractedSlip | null) {
     setBuilding(true);
     setError('');
     setNoBetMsg('');
     try {
-      const res = await zeCycle({ action: 'build', riskLevel, targetMultiplier: riskLevel === 2 ? targetMultiplier : undefined });
-      // Sem jogos no dia, ou achou jogos mas nenhuma aposta com valor → mostra o porquê.
+      const printFixture = slip?.homeTeam && slip.awayTeam ? {
+        homeTeam: slip.homeTeam,
+        awayTeam: slip.awayTeam,
+        league: slip.league,
+        markets: slip.markets,
+      } : undefined;
+      const res = await zeCycle({
+        action: 'build',
+        riskLevel,
+        targetMultiplier: riskLevel === 2 ? targetMultiplier : undefined,
+        ...(printFixture ? { printFixture } : {}),
+      });
       if (res.data.empty) {
-        setNoBetMsg('Não encontrei jogos hoje nos campeonatos que você escolheu. Tenta de novo amanhã, ou adiciona mais campeonatos no seu mandato.');
+        setNoBetMsg(printFixture
+          ? 'Não encontrei apostas com valor neste jogo. Tenta outro jogo ou outro mercado.'
+          : 'Não encontrei jogos hoje. Manda um print da Betano do jogo que você quer apostar!'
+        );
       } else if (res.data.card?.skip) {
-        setNoBetMsg(res.data.card.reasoning || 'Hoje não achei nenhuma aposta que valha a pena pra você. Prefiro não sugerir do que sugerir aposta ruim. Volta amanhã!');
+        setNoBetMsg(res.data.card.reasoning || 'Não achei uma aposta que valha a pena aqui. Prefiro não sugerir do que sugerir aposta ruim.');
       }
       await loadCycle();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Não consegui montar a aposta agora. Tente outra data ou campeonato.');
+      setError(e instanceof Error ? e.message : 'Não consegui montar a aposta agora.');
     } finally {
       setBuilding(false);
     }
@@ -195,18 +211,46 @@ export function Betting() {
             ) : (
               <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-100">Bora achar uma aposta?</h2>
-                  <p className="mt-1 text-sm text-slate-400">É só clicar no botão verde. O Zé olha os jogos do dia, analisa cada um e te mostra uma aposta pronta. <span className="text-slate-300">Você não precisa enviar foto nem nada.</span></p>
+                  <h2 className="text-lg font-bold text-slate-100">Encontre um jogo na Betano</h2>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Abre a Betano, escolha um jogo e tira um print. O Zé lê as odds e monta a melhor aposta pra você.
+                  </p>
                 </div>
+
                 {noBetMsg && (
                   <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200">
                     <Search className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>{noBetMsg}</span>
                   </div>
                 )}
+
+                {/* Passo 1: upload do print da Betano (fonte principal para Copa) */}
+                <UploadOdds onExtracted={(slip) => setExtractedSlip(slip)} />
+
+                {/* Jogo lido → mostra confirmação + botão de análise */}
+                {extractedSlip?.homeTeam && (
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    <span className="text-sm font-semibold text-slate-100">
+                      {extractedSlip.homeTeam} x {extractedSlip.awayTeam}
+                    </span>
+                    {extractedSlip.league && <span className="ml-auto text-xs text-slate-500">{extractedSlip.league}</span>}
+                  </div>
+                )}
+
                 <RiskPicker riskLevel={riskLevel} setRiskLevel={setRiskLevel} targetMultiplier={targetMultiplier} setTargetMultiplier={setTargetMultiplier} />
-                <Button data-tour="build" onClick={buildRound} loading={building} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
-                  <RefreshCw className="h-4 w-4" /> {building ? 'O Zé está analisando os jogos…' : 'Achar uma aposta pra mim'}
+
+                <Button
+                  data-tour="build"
+                  onClick={() => buildRound(extractedSlip)}
+                  loading={building}
+                  className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                >
+                  {extractedSlip?.homeTeam ? (
+                    <><Sparkles className="h-4 w-4" /> {building ? 'Analisando…' : `Analisar: ${extractedSlip.homeTeam} x ${extractedSlip.awayTeam}`}</>
+                  ) : (
+                    <><RefreshCw className="h-4 w-4" /> {building ? 'O Zé está buscando…' : 'Achar uma aposta pra mim'}</>
+                  )}
                 </Button>
               </div>
             )}
@@ -228,23 +272,16 @@ export function Betting() {
           </>
         )}
 
-        {/* Ferramentas: print da Betano (Waze das Odds) e desmascarador de guru */}
+        {/* Ferramentas extras: desmascarador de guru */}
         <div data-tour="tools" className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-400">Ferramentas extras <span className="font-normal text-slate-600">· opcional</span></h3>
-            <p className="text-xs text-slate-600">Não precisa usar pra apostar. Use só se quiser conferir uma odd ou um palpite.</p>
+            <p className="text-xs text-slate-600">Tem um palpite de guru? Manda o print e o Zé calcula a chance real.</p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setTool(tool === 'upload' ? 'none' : 'upload')}
-              className={cn('flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'upload' ? 'border-emerald-400 bg-emerald-400/10 text-emerald-300' : 'border-slate-700 text-slate-300')}>
-              <Camera className="h-4 w-4" /> Ler print da Betano
-            </button>
-            <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
-              className={cn('flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-slate-700 text-slate-300')}>
-              <Search className="h-4 w-4" /> Desmascarar guru
-            </button>
-          </div>
-          {tool === 'upload' && <UploadOdds />}
+          <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
+            className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-slate-700 text-slate-300')}>
+            <Search className="h-4 w-4" /> Desmascarar guru
+          </button>
           {tool === 'guru' && <GuruAudit />}
         </div>
 
