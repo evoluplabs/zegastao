@@ -9,7 +9,7 @@ import { GuidedBetCard } from './betting/GuidedBetCard';
 import { UploadOdds } from './betting/UploadOdds';
 import { GuruAudit } from './betting/GuruAudit';
 import { BettingTour } from './betting/BettingTour';
-import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel } from '@/types';
+import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel, ZeGuidedCard } from '@/types';
 import { cn, formatBRL } from '@/lib/utils';
 import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, Camera, Search } from 'lucide-react';
 
@@ -17,7 +17,7 @@ const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: 
 const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functions, 'zeCycle');
 
 interface CycleGetResponse { cycle: ZeCycle | null; rounds: ZeRound[] }
-interface BuildResponse { roundId?: string | null; empty?: boolean }
+interface BuildResponse { roundId?: string | null; empty?: boolean; card?: ZeGuidedCard }
 
 const TARGET_OPTIONS = [10, 25, 50, 100];
 
@@ -30,6 +30,7 @@ export function Betting() {
   const [loading, setLoading] = useState(false);
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState('');
+  const [noBetMsg, setNoBetMsg] = useState('');
   const [riskLevel, setRiskLevel] = useState<ZeRiskLevel>(1);
   const [targetMultiplier, setTargetMultiplier] = useState(25);
   const [tool, setTool] = useState<'none' | 'upload' | 'guru'>('none');
@@ -83,8 +84,15 @@ export function Betting() {
   async function buildRound() {
     setBuilding(true);
     setError('');
+    setNoBetMsg('');
     try {
-      await zeCycle({ action: 'build', riskLevel, targetMultiplier: riskLevel === 2 ? targetMultiplier : undefined });
+      const res = await zeCycle({ action: 'build', riskLevel, targetMultiplier: riskLevel === 2 ? targetMultiplier : undefined });
+      // Sem jogos no dia, ou achou jogos mas nenhuma aposta com valor → mostra o porquê.
+      if (res.data.empty) {
+        setNoBetMsg('Não encontrei jogos hoje nos campeonatos que você escolheu. Tenta de novo amanhã, ou adiciona mais campeonatos no seu mandato.');
+      } else if (res.data.card?.skip) {
+        setNoBetMsg(res.data.card.reasoning || 'Hoje não achei nenhuma aposta que valha a pena pra você. Prefiro não sugerir do que sugerir aposta ruim. Volta amanhã!');
+      }
       await loadCycle();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Não consegui montar a aposta agora. Tente outra data ou campeonato.');
@@ -190,6 +198,12 @@ export function Betting() {
                   <h2 className="text-lg font-bold text-slate-100">Bora achar uma aposta?</h2>
                   <p className="mt-1 text-sm text-slate-400">É só clicar no botão verde. O Zé olha os jogos do dia, analisa cada um e te mostra uma aposta pronta. <span className="text-slate-300">Você não precisa enviar foto nem nada.</span></p>
                 </div>
+                {noBetMsg && (
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200">
+                    <Search className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{noBetMsg}</span>
+                  </div>
+                )}
                 <RiskPicker riskLevel={riskLevel} setRiskLevel={setRiskLevel} targetMultiplier={targetMultiplier} setTargetMultiplier={setTargetMultiplier} />
                 <Button data-tour="build" onClick={buildRound} loading={building} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
                   <RefreshCw className="h-4 w-4" /> {building ? 'O Zé está analisando os jogos…' : 'Achar uma aposta pra mim'}
