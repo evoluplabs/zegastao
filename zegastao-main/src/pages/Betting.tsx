@@ -125,6 +125,7 @@ export function Betting() {
   const progressPct = cycle ? Math.min(100, Math.max(0, ((cycle.currentBankroll - cycle.budget * (1 - cycle.stopLossPct / 100)) / (target - cycle.budget * (1 - cycle.stopLossPct / 100))) * 100)) : 0;
   const latestPending = rounds.find((r) => r.outcome === 'pending' && !r.skip);
   const closed = cycle && ['won', 'lost', 'aborted'].includes(cycle.status);
+  const betsCompleted = rounds.filter((r) => r.outcome !== 'pending').length;
 
   return (
     <>
@@ -239,7 +240,7 @@ export function Betting() {
       </div>
     </div>
 
-    <BettingTour />
+    <BettingTour betsCompleted={betsCompleted} />
     </>
   );
 }
