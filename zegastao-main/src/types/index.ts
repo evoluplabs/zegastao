@@ -708,3 +708,27 @@ export const CREDIT_CARD_BANKS: Record<CreditCardBank, { label: string; emoji: s
   btg:       { label: 'BTG',       emoji: '🔷', color: '#1D4ED8' },
   outro:     { label: 'Outro',     emoji: '💳', color: '#6B7280' },
 };
+
+// Imposto de Renda — espelha o retorno de extractTaxData (Cloud Function).
+// Mantido em sincronia com functions/src/functions/extractTaxData.ts.
+export interface TaxSummary {
+  year: number;
+  deductions: {
+    medical: number;
+    education: number;
+    donations: number;
+  };
+  income: {
+    salary: number;
+    investments: number;
+    rental: number;
+    other: number;
+  };
+  highlights: string[];
+  obligations: {
+    type: 'irpf' | 'dasn_mei' | 'carne_leao' | 'darf_ganho_capital';
+    label: string;
+    deadline: string;
+    description: string;
+  }[];
+}
