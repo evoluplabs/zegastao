@@ -114,7 +114,7 @@ export function Betting() {
     return (
       <div className="min-h-screen bg-slate-950 py-8">
         <MandateOnboarding onComplete={() => {
-          localStorage.removeItem('ze_apostador_tour_v1');
+          localStorage.removeItem('ze_apostador_tour_v2');
           setMandate('loading');
         }} />
       </div>
@@ -139,7 +139,7 @@ export function Betting() {
             <h1 className="text-2xl font-bold">Seu ciclo de apostas</h1>
             <p className="text-sm text-slate-400">Aposta com cabeça, fézinha consciente</p>
           </div>
-          <button onClick={selfExclude} className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200">
+          <button data-tour="pause" onClick={selfExclude} className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200">
             <PauseCircle className="h-3.5 w-3.5" /> Pausar
           </button>
         </div>
@@ -155,19 +155,19 @@ export function Betting() {
                 Ciclo {cycle!.status === 'won' ? 'fechado no azul! 🎯' : cycle!.status === 'lost' ? 'encerrado no stop-loss.' : 'encerrado.'} Banca final: {formatBRL(cycle!.currentBankroll)}.
               </div>
             )}
-            <div className="flex items-center gap-2 text-slate-100"><Target className="h-5 w-5 text-emerald-400" /><h2 className="text-lg font-bold">Começar um novo ciclo</h2></div>
-            <p className="text-sm text-slate-400">Orçamento {formatBRL(mandate.cycleBudget)} · meta +{mandate.growthTargetPct}% · stop-loss {mandate.stopLossPct}%</p>
+            <div className="flex items-center gap-2 text-slate-100"><Target className="h-5 w-5 text-emerald-400" /><h2 className="text-lg font-bold">Comece por aqui</h2></div>
+            <p className="text-sm text-slate-400">Um ciclo é a sua rodada de apostas. Você vai começar com {formatBRL(mandate.cycleBudget)} e o Zé encerra sozinho quando você chegar na meta ou pra te proteger de perder demais.</p>
             <RiskPicker riskLevel={riskLevel} setRiskLevel={setRiskLevel} targetMultiplier={targetMultiplier} setTargetMultiplier={setTargetMultiplier} />
-            <Button onClick={startCycle} loading={loading} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">Iniciar ciclo</Button>
+            <Button data-tour="start" onClick={startCycle} loading={loading} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">Começar a apostar</Button>
           </div>
         )}
 
         {/* Ciclo ativo */}
         {cycle && !closed && (
           <>
-            <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+            <div data-tour="banca" className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Banca do ciclo</span>
+                <span className="text-slate-400">Quanto você tem agora</span>
                 <span className="font-bold text-emerald-400">{formatBRL(cycle.currentBankroll)}</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
@@ -180,13 +180,18 @@ export function Betting() {
             </div>
 
             {latestPending ? (
-              <GuidedBetCard cycleId={cycle.id} round={latestPending} referralCode={referralCode} onUpdated={loadCycle} />
+              <div data-tour="card">
+                <GuidedBetCard cycleId={cycle.id} round={latestPending} referralCode={referralCode} onUpdated={loadCycle} />
+              </div>
             ) : (
               <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                <p className="text-sm text-slate-400">Nenhuma aposta montada agora. Bora procurar uma boa pro seu ciclo?</p>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-100">Bora achar uma aposta?</h2>
+                  <p className="mt-1 text-sm text-slate-400">É só clicar no botão verde. O Zé olha os jogos do dia, analisa cada um e te mostra uma aposta pronta. <span className="text-slate-300">Você não precisa enviar foto nem nada.</span></p>
+                </div>
                 <RiskPicker riskLevel={riskLevel} setRiskLevel={setRiskLevel} targetMultiplier={targetMultiplier} setTargetMultiplier={setTargetMultiplier} />
-                <Button onClick={buildRound} loading={building} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
-                  <RefreshCw className="h-4 w-4" /> {building ? 'O Zé está analisando os jogos…' : 'Buscar aposta pro ciclo'}
+                <Button data-tour="build" onClick={buildRound} loading={building} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
+                  <RefreshCw className="h-4 w-4" /> {building ? 'O Zé está analisando os jogos…' : 'Achar uma aposta pra mim'}
                 </Button>
               </div>
             )}
@@ -209,8 +214,11 @@ export function Betting() {
         )}
 
         {/* Ferramentas: print da Betano (Waze das Odds) e desmascarador de guru */}
-        <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
-          <h3 className="text-sm font-semibold text-slate-400">Ferramentas do Zé</h3>
+        <div data-tour="tools" className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-400">Ferramentas extras <span className="font-normal text-slate-600">· opcional</span></h3>
+            <p className="text-xs text-slate-600">Não precisa usar pra apostar. Use só se quiser conferir uma odd ou um palpite.</p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setTool(tool === 'upload' ? 'none' : 'upload')}
               className={cn('flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'upload' ? 'border-emerald-400 bg-emerald-400/10 text-emerald-300' : 'border-slate-700 text-slate-300')}>
@@ -242,7 +250,7 @@ function RiskPicker({ riskLevel, setRiskLevel, targetMultiplier, setTargetMultip
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-slate-400">Estilo da aposta</p>
+      <p className="text-xs text-slate-400">Como você quer jogar?</p>
       <div className="grid grid-cols-2 gap-2">
         {ZE_RISK_LEVELS.filter((r) => r.level !== 3).map((r) => (
           <button key={r.level} onClick={() => setRiskLevel(r.level)} className={cn('rounded-xl border p-2 text-left text-xs', riskLevel === r.level ? 'border-emerald-400 bg-emerald-400/10' : 'border-slate-700')}>
@@ -252,7 +260,7 @@ function RiskPicker({ riskLevel, setRiskLevel, targetMultiplier, setTargetMultip
       </div>
       {riskLevel === 2 && (
         <div className="space-y-1">
-          <p className="text-xs text-slate-400">Mirar quanto? (quanto maior, mais difícil)</p>
+          <p className="text-xs text-slate-400">Tentar multiplicar por quanto? Quanto mais alto, mais difícil acertar.</p>
           <div className="flex gap-2">
             {TARGET_OPTIONS.map((t) => (
               <button key={t} onClick={() => setTargetMultiplier(t)} className={cn('flex-1 rounded-lg border px-2 py-1.5 text-sm', targetMultiplier === t ? 'border-amber-400 bg-amber-400/15 text-amber-300' : 'border-slate-700 text-slate-300')}>{t}x</button>
