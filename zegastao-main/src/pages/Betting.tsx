@@ -8,6 +8,7 @@ import { MandateOnboarding } from './betting/MandateOnboarding';
 import { GuidedBetCard } from './betting/GuidedBetCard';
 import { UploadOdds } from './betting/UploadOdds';
 import { GuruAudit } from './betting/GuruAudit';
+import { BettingTour } from './betting/BettingTour';
 import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel } from '@/types';
 import { cn, formatBRL } from '@/lib/utils';
 import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, Camera, Search } from 'lucide-react';
@@ -110,7 +111,14 @@ export function Betting() {
     return <div className="flex min-h-60 items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-emerald-400" /></div>;
   }
   if (mandate === null) {
-    return <div className="min-h-screen bg-slate-950 py-8"><MandateOnboarding onComplete={() => setMandate('loading')} /></div>;
+    return (
+      <div className="min-h-screen bg-slate-950 py-8">
+        <MandateOnboarding onComplete={() => {
+          localStorage.removeItem('ze_apostador_tour_v1');
+          setMandate('loading');
+        }} />
+      </div>
+    );
   }
 
   const target = cycle ? cycle.budget * (1 + cycle.growthTargetPct / 100) : 0;
@@ -119,6 +127,7 @@ export function Betting() {
   const closed = cycle && ['won', 'lost', 'aborted'].includes(cycle.status);
 
   return (
+    <>
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto max-w-2xl space-y-5 p-4 pb-16">
         {/* Header */}
@@ -221,6 +230,9 @@ export function Betting() {
         </p>
       </div>
     </div>
+
+    <BettingTour />
+    </>
   );
 }
 
