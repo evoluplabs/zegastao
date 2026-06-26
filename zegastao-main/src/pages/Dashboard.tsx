@@ -172,11 +172,11 @@ export function Dashboard() {
   const hasAnyData = income > 0 || debts.length > 0 || allTransactions.length > 0 || goals.length > 0;
   const hasCurrentMonthTx = currentMonthTx.length > 0;
 
-  // Caixinhas que precisam de depósito hoje
+  // Caixinhas que precisam de depósito (hoje ou esta semana)
   const pendingCaixinha = caixinhas
     .filter((c) => c.status !== 'completed')
     .map((c) => ({ c, plan: getCaixinhaPlan(c) }))
-    .find(({ plan }) => plan.needsDepositToday && plan.dailyTarget > 0);
+    .find(({ plan }) => (plan.needsDepositToday || plan.needsDepositThisWeek) && plan.periodTarget > 0);
 
   if (txLoading) {
     return (
@@ -265,7 +265,7 @@ export function Dashboard() {
               )}
             </div>
             <p className={cn(
-              'text-4xl font-bold tracking-tight tabular-nums',
+              'text-3xl sm:text-4xl font-bold tracking-tight tabular-nums truncate',
               totalAccountBalance >= 0 ? 'text-foreground' : 'text-destructive'
             )}>
               {accounts.length > 0 ? formatBRL(totalAccountBalance) : '—'}
@@ -280,17 +280,17 @@ export function Dashboard() {
 
           {/* Receitas / Despesas / Saldo do mês */}
           <div className="grid grid-cols-3 divide-x">
-            <div className="px-4 py-3">
+            <div className="min-w-0 px-3 py-3">
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Entradas</p>
-              <p className="text-base font-bold text-success tabular-nums truncate">
+              <p className="text-sm font-bold text-success tabular-nums truncate">
                 {displayedIncome > 0 ? formatBRL(displayedIncome) : '—'}
               </p>
               {isIncomeEstimate && <p className="text-[9px] text-muted-foreground/60">estimado</p>}
             </div>
-            <div className="px-4 py-3">
+            <div className="min-w-0 px-3 py-3">
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Saídas</p>
               <p className={cn(
-                'text-base font-bold tabular-nums truncate',
+                'text-sm font-bold tabular-nums truncate',
                 displayedExpenses > 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
                 {displayedExpenses > 0 ? formatBRL(displayedExpenses) : '—'}
@@ -301,10 +301,10 @@ export function Dashboard() {
                 </p>
               )}
             </div>
-            <div className="px-4 py-3">
+            <div className="min-w-0 px-3 py-3">
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Sobra</p>
               <p className={cn(
-                'text-base font-bold tabular-nums truncate',
+                'text-sm font-bold tabular-nums truncate',
                 displayedBalance >= 0 ? 'text-foreground' : 'text-destructive'
               )}>
                 {displayedIncome === 0 && displayedExpenses === 0 ? '—' : formatBRL(displayedBalance)}
@@ -465,8 +465,9 @@ export function Dashboard() {
           >
             <Bell className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm flex-1 min-w-0">
-              Hora de guardar <span className="font-semibold text-primary">{formatBRL(pendingCaixinha.plan.dailyTarget)}</span>
+              Hora de guardar <span className="font-semibold text-primary">{formatBRL(pendingCaixinha.plan.periodTarget)}</span>
               {' '}em {pendingCaixinha.c.emoji} {pendingCaixinha.c.name}
+              {pendingCaixinha.plan.isWeekly ? ' (semana)' : ''}
             </span>
             <ArrowRight className="h-4 w-4 text-primary shrink-0" />
           </Link>
@@ -521,8 +522,10 @@ export function Dashboard() {
                       <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground">{pct.toFixed(0)}%</p>
-                    {plan.needsDepositToday && (
-                      <p className="mt-0.5 text-[10px] font-semibold text-primary">Guardar hoje</p>
+                    {(plan.needsDepositToday || plan.needsDepositThisWeek) && (
+                      <p className="mt-0.5 text-[10px] font-semibold text-primary">
+                        {plan.isWeekly ? 'Guardar semana' : 'Guardar hoje'}
+                      </p>
                     )}
                   </Link>
                 );

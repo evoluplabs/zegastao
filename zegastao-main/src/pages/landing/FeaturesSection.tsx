@@ -60,6 +60,16 @@ const FEATURES = [
     title: 'Chat com contexto real',
     desc: 'Pergunte "devo quitar ou investir?" — a IA conhece suas dívidas e responde com seus números.',
   },
+  {
+    emoji: '⚽',
+    title: 'Zé Apostador · Copa 2026',
+    desc: 'Fotografa o jogo na Betano. A IA lê as odds, calcula a chance real e monta a aposta com mais valor. Sem achismo.',
+  },
+  {
+    emoji: '🔍',
+    title: 'Desmascarador de Guru',
+    desc: 'Manda o print do bilhete do tipster. O Zé mostra a probabilidade real e quanto a casa está ganhando de você.',
+  },
 ];
 
 export function FeaturesSection() {

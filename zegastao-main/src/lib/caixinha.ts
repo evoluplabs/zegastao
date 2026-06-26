@@ -8,27 +8,52 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Retorna a data (YYYY-MM-DD) da segunda-feira da semana atual. */
+function thisWeekMondayStr(): string {
+  const d = new Date();
+  const day = d.getDay(); // 0=Dom, 1=Seg, ...6=Sáb
+  const diffToMon = day === 0 ? -6 : 1 - day;
+  const mon = new Date(d);
+  mon.setDate(mon.getDate() + diffToMon);
+  mon.setHours(0, 0, 0, 0);
+  return mon.toISOString().slice(0, 10);
+}
+
 export function getCaixinhaPlan(c: Caixinha) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const target = new Date(c.targetDate + 'T12:00:00');
+  const isWeekly = c.frequency === 'weekly';
 
   const daysRemaining = Math.max(0, daysBetween(today, target));
   const amountRemaining = Math.max(0, c.targetAmount - c.totalSaved);
-  // O valor diário se recalcula sozinho: sempre o que falta dividido pelos dias restantes.
+
+  // Valor diário: falta / dias restantes.
   const dailyTarget = daysRemaining > 0 ? amountRemaining / daysRemaining : 0;
 
+  // Valor semanal: falta / semanas restantes (mínimo 1 semana).
+  const weeksRemaining = Math.max(1, Math.ceil(daysRemaining / 7));
+  const weeklyTarget = amountRemaining > 0 ? amountRemaining / weeksRemaining : 0;
+
   const todayISO = todayStr();
+  const weekMondayISO = thisWeekMondayStr();
+
   const todayDeposit = (c.deposits || [])
     .filter((d) => d.date === todayISO)
     .reduce((sum, d) => sum + d.amount, 0);
 
-  const isOnTrack = amountRemaining <= 0 || todayDeposit >= dailyTarget * 0.9;
-  const progressPct = Math.min(100, c.targetAmount > 0 ? (c.totalSaved / c.targetAmount) * 100 : 0);
-  // Precisa guardar hoje? (caixinha ativa, ainda falta valor e nada depositado hoje)
-  const needsDepositToday = amountRemaining > 0 && daysRemaining > 0 && todayDeposit <= 0;
+  const thisWeekDeposit = (c.deposits || [])
+    .filter((d) => d.date >= weekMondayISO)
+    .reduce((sum, d) => sum + d.amount, 0);
 
-  // Dias seguidos sem nenhum depósito (até ontem) — usado para a mensagem de recálculo.
+  const periodTarget = isWeekly ? weeklyTarget : dailyTarget;
+  const periodDeposit = isWeekly ? thisWeekDeposit : todayDeposit;
+  const isOnTrack = amountRemaining <= 0 || periodDeposit >= periodTarget * 0.9;
+  const progressPct = Math.min(100, c.targetAmount > 0 ? (c.totalSaved / c.targetAmount) * 100 : 0);
+
+  const needsDepositToday = !isWeekly && amountRemaining > 0 && daysRemaining > 0 && todayDeposit <= 0;
+  const needsDepositThisWeek = isWeekly && amountRemaining > 0 && daysRemaining > 0 && thisWeekDeposit <= 0;
+
   const missedDays = getMissedDays(c.deposits || []);
 
   let estimatedCompletionDate: string | null = null;
@@ -43,14 +68,20 @@ export function getCaixinhaPlan(c: Caixinha) {
 
   return {
     daysRemaining,
+    weeksRemaining,
     amountRemaining,
     dailyTarget,
+    weeklyTarget,
+    periodTarget,
     todayDeposit,
+    thisWeekDeposit,
     isOnTrack,
     progressPct,
     needsDepositToday,
+    needsDepositThisWeek,
     missedDays,
     estimatedCompletionDate,
+    isWeekly,
   };
 }
 

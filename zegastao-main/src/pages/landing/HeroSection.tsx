@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, TrendingDown, AlertTriangle, Clock, CalendarCheck2, Wallet } from 'lucide-react';
+import { ArrowRight, Sparkles, TrendingDown, AlertTriangle, Clock, CalendarCheck2, Wallet, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 function DashboardMockup() {
@@ -127,6 +127,16 @@ export function HeroSection() {
               <Button asChild variant="outline" size="lg" className="rounded-xl bg-card/70 backdrop-blur-sm">
                 <a href="#como-funciona">Ver como funciona</a>
               </Button>
+            </div>
+
+            {/* Zé Apostador Copa callout */}
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 mb-6">
+              <span className="text-xl shrink-0">⚽</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Novo · Zé Apostador · Copa 2026</p>
+                <p className="text-xs text-muted-foreground leading-snug">Fotografa o jogo na Betano. A IA lê as odds e monta a melhor aposta pra você.</p>
+              </div>
+              <TrendingUp className="h-4 w-4 text-emerald-500 shrink-0" />
             </div>
 
             {/* Trust signals */}

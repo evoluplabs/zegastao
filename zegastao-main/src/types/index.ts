@@ -308,6 +308,7 @@ export interface Caixinha {
   deposits: CaixinhaDeposit[];
   status: 'active' | 'completed' | 'paused';
   color?: string;
+  frequency?: 'daily' | 'weekly'; // padrão: 'daily'
   shared?: boolean;   // caixinha compartilhada do casal (plano Casal/Família)
   ownerUid?: string;  // dono da caixinha compartilhada
 }

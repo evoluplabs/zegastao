@@ -4,8 +4,9 @@ import {
   Crown, LogOut, HelpCircle, Shield,
   ChevronRight, Brain, Zap, Trophy,
   MessageSquarePlus, FileText, Pencil, Sun, Moon, Monitor,
-  Users, LinkIcon, Unlink,
+  Users, LinkIcon, Unlink, TrendingUp,
 } from 'lucide-react';
+import { FEATURES } from '@/lib/features';
 import { useTheme } from '@/hooks/useTheme';
 import { useSharedFinances } from '@/hooks/useSharedFinances';
 import type { AppTheme } from '@/types';
@@ -346,6 +347,23 @@ export function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Zé Apostador */}
+      {FEATURES.ZE_APOSTADOR && (
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Apostas</p>
+          </div>
+          <div className="divide-y">
+            <MenuRow
+              icon={TrendingUp}
+              label="Zé Apostador"
+              sub="Apostas na Betano com IA · Copa 2026"
+              to="/betting"
+            />
+          </div>
+        </div>
+      )}
 
       {/* App */}
       <div className="rounded-2xl border bg-card overflow-hidden">

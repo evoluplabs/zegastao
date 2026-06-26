@@ -168,20 +168,29 @@ function CaixinhaDetail({
         {plan.daysRemaining > 0 && ` · ${plan.daysRemaining} dia${plan.daysRemaining !== 1 ? 's' : ''} restantes`}
       </p>
 
-      {caixinha.status !== 'completed' && plan.dailyTarget > 0 && (
+      {caixinha.status !== 'completed' && plan.periodTarget > 0 && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="pt-4 text-center space-y-1">
-            <p className="text-sm text-muted-foreground">Poupar hoje:</p>
+            <p className="text-sm text-muted-foreground">
+              {plan.isWeekly ? 'Poupar esta semana:' : 'Poupar hoje:'}
+            </p>
             <p className="text-3xl font-extrabold text-primary animate-pulse">
-              {formatBRL(plan.dailyTarget)}
+              {formatBRL(plan.periodTarget)}
             </p>
             <p className="text-xs text-muted-foreground">
               {plan.isOnTrack
                 ? '✅ Você está em dia!'
-                : plan.missedDays > 0
-                  ? `Você ficou ${plan.missedDays} dia${plan.missedDays !== 1 ? 's' : ''} sem guardar — recalculamos o valor pra você chegar lá.`
-                  : 'Recalculado com base no que falta'}
+                : plan.isWeekly
+                  ? `Guarde ${formatBRL(plan.weeklyTarget)} esta semana para chegar na meta.`
+                  : plan.missedDays > 0
+                    ? `Você ficou ${plan.missedDays} dia${plan.missedDays !== 1 ? 's' : ''} sem guardar — recalculamos o valor pra você chegar lá.`
+                    : 'Recalculado com base no que falta'}
             </p>
+            {plan.isWeekly && plan.thisWeekDeposit > 0 && (
+              <p className="text-xs font-medium text-success">
+                Já guardou {formatBRL(plan.thisWeekDeposit)} esta semana
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -189,7 +198,7 @@ function CaixinhaDetail({
       {caixinha.status !== 'completed' && (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <Label>Registrar depósito de hoje</Label>
+            <Label>{plan.isWeekly ? 'Registrar depósito desta semana' : 'Registrar depósito de hoje'}</Label>
             <div className="flex gap-2">
               <div className="flex-1">
                 <CurrencyInput label="" value={depositAmount} onChange={setDepositAmount} />
@@ -246,7 +255,7 @@ export function Caixinha() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
-  const [form, setForm] = useState({ name: '', emoji: '✈️', target: 0, date: '', shared: false });
+  const [form, setForm] = useState({ name: '', emoji: '✈️', target: 0, date: '', shared: false, frequency: 'daily' as 'daily' | 'weekly' });
 
   const canShare = limits.sharedPartner && isLinked;
   const atLimit = caixinhas.length >= limits.caixinhasTotal;
@@ -272,9 +281,10 @@ export function Caixinha() {
       totalSaved: 0,
       deposits: [],
       status: 'active',
+      frequency: form.frequency,
       ...(form.shared && canShare ? { shared: true, ownerUid: user?.uid } : {}),
     });
-    setForm({ name: '', emoji: '✈️', target: 0, date: '', shared: false });
+    setForm({ name: '', emoji: '✈️', target: 0, date: '', shared: false, frequency: 'daily' });
     setOpen(false);
     toast('Caixinha criada!');
   }
@@ -317,12 +327,12 @@ export function Caixinha() {
         )}
       </div>
 
-      {/* Lembrete diário: tem caixinha ativa e ainda não guardou hoje */}
+      {/* Lembrete: caixinha ativa sem depósito no período */}
       {(() => {
         const pending = caixinhas
           .filter((c) => c.status !== 'completed')
           .map((c) => ({ c, plan: getCaixinhaPlan(c) }))
-          .find(({ plan }) => plan.needsDepositToday && plan.dailyTarget > 0);
+          .find(({ plan }) => (plan.needsDepositToday || plan.needsDepositThisWeek) && plan.periodTarget > 0);
         if (!pending) return null;
         return (
           <button
@@ -331,8 +341,8 @@ export function Caixinha() {
           >
             <Bell className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm">
-              Hora de guardar <span className="font-semibold text-primary">{formatBRL(pending.plan.dailyTarget)}</span> em
-              {' '}{pending.c.emoji} {pending.c.name} hoje.
+              Hora de guardar <span className="font-semibold text-primary">{formatBRL(pending.plan.periodTarget)}</span> em
+              {' '}{pending.c.emoji} {pending.c.name}{pending.plan.isWeekly ? ' esta semana.' : ' hoje.'}
             </span>
           </button>
         );
@@ -391,6 +401,25 @@ export function Caixinha() {
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Frequência de depósito</Label>
+              <div className="flex gap-2">
+                {(['daily', 'weekly'] as const).map((freq) => (
+                  <button
+                    key={freq}
+                    type="button"
+                    onClick={() => setForm({ ...form, frequency: freq })}
+                    className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${
+                      form.frequency === freq
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    {freq === 'daily' ? '📅 Todo dia' : '📆 Toda semana'}
+                  </button>
+                ))}
+              </div>
             </div>
             {canShare && (
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -484,7 +513,8 @@ function CaixinhaCard({ c, onOpen, onRemove }: { c: CaixinhaType; onOpen: () => 
           <p className="mt-2 text-xs font-semibold text-green-600">🎉 Meta atingida!</p>
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">
-            Poupar hoje: <span className="font-semibold text-primary">{formatBRL(plan.dailyTarget)}</span>
+            {plan.isWeekly ? 'Esta semana:' : 'Hoje:'}{' '}
+            <span className="font-semibold text-primary">{formatBRL(plan.periodTarget)}</span>
             {plan.daysRemaining > 0 && ` · ${plan.daysRemaining} dia${plan.daysRemaining !== 1 ? 's' : ''}`}
           </p>
         )}
