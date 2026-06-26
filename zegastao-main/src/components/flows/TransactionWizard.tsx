@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { CATEGORIES } from '@/types';
 import { cn } from '@/lib/utils';
+import { useAccounts } from '@/hooks/useAccounts';
 
 interface ExistingTransaction {
   id: string;
@@ -14,6 +15,7 @@ interface ExistingTransaction {
   date: string;
   description: string;
   category: string;
+  accountId?: string;
 }
 
 interface Props {
@@ -29,6 +31,7 @@ const INCOME_CATEGORIES = ['Salário', 'Renda extra', 'Transferência', 'Outros'
 
 export function TransactionWizard({ onClose, existing }: Props) {
   const isEditing = !!existing;
+  const { data: accounts } = useAccounts();
   const [step, setStep] = useState(isEditing ? 1 : 0);
   const [form, setForm] = useState({
     type: (existing ? (existing.amount >= 0 ? 'in' : 'out') : 'out') as 'in' | 'out',
@@ -36,6 +39,7 @@ export function TransactionWizard({ onClose, existing }: Props) {
     date: existing?.date ?? new Date().toISOString().substring(0, 10),
     description: existing?.description ?? '',
     category: existing?.category ?? '',
+    accountId: existing?.accountId ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -46,7 +50,7 @@ export function TransactionWizard({ onClose, existing }: Props) {
   async function save() {
     if (form.amount <= 0 || !form.description) return;
     setSaving(true);
-    const data = {
+    const data: Record<string, unknown> = {
       date: form.date,
       description: form.description,
       amount: form.type === 'out' ? -Math.abs(form.amount) : Math.abs(form.amount),
@@ -54,6 +58,7 @@ export function TransactionWizard({ onClose, existing }: Props) {
       category: form.category || (form.type === 'out' ? 'Outros' : 'Renda extra'),
       userCorrected: true,
     };
+    if (form.accountId) data.accountId = form.accountId;
     if (isEditing) {
       await updateUserDoc('transactions', existing.id, data);
     } else {
@@ -233,6 +238,30 @@ export function TransactionWizard({ onClose, existing }: Props) {
                       ))}
                     </div>
                   </div>
+                  {accounts && accounts.length > 0 && (
+                    <div>
+                      <Label className="mb-2 block">
+                        Conta{' '}
+                        <span className="text-xs text-muted-foreground font-normal">(opcional — atualiza saldo)</span>
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {accounts.map((a) => (
+                          <button
+                            key={a.id}
+                            onClick={() => setForm({ ...form, accountId: form.accountId === a.id ? '' : a.id })}
+                            className={cn(
+                              'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                              form.accountId === a.id
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border text-muted-foreground hover:border-primary/50'
+                            )}
+                          >
+                            {a.emoji} {a.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>

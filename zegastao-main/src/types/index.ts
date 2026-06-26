@@ -223,7 +223,8 @@ export interface Account {
   name: string;
   type: AccountType;
   institution?: string;
-  balance: number;
+  balance: number;       // saldo reconciliado manualmente (âncora)
+  balancedAt?: string;   // YYYY-MM-DD da última reconciliação manual
   emoji?: string;
   color?: string;
 }
@@ -246,6 +247,7 @@ export interface Transaction {
   statementType?: 'checking' | 'credit_card' | null;
   isRecurring?: boolean;
   normalizedDesc?: string | null;
+  accountId?: string;    // link para a conta (opcional, retrocompatível)
   // Parcelamento detectado automaticamente no upload
   isInstallment?: boolean;
   installmentCurrent?: number;

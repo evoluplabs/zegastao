@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, Sparkles, Upload, ArrowRight, Plus, Zap,
-  Wallet, CalendarCheck2, Clock, Bell, ChevronRight, TrendingDown, Target,
+  Wallet, CalendarCheck2, Bell, ChevronRight, TrendingDown, Target,
+  ChevronLeft, RefreshCw,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -25,6 +26,7 @@ import { FinancialSimulator } from '@/components/FinancialSimulator';
 import { MonthlyReport, shouldShowMonthlyReport } from '@/components/MonthlyReport';
 import { formatBRL, currentMonthStart } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { isNeutral, computeBalance, currentMonthISO, shiftMonth, monthLabel } from '@/lib/finance';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Alimentação': '🍽️', 'Mercado': '🛒', 'Delivery': '🛵', 'Transporte': '🚗',
@@ -80,6 +82,17 @@ export function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
 
+  // ── Navegação de mês ──────────────────────────────────────────────────────
+  const thisMonth = currentMonthISO();
+  const [viewMonth, setViewMonth] = useState(thisMonth);
+  const isCurrentMonth = viewMonth === thisMonth;
+
+  function navMonth(dir: 1 | -1) {
+    setViewMonth((prev) => shiftMonth(prev, dir));
+  }
+
+  const viewLabel = useMemo(() => monthLabel(viewMonth), [viewMonth]);
+
   useEffect(() => {
     if (searchParams.get('welcome') === '1') {
       setSearchParams({}, { replace: true });
@@ -88,35 +101,29 @@ export function Dashboard() {
   }, []);
 
   const income = profile?.monthlyIncome || 0;
-  const monthStart = currentMonthStart();
 
-  const prevMonthStart = useMemo(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().substring(0, 10);
-  }, []);
-
-  const currentMonthTx = useMemo(
-    () => allTransactions.filter((t) => t.date >= monthStart),
-    [allTransactions, monthStart]
+  // ── Filtro de transações por mês ──────────────────────────────────────────
+  const monthTx = useMemo(
+    () => allTransactions.filter((t) => (t.date || '').slice(0, 7) === viewMonth),
+    [allTransactions, viewMonth]
   );
 
-  const prevMonthTx = useMemo(
-    () => allTransactions.filter((t) => t.date >= prevMonthStart && t.date < monthStart),
-    [allTransactions, prevMonthStart, monthStart]
-  );
+  const prevMonthTx = useMemo(() => {
+    const prev = shiftMonth(viewMonth, -1);
+    return allTransactions.filter((t) => (t.date || '').slice(0, 7) === prev);
+  }, [allTransactions, viewMonth]);
 
-  const actualIncome = useMemo(
-    () => currentMonthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-    [currentMonthTx]
-  );
-  const displayIncome = actualIncome > 0 ? actualIncome : income;
-  const isIncomeEstimate = actualIncome === 0 && income > 0;
-
-  const { expenses, byCategory } = useMemo(() => {
+  // ── Fluxo do mês (categorias neutras excluídas) ───────────────────────────
+  // Neutras: Fatura cartão, Transferência — são movimentos internos, não receita/despesa real.
+  const { actualIncome, expenses, byCategory } = useMemo(() => {
+    let actualIncome = 0;
     let expenses = 0;
     const map: Record<string, number> = {};
-    for (const t of currentMonthTx) {
-      if (t.amount < 0) {
+    for (const t of monthTx) {
+      if (isNeutral(t.category)) continue;
+      if (t.amount > 0) {
+        actualIncome += t.amount;
+      } else {
         const abs = Math.abs(t.amount);
         expenses += abs;
         map[t.category] = (map[t.category] || 0) + abs;
@@ -125,32 +132,42 @@ export function Dashboard() {
     const byCategory = Object.entries(map)
       .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount);
-    return { expenses, byCategory };
-  }, [currentMonthTx]);
+    return { actualIncome, expenses, byCategory };
+  }, [monthTx]);
 
-  const effectiveExpenses = expenses > 0 ? expenses : (profile?.fixedExpenses || 0);
-  const balance = displayIncome - effectiveExpenses;
+  const hasMonthTx = monthTx.length > 0;
 
-  const coupleActive = showCombined && isLinked && !!partnerData;
-  const combinedIncome = displayIncome + (partnerData?.income ?? 0);
-  const combinedExpenses = effectiveExpenses + (partnerData?.expenses ?? 0);
-  const displayedIncome = coupleActive ? combinedIncome : displayIncome;
-  const displayedExpenses = coupleActive ? combinedExpenses : effectiveExpenses;
-  const displayedBalance = coupleActive ? combinedIncome - combinedExpenses : balance;
-
-  // Saldo total das contas
-  const totalAccountBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
-
-  // Variação vs mês anterior
+  // ── Variação vs mês anterior ───────────────────────────────────────────────
   const prevExpenses = useMemo(
-    () => prevMonthTx.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+    () => prevMonthTx
+      .filter((t) => t.amount < 0 && !isNeutral(t.category))
+      .reduce((s, t) => s + Math.abs(t.amount), 0),
     [prevMonthTx]
   );
   const expensesDelta = prevExpenses > 0
-    ? Math.round(((effectiveExpenses - prevExpenses) / prevExpenses) * 100)
+    ? Math.round(((expenses - prevExpenses) / prevExpenses) * 100)
     : null;
 
-  // Vencimentos
+  // ── Modo casal ───────────────────────────────────────────────────────────
+  const coupleActive = showCombined && isLinked && !!partnerData;
+  // Dados do parceiro: apenas mês atual (limitação do usePartnerData)
+  const partnerIncome = coupleActive ? (partnerData?.income ?? 0) : 0;
+  const partnerExpenses = coupleActive ? (partnerData?.expenses ?? 0) : 0;
+
+  const displayedIncome = actualIncome + partnerIncome;
+  const displayedExpenses = expenses + partnerExpenses;
+  const displayedBalance = displayedIncome - displayedExpenses;
+
+  // ── Saldo total computado das contas ────────────────────────────────────
+  // computeBalance usa account.balance (âncora reconciliada) + transações
+  // com accountId vinculado desde balancedAt. Retrocompatível: contas sem
+  // balancedAt exibem o balance estático como antes.
+  const totalAccountBalance = useMemo(
+    () => accounts.reduce((s, a) => s + computeBalance(a, allTransactions), 0),
+    [accounts, allTransactions]
+  );
+
+  // ── Vencimentos ───────────────────────────────────────────────────────────
   const { overdue, dueSoon } = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -170,9 +187,8 @@ export function Dashboard() {
   }, [debts]);
 
   const hasAnyData = income > 0 || debts.length > 0 || allTransactions.length > 0 || goals.length > 0;
-  const hasCurrentMonthTx = currentMonthTx.length > 0;
 
-  // Caixinhas que precisam de depósito (hoje ou esta semana)
+  // ── Caixinhas com depósito pendente ───────────────────────────────────────
   const pendingCaixinha = caixinhas
     .filter((c) => c.status !== 'completed')
     .map((c) => ({ c, plan: getCaixinhaPlan(c) }))
@@ -238,13 +254,14 @@ export function Dashboard() {
 
         {/* ── 1. HERO ─────────────────────────────────────── */}
         <div className="rounded-3xl border bg-card overflow-hidden">
-          {/* Saldo nas contas */}
+
+          {/* Patrimônio: saldo das contas */}
           <div className="px-5 pt-5 pb-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5">
                 <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Saldo nas contas
+                  Patrimônio — saldo em contas
                 </p>
                 {accounts.length === 0 && (
                   <button
@@ -258,8 +275,9 @@ export function Dashboard() {
               {accounts.length > 0 && (
                 <button
                   onClick={() => setOpenAccount(true)}
-                  className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
                 >
+                  <RefreshCw className="h-2.5 w-2.5" />
                   {accounts.length} conta{accounts.length !== 1 ? 's' : ''}
                 </button>
               )}
@@ -273,19 +291,46 @@ export function Dashboard() {
             {accounts.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">Cadastre suas contas para ver o saldo real</p>
             )}
+            {accounts.length > 0 && accounts.some((a) => !a.balancedAt) && (
+              <p className="text-[10px] text-amber-600/80 dark:text-amber-400/70 mt-1">
+                Toque em <span className="font-semibold">reconciliar</span> em qualquer conta para manter o saldo atualizado automaticamente.
+              </p>
+            )}
           </div>
 
           {/* Divisor */}
           <div className="border-t mx-5" />
 
-          {/* Receitas / Despesas / Saldo do mês */}
-          <div className="grid grid-cols-3 divide-x">
+          {/* Navegação de mês */}
+          <div className="flex items-center justify-between px-4 py-2">
+            <button
+              onClick={() => navMonth(-1)}
+              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-accent transition-colors"
+              title="Mês anterior"
+            >
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <p className="text-[11px] font-semibold capitalize text-muted-foreground">{viewLabel}</p>
+            <button
+              onClick={() => navMonth(1)}
+              disabled={isCurrentMonth}
+              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-default"
+              title="Próximo mês"
+            >
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Fluxo do mês: Entradas / Saídas / Sobra */}
+          <div className="grid grid-cols-3 divide-x border-t">
             <div className="min-w-0 px-3 py-3">
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Entradas</p>
               <p className="text-sm font-bold text-success tabular-nums truncate">
                 {displayedIncome > 0 ? formatBRL(displayedIncome) : '—'}
               </p>
-              {isIncomeEstimate && <p className="text-[9px] text-muted-foreground/60">estimado</p>}
+              {!hasMonthTx && isCurrentMonth && (
+                <p className="text-[9px] text-muted-foreground/60">sem dados</p>
+              )}
             </div>
             <div className="min-w-0 px-3 py-3">
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Saídas</p>
@@ -297,20 +342,20 @@ export function Dashboard() {
               </p>
               {expensesDelta !== null && Math.abs(expensesDelta) >= 5 && (
                 <p className={cn('text-[9px]', expensesDelta > 0 ? 'text-destructive' : 'text-success')}>
-                  {expensesDelta > 0 ? '+' : ''}{expensesDelta}% vs mês ant.
+                  {expensesDelta > 0 ? '+' : ''}{expensesDelta}% vs anterior
                 </p>
               )}
             </div>
             <div className="min-w-0 px-3 py-3">
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Sobra</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-1">Resultado</p>
               <p className={cn(
                 'text-sm font-bold tabular-nums truncate',
                 displayedBalance >= 0 ? 'text-foreground' : 'text-destructive'
               )}>
-                {displayedIncome === 0 && displayedExpenses === 0 ? '—' : formatBRL(displayedBalance)}
+                {!hasMonthTx && !coupleActive ? '—' : formatBRL(displayedBalance)}
               </p>
-              {displayedBalance < 0 && displayedExpenses > 0 && (
-                <p className="text-[9px] text-destructive">Acima da renda</p>
+              {displayedBalance < 0 && hasMonthTx && (
+                <p className="text-[9px] text-destructive">Saiu mais do que entrou</p>
               )}
             </div>
           </div>
@@ -326,8 +371,30 @@ export function Dashboard() {
           </button>
         </div>
 
-        {/* ── 2. CATEGORIAS (SEMPRE VISÍVEL) ──────────────── */}
-        {(byCategory.length > 0 || hasCurrentMonthTx) && (
+        {/* CTA importar extrato quando sem transações no mês */}
+        {!hasMonthTx && accounts.length > 0 && (
+          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Upload className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">Nenhum lançamento em {viewLabel}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isCurrentMonth
+                  ? 'Importe seu extrato ou lance transações para ver o fluxo real.'
+                  : 'Sem dados importados para este mês.'}
+              </p>
+            </div>
+            {isCurrentMonth && (
+              <Button size="sm" className="gap-1.5 shrink-0 rounded-xl text-xs h-8" asChild>
+                <Link to="/upload"><Upload className="h-3 w-3" /> Importar</Link>
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* ── 2. CATEGORIAS (QUANDO HÁ TRANSAÇÕES) ──────── */}
+        {(byCategory.length > 0 || hasMonthTx) && (
           <div className="rounded-3xl border bg-card p-5">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold">Onde está seu dinheiro</h2>
@@ -338,10 +405,10 @@ export function Dashboard() {
 
             {byCategory.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">Nenhum gasto registrado este mês.</p>
-                <Button size="sm" variant="outline" className="mt-3 gap-1.5 rounded-xl" asChild>
-                  <Link to="/upload"><Upload className="h-3.5 w-3.5" /> Importar extrato</Link>
-                </Button>
+                <p className="text-sm text-muted-foreground">Nenhuma despesa real registrada.</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Transferências e faturas de cartão são excluídas — não são despesas de consumo.
+                </p>
               </div>
             ) : (
               <>
@@ -394,7 +461,7 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── 3. ALERTAS URGENTES (CONDICIONAL) ───────────── */}
+        {/* ── 3. ALERTAS URGENTES (CONDICIONAL) ──────────── */}
         {(overdue > 0 || dueSoon > 0) && (
           <div className="rounded-3xl border overflow-hidden">
             {overdue > 0 && (
@@ -426,7 +493,7 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── 4. AÇÕES RÁPIDAS ────────────────────────────── */}
+        {/* ── 4. AÇÕES RÁPIDAS ─────────────────────────── */}
         <div className="grid grid-cols-4 gap-2">
           {[
             { icon: Plus, label: 'Transação', onClick: () => setOpenTx(true), color: 'bg-primary/10 text-primary' },
@@ -473,7 +540,7 @@ export function Dashboard() {
           </Link>
         )}
 
-        {/* ── 5. INSIGHT DO COPILOTO ──────────────────────── */}
+        {/* ── 5. INSIGHT DO COPILOTO ────────────────────── */}
         {insights.length > 0 && (
           <div className="rounded-3xl border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b">
@@ -497,7 +564,7 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── 6. CAIXINHAS ATIVAS ─────────────────────────── */}
+        {/* ── 6. CAIXINHAS ATIVAS ──────────────────────── */}
         {caixinhas.filter(c => c.status !== 'completed').length > 0 && (
           <div className="rounded-3xl border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b">
@@ -534,8 +601,8 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* CTA importar extrato quando sem transações */}
-        {allTransactions.length === 0 && income > 0 && (
+        {/* CTA importar extrato quando sem transações e sem contas */}
+        {allTransactions.length === 0 && income > 0 && accounts.length === 0 && (
           <div className="rounded-3xl border border-dashed border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
               <Upload className="h-5 w-5 text-primary" />
@@ -570,7 +637,7 @@ export function Dashboard() {
       {openSimulator && (
         <FinancialSimulator
           income={income}
-          expenses={effectiveExpenses}
+          expenses={expenses}
           debts={debts}
           onClose={() => setOpenSimulator(false)}
         />
@@ -582,8 +649,10 @@ export function Dashboard() {
           goals={goals}
           debts={debts}
           monthlyIncome={income}
-          monthLabel={new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
-            .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+          monthLabel={(() => {
+            const prev = shiftMonth(thisMonth, -1);
+            return monthLabel(prev);
+          })()}
           onClose={() => setShowMonthlyReport(false)}
         />
       )}
