@@ -38,6 +38,19 @@ export default {
           DEFAULT: 'hsl(var(--success))',
           foreground: 'hsl(var(--success-foreground))',
         },
+        // RPG accent tokens
+        gold: {
+          DEFAULT: 'hsl(var(--gold, 38 93% 51%))',
+          foreground: '#0f1117',
+        },
+        boss: {
+          DEFAULT: 'hsl(var(--boss-red, 0 84% 60%))',
+          foreground: '#fff',
+        },
+        raid: {
+          DEFAULT: 'hsl(var(--raid-amber, 25 95% 53%))',
+          foreground: '#0f1117',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

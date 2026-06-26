@@ -3,8 +3,10 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, Sparkles, Upload, ArrowRight, Plus, Zap,
   Wallet, CalendarCheck2, Bell, ChevronRight, TrendingDown, Target,
-  ChevronLeft, RefreshCw,
+  ChevronLeft, RefreshCw, Skull, Package,
 } from 'lucide-react';
+import { CharacterPanel } from '@/components/CharacterPanel';
+import { hpFinanceiro, hpStatus } from '@/lib/xp';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useDebts } from '@/hooks/useDebts';
@@ -237,6 +239,9 @@ export function Dashboard() {
     <>
       <div className="space-y-4">
 
+        {/* Character Panel — RPG identity */}
+        <CharacterPanel />
+
         {/* Boas-vindas pós-onboarding */}
         {showWelcome && (
           <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 flex items-start gap-3">
@@ -261,7 +266,7 @@ export function Dashboard() {
               <div className="flex items-center gap-1.5">
                 <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Patrimônio — saldo em contas
+                  🏆 Ouro em Cofres
                 </p>
                 {accounts.length === 0 && (
                   <button
@@ -321,10 +326,10 @@ export function Dashboard() {
             </button>
           </div>
 
-          {/* Fluxo do mês: Entradas / Saídas / Sobra */}
+          {/* Fluxo do mês: Entradas / Saídas / Sobra — vocabulário RPG */}
           <div className="grid grid-cols-3 divide-x border-t">
             <div className="min-w-0 px-3 py-3">
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Entradas</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-1">💰 Ouro Ganho</p>
               <p className="text-sm font-bold text-success tabular-nums truncate">
                 {displayedIncome > 0 ? formatBRL(displayedIncome) : '—'}
               </p>
@@ -333,7 +338,7 @@ export function Dashboard() {
               )}
             </div>
             <div className="min-w-0 px-3 py-3">
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Saídas</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-1">🗡️ Ouro Gasto</p>
               <p className={cn(
                 'text-sm font-bold tabular-nums truncate',
                 displayedExpenses > 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -347,7 +352,7 @@ export function Dashboard() {
               )}
             </div>
             <div className="min-w-0 px-3 py-3">
-              <p className="text-[10px] font-medium text-muted-foreground mb-1">Resultado</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-1">⚡ Fluxo</p>
               <p className={cn(
                 'text-sm font-bold tabular-nums truncate',
                 displayedBalance >= 0 ? 'text-foreground' : 'text-destructive'
@@ -461,7 +466,7 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── 3. ALERTAS URGENTES (CONDICIONAL) ──────────── */}
+        {/* ── 3. ALERTAS DE BATALHA (CONDICIONAL) ───────── */}
         {(overdue > 0 || dueSoon > 0) && (
           <div className="rounded-3xl border overflow-hidden">
             {overdue > 0 && (
@@ -469,10 +474,10 @@ export function Dashboard() {
                 to="/carteira"
                 className="flex items-center gap-3 bg-destructive/5 border-b border-destructive/20 px-5 py-3.5 hover:bg-destructive/10 transition-colors"
               >
-                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                <Skull className="h-4 w-4 text-destructive shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-destructive">Pagamentos em atraso</p>
-                  <p className="text-xs text-destructive/70">{formatBRL(overdue)} em dívidas vencidas</p>
+                  <p className="text-sm font-semibold text-destructive">☠️ Boss atacou! Parcelas em atraso</p>
+                  <p className="text-xs text-destructive/70">{formatBRL(overdue)} aguardam pagamento</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-destructive/50 shrink-0" />
               </Link>
@@ -484,8 +489,8 @@ export function Dashboard() {
               >
                 <CalendarCheck2 className="h-4 w-4 text-amber-600 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Vence nos próximos 7 dias</p>
-                  <p className="text-xs text-amber-600/70">{formatBRL(dueSoon)} em parcelas</p>
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">⚠️ Boss ataca em breve — 7 dias</p>
+                  <p className="text-xs text-amber-600/70">{formatBRL(dueSoon)} em parcelas chegando</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-amber-500/50 shrink-0" />
               </Link>
@@ -496,10 +501,10 @@ export function Dashboard() {
         {/* ── 4. AÇÕES RÁPIDAS ─────────────────────────── */}
         <div className="grid grid-cols-4 gap-2">
           {[
-            { icon: Plus, label: 'Transação', onClick: () => setOpenTx(true), color: 'bg-primary/10 text-primary' },
-            { icon: Upload, label: 'Importar', to: '/upload', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-            { icon: TrendingDown, label: 'Dívidas', to: '/carteira', color: 'bg-destructive/10 text-destructive' },
-            { icon: Target, label: 'Metas', onClick: () => setOpenGoal(true), color: 'bg-success/10 text-success' },
+            { icon: Plus, label: 'Lançar', onClick: () => setOpenTx(true), color: 'bg-primary/10 text-primary' },
+            { icon: Upload, label: 'Extrato', to: '/upload', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+            { icon: Skull, label: 'Bosses', to: '/carteira', color: 'bg-destructive/10 text-destructive' },
+            { icon: Package, label: 'Inventário', to: '/inventario', color: 'bg-amber-500/10 text-amber-500' },
           ].map((action) => {
             const content = (
               <>
@@ -524,7 +529,7 @@ export function Dashboard() {
           })}
         </div>
 
-        {/* Lembrete da Caixinha */}
+        {/* Lembrete da Caixinha — Cofre da Guilda */}
         {pendingCaixinha && (
           <Link
             to="/caixinha"
@@ -532,24 +537,24 @@ export function Dashboard() {
           >
             <Bell className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm flex-1 min-w-0">
-              Hora de guardar <span className="font-semibold text-primary">{formatBRL(pendingCaixinha.plan.periodTarget)}</span>
-              {' '}em {pendingCaixinha.c.emoji} {pendingCaixinha.c.name}
+              🏦 Hora de encher o cofre: <span className="font-semibold text-primary">{formatBRL(pendingCaixinha.plan.periodTarget)}</span>
+              {' '}→ {pendingCaixinha.c.emoji} {pendingCaixinha.c.name}
               {pendingCaixinha.plan.isWeekly ? ' (semana)' : ''}
             </span>
             <ArrowRight className="h-4 w-4 text-primary shrink-0" />
           </Link>
         )}
 
-        {/* ── 5. INSIGHT DO COPILOTO ────────────────────── */}
+        {/* ── 5. PERGAMINHO DO SÁBIO ────────────────────── */}
         {insights.length > 0 && (
           <div className="rounded-3xl border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b">
               <h2 className="text-sm font-semibold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Insight do Copiloto
+                📜 Pergaminho do Sábio
               </h2>
               <Link to="/copilot" className="text-xs text-primary font-medium">
-                ver mais →
+                consultar →
               </Link>
             </div>
             <div className="px-5 py-4">
@@ -564,11 +569,11 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── 6. CAIXINHAS ATIVAS ──────────────────────── */}
+        {/* ── 6. COFRES DA GUILDA ─────────────────────── */}
         {caixinhas.filter(c => c.status !== 'completed').length > 0 && (
           <div className="rounded-3xl border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b">
-              <h2 className="text-sm font-semibold">Caixinhas</h2>
+              <h2 className="text-sm font-semibold">🏦 Cofres da Guilda</h2>
               <Link to="/caixinha" className="text-xs text-primary font-medium">
                 gerenciar →
               </Link>

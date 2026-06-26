@@ -30,28 +30,34 @@
   }
 
   .dark {
-    --background: 222 47% 3%;
-    --foreground: 210 30% 92%;
-    --card: 220 42% 8%;
-    --card-foreground: 210 30% 92%;
-    --primary: 168 72% 42%;
-    --primary-foreground: 168 84% 8%;
-    --secondary: 218 35% 14%;
-    --secondary-foreground: 210 30% 92%;
-    --muted: 218 35% 14%;
-    --muted-foreground: 215 20% 62%;
-    --accent: 216 32% 20%;
-    --accent-foreground: 210 30% 92%;
-    --destructive: 0 63% 51%;
+    /* RPG dark theme — Zé Gastão MMORPG */
+    --background: 228 34% 7%;      /* #0f1117 */
+    --foreground: 220 20% 92%;     /* #e8eaf0 */
+    --card: 228 28% 12%;           /* #1a1d27 */
+    --card-foreground: 220 20% 92%;
+    --primary: 160 84% 39%;        /* emerald #10b981 */
+    --primary-foreground: 160 84% 8%;
+    --secondary: 228 24% 16%;      /* #1f2333 */
+    --secondary-foreground: 220 20% 92%;
+    --muted: 228 24% 16%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 228 20% 19%;         /* #2a2d3e */
+    --accent-foreground: 220 20% 92%;
+    --destructive: 0 84% 60%;      /* #ef4444 — boss/debt red */
     --destructive-foreground: 210 40% 98%;
-    --success: 142 71% 45%;
-    --success-foreground: 210 40% 98%;
-    --border: 216 32% 20%;
-    --input: 216 32% 17%;
-    --ring: 168 72% 42%;
-    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.4);
-    --shadow: 0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.4);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.4);
+    --success: 160 84% 39%;
+    --success-foreground: 160 84% 8%;
+    --border: 228 20% 19%;         /* #2a2d3e */
+    --input: 228 24% 16%;
+    --ring: 160 84% 39%;
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.5);
+    --shadow: 0 1px 3px 0 rgba(0,0,0,0.5), 0 1px 2px -1px rgba(0,0,0,0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -2px rgba(0,0,0,0.5);
+    /* RPG accent tokens */
+    --gold: 38 93% 51%;            /* #f59e0b — XP, rewards */
+    --boss-red: 0 84% 60%;         /* #ef4444 — debts, bosses */
+    --raid-amber: 25 95% 53%;      /* #f97316 — apostador, alerts */
+    --sky-info: 199 89% 48%;       /* #0ea5e9 — investments */
   }
 
   * {

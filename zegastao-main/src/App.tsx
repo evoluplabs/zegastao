@@ -75,6 +75,7 @@ import { Journey } from '@/pages/Journey';
 import { UploadPage } from '@/pages/Upload';
 import { Landing } from '@/pages/Landing';
 import { Betting } from '@/pages/Betting';
+import { Inventory } from '@/pages/Inventory';
 import { FEATURES } from '@/lib/features';
 import { Pricing } from '@/pages/Pricing';
 import { Empresas } from '@/pages/Empresas';
@@ -141,6 +142,7 @@ export default function App() {
           <Route path="/ir" element={<ErrorBoundary><ImpostoRenda /></ErrorBoundary>} />
           <Route path="/referrals" element={<ErrorBoundary><Referrals /></ErrorBoundary>} />
           <Route path="/caixinha" element={<ErrorBoundary><Caixinha /></ErrorBoundary>} />
+          <Route path="/inventario" element={<ErrorBoundary><Inventory /></ErrorBoundary>} />
           {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<ErrorBoundary><Betting /></ErrorBoundary>} />}
         </Route>
       </Routes>

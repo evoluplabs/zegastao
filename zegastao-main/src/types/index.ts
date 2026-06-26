@@ -403,10 +403,31 @@ export interface Profile {
   extraIncomeSources?: ExtraIncomeSource[];
   riskProfile?: RiskProfile;
   alreadyInvests?: 'yes' | 'no' | 'no_idea';
-  organizationId?: string;  // ID da empresa (B2B)
-  isEmployee?: boolean;     // vinculado via convite corporativo
+  organizationId?: string;
+  isEmployee?: boolean;
   theme?: AppTheme;
   sharedWithUid?: string | null;
+  // RPG fields
+  xp?: number;
+  professionXP?: {
+    poupador?: number;
+    quitador?: number;
+    freelancer?: number;
+    investidor?: number;
+  };
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: 'electronics' | 'appliances' | 'furniture' | 'clothing' | 'vehicle' | 'other';
+  estimatedValue: number;
+  customValue?: number;
+  status: 'available' | 'listed' | 'sold';
+  linkedDebtId?: string;
+  addedAt: string;
+  soldAt?: string;
+  soldFor?: number;
 }
 
 export interface Milestone {

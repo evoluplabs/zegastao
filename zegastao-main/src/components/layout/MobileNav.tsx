@@ -11,6 +11,7 @@ import {
   Target,
   Upload,
   CreditCard,
+  Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionSheet } from '@/components/ActionSheet';
@@ -19,11 +20,11 @@ import { GoalWizard } from '@/components/flows/GoalWizard';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
 
 const NAV = [
-  { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
-  { to: '/carteira', label: 'Carteira', icon: Wallet },
+  { to: '/dashboard', label: 'Castelo', icon: LayoutDashboard, end: true },
+  { to: '/carteira', label: 'Arsenal', icon: Wallet },
   null, // FAB placeholder
-  { to: '/copilot', label: 'Copiloto', icon: MessageCircle },
-  { to: '/profile', label: 'Perfil', icon: UserCircle },
+  { to: '/inventario', label: 'Inventário', icon: Package },
+  { to: '/profile', label: 'Ficha', icon: UserCircle },
 ];
 
 export function MobileNav() {
@@ -63,6 +64,12 @@ export function MobileNav() {
       label: 'Nova meta',
       description: 'Definir objetivo financeiro',
       onClick: () => setOpenGoal(true),
+    },
+    {
+      icon: <Package className="h-5 w-5" />,
+      label: 'Inventário',
+      description: 'Itens para vender → missões',
+      onClick: () => navigate('/inventario'),
     },
   ];
 
