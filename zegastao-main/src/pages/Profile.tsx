@@ -359,7 +359,7 @@ export function Profile() {
               icon={TrendingUp}
               label="Zé Apostador"
               sub="Apostas na Betano com IA · Copa 2026"
-              to="/betting"
+              to="/apostas"
             />
           </div>
         </div>
