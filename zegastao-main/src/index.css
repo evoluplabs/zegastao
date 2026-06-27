@@ -30,34 +30,36 @@
   }
 
   .dark {
-    /* RPG dark theme — Zé Gastão MMORPG */
-    --background: 228 34% 7%;      /* #0f1117 */
-    --foreground: 220 20% 92%;     /* #e8eaf0 */
-    --card: 228 28% 12%;           /* #1a1d27 */
-    --card-foreground: 220 20% 92%;
-    --primary: 160 84% 39%;        /* emerald #10b981 */
-    --primary-foreground: 160 84% 8%;
-    --secondary: 228 24% 16%;      /* #1f2333 */
-    --secondary-foreground: 220 20% 92%;
-    --muted: 228 24% 16%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 228 20% 19%;         /* #2a2d3e */
-    --accent-foreground: 220 20% 92%;
-    --destructive: 0 84% 60%;      /* #ef4444 — boss/debt red */
-    --destructive-foreground: 210 40% 98%;
-    --success: 160 84% 39%;
-    --success-foreground: 160 84% 8%;
-    --border: 228 20% 19%;         /* #2a2d3e */
-    --input: 228 24% 16%;
-    --ring: 160 84% 39%;
-    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.5);
-    --shadow: 0 1px 3px 0 rgba(0,0,0,0.5), 0 1px 2px -1px rgba(0,0,0,0.5);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -2px rgba(0,0,0,0.5);
-    /* RPG accent tokens */
-    --gold: 38 93% 51%;            /* #f59e0b — XP, rewards */
-    --boss-red: 0 84% 60%;         /* #ef4444 — debts, bosses */
-    --raid-amber: 25 95% 53%;      /* #f97316 — apostador, alerts */
-    --sky-info: 199 89% 48%;       /* #0ea5e9 — investments */
+    /* RPG warm theme — Zé Gastão MMORPG (terra/madeira/ouro) */
+    --background: 30 24% 6%;       /* #15110b — marrom-terra escuro */
+    --foreground: 38 44% 90%;      /* #f1e7d4 — pergaminho/creme */
+    --card: 30 26% 10%;            /* #211a11 — madeira escura */
+    --card-foreground: 38 44% 90%;
+    --primary: 96 38% 46%;         /* #6ba23f — verde-folha (ações) */
+    --primary-foreground: 40 50% 96%;
+    --secondary: 32 26% 14%;       /* #2b2115 */
+    --secondary-foreground: 38 44% 90%;
+    --muted: 32 24% 16%;           /* #2f2518 */
+    --muted-foreground: 36 22% 58%;/* #a99a7e — taupe quente */
+    --accent: 34 26% 19%;          /* #3a2e1d */
+    --accent-foreground: 38 44% 90%;
+    --destructive: 2 68% 55%;      /* #d44b41 — boss/dívida (vermelho quente) */
+    --destructive-foreground: 40 50% 96%;
+    --success: 96 38% 46%;
+    --success-foreground: 40 50% 96%;
+    --border: 34 24% 19%;          /* #3a2e1d — moldura de madeira */
+    --input: 32 26% 14%;
+    --ring: 40 88% 52%;            /* dourado no foco */
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.6);
+    --shadow: 0 1px 3px 0 rgba(0,0,0,0.6), 0 1px 2px -1px rgba(0,0,0,0.6);
+    --shadow-md: 0 4px 10px -2px rgba(0,0,0,0.6), 0 2px 6px -2px rgba(0,0,0,0.55);
+    /* RPG accent tokens — quentes */
+    --gold: 40 90% 52%;            /* #f0a824 — moedas, XP, recompensa */
+    --boss-red: 2 68% 55%;         /* #d44b41 — dívidas, bosses, HP baixo */
+    --raid-amber: 30 88% 52%;      /* #e87d20 — alertas, selecionado, raid */
+    --sky-info: 190 50% 48%;       /* #3ba0ab — info/investimento (teal quente) */
+    --xp-bar: 40 90% 52%;          /* barra de XP dourada */
+    --hp-bar: 96 45% 48%;          /* barra de HP verde */
   }
 
   * {
@@ -236,19 +238,129 @@
     animation: gradient-x 8s ease infinite;
   }
   .dark .bg-gradient-animated {
-    background: linear-gradient(135deg, #0a1f1a 0%, #0d1b2a 50%, #071a14 100%);
+    background: linear-gradient(135deg, #1a130a 0%, #241a0d 50%, #160f07 100%);
     background-size: 200% 200%;
     animation: gradient-x 8s ease infinite;
   }
 
-  /* Shimmer text */
+  /* Shimmer text — dourado */
   .text-shimmer {
-    background: linear-gradient(90deg, #0d9068 0%, #22c55e 50%, #0d9068 100%);
+    background: linear-gradient(90deg, #b8841a 0%, #f0c04a 50%, #b8841a 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: shimmer 3s linear infinite;
+  }
+
+  /* ───────── RPG identity utilities ───────── */
+
+  /* Painel de madeira com moldura dourada sutil */
+  .rpg-panel {
+    background:
+      linear-gradient(180deg, hsl(30 26% 11%) 0%, hsl(30 28% 9%) 100%);
+    border: 1px solid hsl(34 24% 22%);
+    box-shadow:
+      inset 0 1px 0 0 hsl(38 30% 24% / 0.4),
+      inset 0 0 24px 0 rgba(0,0,0,0.35),
+      0 4px 14px -4px rgba(0,0,0,0.6);
+  }
+  .rpg-panel-gold {
+    border-color: hsl(40 70% 38% / 0.55);
+    box-shadow:
+      inset 0 1px 0 0 hsl(40 80% 50% / 0.25),
+      0 0 0 1px hsl(40 70% 30% / 0.25),
+      0 6px 18px -6px rgba(0,0,0,0.7);
+  }
+
+  /* Fundo de aventura: terra escura com vinheta + textura pontilhada */
+  .rpg-bg {
+    background-color: hsl(30 24% 6%);
+    background-image:
+      radial-gradient(1200px 600px at 50% -10%, hsl(40 60% 20% / 0.18), transparent 60%),
+      radial-gradient(900px 500px at 100% 110%, hsl(96 40% 22% / 0.12), transparent 60%),
+      radial-gradient(circle at 1px 1px, hsl(40 40% 40% / 0.05) 1px, transparent 0);
+    background-size: 100% 100%, 100% 100%, 22px 22px;
+  }
+
+  /* Glow dourado para CTAs e recompensas */
+  .glow-gold {
+    box-shadow: 0 0 0 1px hsl(40 90% 50% / 0.4), 0 0 24px -4px hsl(40 90% 50% / 0.45);
+  }
+  .glow-green {
+    box-shadow: 0 0 0 1px hsl(96 45% 45% / 0.4), 0 0 22px -4px hsl(96 45% 45% / 0.4);
+  }
+  .glow-red {
+    box-shadow: 0 0 0 1px hsl(2 68% 55% / 0.4), 0 0 22px -4px hsl(2 68% 55% / 0.45);
+  }
+
+  /* Barra de stat (HP/XP) com brilho interno */
+  .stat-bar {
+    position: relative;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: hsl(32 20% 14%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background-size: 200% 100%;
+    transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .stat-bar-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
+  }
+
+  /* Companion (mascote) — pulinho idle e reações */
+  @keyframes companion-idle {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(-2deg); }
+    75% { transform: translateY(-2px) rotate(2deg); }
+  }
+  @keyframes companion-happy {
+    0%, 100% { transform: translateY(0) scale(1); }
+    30% { transform: translateY(-12px) scale(1.08); }
+    60% { transform: translateY(0) scale(0.96); }
+  }
+  @keyframes companion-sad {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(2px) rotate(-3deg); }
+  }
+  .companion-idle { animation: companion-idle 3.2s ease-in-out infinite; }
+  .companion-happy { animation: companion-happy 0.8s ease-in-out; }
+  .companion-sad { animation: companion-sad 2.6s ease-in-out infinite; }
+
+  /* Float de recompensa (+XP / +Ouro) */
+  @keyframes reward-float {
+    0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+    20% { opacity: 1; transform: translateY(0) scale(1); }
+    80% { opacity: 1; transform: translateY(-18px) scale(1); }
+    100% { opacity: 0; transform: translateY(-34px) scale(0.9); }
+  }
+  .animate-reward-float { animation: reward-float 1.8s ease-out forwards; }
+
+  /* Pulso de destaque para o tour guiado */
+  @keyframes tour-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 hsl(40 90% 50% / 0.6); }
+    50% { box-shadow: 0 0 0 8px hsl(40 90% 50% / 0); }
+  }
+  .tour-highlight {
+    position: relative;
+    z-index: 60;
+    border-radius: 14px;
+    animation: tour-pulse 1.8s ease-out infinite;
+  }
+
+  /* Tipografia de título RPG (display) */
+  .font-display {
+    font-family: 'Cinzel', 'Trajan Pro', ui-serif, Georgia, serif;
+    letter-spacing: 0.01em;
   }
 
   /* Hide scrollbar but keep scroll */

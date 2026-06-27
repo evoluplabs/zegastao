@@ -57,8 +57,8 @@ export function UploadOdds({ onExtracted }: Props) {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-bold text-slate-100">Manda o print da Betano</h3>
-        <p className="text-sm text-slate-400">Tira um print da tela do jogo na Betano. O Zé lê as odds — de todos os mercados.</p>
+        <h3 className="text-lg font-bold text-stone-100">Manda o print da Betano</h3>
+        <p className="text-sm text-stone-400">Tira um print da tela do jogo na Betano. O Zé lê as odds — de todos os mercados.</p>
       </div>
 
       <input
@@ -73,7 +73,7 @@ export function UploadOdds({ onExtracted }: Props) {
       <button
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 px-4 py-8 text-emerald-300 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-green-500/40 bg-green-500/5 px-4 py-8 text-green-300 disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
         <span className="font-semibold">{busy ? phase || 'Lendo…' : 'Escolher / tirar foto'}</span>
@@ -82,17 +82,17 @@ export function UploadOdds({ onExtracted }: Props) {
       {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
       {result && (
-        <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+        <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-semibold text-slate-100">
+            <div className="font-semibold text-stone-100">
               {result.slip.homeTeam || 'Jogo'} {result.slip.awayTeam ? `x ${result.slip.awayTeam}` : ''}
             </div>
             <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold',
-              result.source === 'ocr' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-500/15 text-sky-300')}>
+              result.source === 'ocr' ? 'bg-green-500/15 text-green-300' : 'bg-sky-500/15 text-sky-300')}>
               {result.source === 'ocr' ? 'Lido de graça (OCR)' : 'Lido pelo Zé (Vision)'}
             </span>
           </div>
-          {result.slip.league && <p className="text-xs text-slate-500">{result.slip.league}</p>}
+          {result.slip.league && <p className="text-xs text-stone-500">{result.slip.league}</p>}
           {result.slip.superOdds && (
             <p className="flex items-center gap-1 rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] text-amber-300">
               <Sparkles className="h-3 w-3" /> Tem SuperOdds nesse print — odd turbinada (sinal forte, mas não garantia).
@@ -100,14 +100,14 @@ export function UploadOdds({ onExtracted }: Props) {
           )}
           <ul className="space-y-1.5">
             {result.slip.markets.map((m, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg bg-slate-800/60 px-3 py-2 text-sm">
-                <span className="text-slate-300"><span className="text-slate-500">{MARKET_PT[m.market] || m.market}:</span> {m.selection}</span>
-                <span className="font-bold text-emerald-400">{m.odd.toFixed(2)}</span>
+              <li key={i} className="flex items-center justify-between rounded-lg bg-stone-800/60 px-3 py-2 text-sm">
+                <span className="text-stone-300"><span className="text-stone-500">{MARKET_PT[m.market] || m.market}:</span> {m.selection}</span>
+                <span className="font-bold text-green-400">{m.odd.toFixed(2)}</span>
               </li>
             ))}
           </ul>
-          <p className="flex items-center gap-1 text-[11px] text-slate-500">
-            <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Guardado no Waze das Odds — outro da turma reaproveita sem printar de novo.
+          <p className="flex items-center gap-1 text-[11px] text-stone-500">
+            <CheckCircle2 className="h-3 w-3 text-green-500" /> Guardado no Waze das Odds — outro da turma reaproveita sem printar de novo.
           </p>
         </div>
       )}

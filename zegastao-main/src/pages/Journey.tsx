@@ -228,7 +228,7 @@ export function Journey() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm leading-snug">{t.title}</p>
                   {t.debtContext && (
-                    <p className="text-[11px] font-semibold text-emerald-500 mt-0.5">{t.debtContext}</p>
+                    <p className="text-[11px] font-semibold text-green-500 mt-0.5">{t.debtContext}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-0.5">
                     💰 {t.estimatedReturn} · ⏱ {t.estimatedTime}

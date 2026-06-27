@@ -360,11 +360,11 @@ export function DemoSection() {
   const MockupComponent = tab.component;
 
   return (
-    <section id="como-funciona" className="border-b border-[#2a2d3e] py-16 md:py-24 bg-[#141720]">
+    <section id="como-funciona" className="border-b border-[#3a2e1d] py-16 md:py-24 bg-[#1a130b]">
       <div className="mx-auto max-w-5xl px-4">
         <div className="text-center mb-12 reveal">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">— Ver o Jogo em Ação —</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-slate-100">
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">— Ver o Jogo em Ação —</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-stone-100">
             Tudo que você precisa.<br />Nada que você não vai usar.
           </h2>
         </div>
@@ -377,8 +377,8 @@ export function DemoSection() {
               onClick={() => setActive(t.id)}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                 active === t.id
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'bg-[#1a1d27] border border-[#2a2d3e] text-slate-400 hover:text-slate-200 hover:border-emerald-500/30 hover:bg-[#1e2235]'
+                  ? 'bg-green-500 text-stone-950 shadow-sm'
+                  : 'bg-[#211a11] border border-[#3a2e1d] text-stone-400 hover:text-stone-200 hover:border-green-500/30 hover:bg-[#2b2115]'
               }`}
             >
               <t.icon className="h-3.5 w-3.5" />
@@ -391,8 +391,8 @@ export function DemoSection() {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div className="reveal-left order-2 md:order-1">
             <div key={active + '-text'} className="animate-slide-up">
-              <h3 className="text-xl font-bold mb-3 text-slate-100">{tab.label}</h3>
-              <p className="text-slate-400 leading-relaxed">{tab.copy}</p>
+              <h3 className="text-xl font-bold mb-3 text-stone-100">{tab.label}</h3>
+              <p className="text-stone-400 leading-relaxed">{tab.copy}</p>
             </div>
           </div>
           <div className="reveal-right order-1 md:order-2">

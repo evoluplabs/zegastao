@@ -102,7 +102,7 @@ export function BossCard({ debt, onAttack, className }: BossCardProps) {
             />
           </div>
           {paid > 0 && (
-            <p className="text-[10px] text-emerald-500 font-medium">
+            <p className="text-[10px] text-green-500 font-medium">
               ✅ {formatCurrency(paid)} de dano causado
             </p>
           )}

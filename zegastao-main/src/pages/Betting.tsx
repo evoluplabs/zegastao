@@ -132,11 +132,11 @@ export function Betting() {
   }
 
   if (mandate === 'loading') {
-    return <div className="flex min-h-60 items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-emerald-400" /></div>;
+    return <div className="flex min-h-60 items-center justify-center bg-stone-950"><Loader2 className="h-8 w-8 animate-spin text-green-400" /></div>;
   }
   if (mandate === null) {
     return (
-      <div className="min-h-screen bg-slate-950 py-8">
+      <div className="min-h-screen bg-stone-950 py-8">
         <MandateOnboarding onComplete={() => {
           localStorage.removeItem('ze_apostador_tour_v2');
           setMandate('loading');
@@ -153,18 +153,18 @@ export function Betting() {
 
   return (
     <>
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-stone-950 text-stone-100">
       <div className="mx-auto max-w-2xl space-y-5 p-4 pb-16">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1 text-xs font-semibold text-green-400">
               <Sparkles className="h-3 w-3" /> ⚔️ Sistema de Raid
             </div>
             <h1 className="text-2xl font-bold">Seu Raid Ativo</h1>
-            <p className="text-sm text-slate-400">Raids inteligentes, diversão com estratégia</p>
+            <p className="text-sm text-stone-400">Raids inteligentes, diversão com estratégia</p>
           </div>
-          <button data-tour="pause" onClick={selfExclude} className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200">
+          <button data-tour="pause" onClick={selfExclude} className="flex items-center gap-1.5 rounded-lg border border-stone-700 px-2.5 py-1.5 text-xs text-stone-400 hover:text-stone-200">
             <PauseCircle className="h-3.5 w-3.5" /> Pausar Raid
           </button>
         </div>
@@ -173,32 +173,32 @@ export function Betting() {
 
         {/* Sem ciclo ativo → começar */}
         {(!cycle || closed) && (
-          <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+          <div className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
             {closed && (
-              <div className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-sm', cycle!.status === 'won' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 text-slate-300')}>
+              <div className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-sm', cycle!.status === 'won' ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-stone-700 text-stone-300')}>
                 {cycle!.status === 'won' ? <Trophy className="h-4 w-4" /> : <Flag className="h-4 w-4" />}
                 Raid {cycle!.status === 'won' ? 'concluído com vitória! 🎯' : cycle!.status === 'lost' ? 'encerrado no stop-loss.' : 'encerrado.'} Banca final: {formatBRL(cycle!.currentBankroll)}.
               </div>
             )}
-            <div className="flex items-center gap-2 text-slate-100"><Target className="h-5 w-5 text-emerald-400" /><h2 className="text-lg font-bold">⚔️ Iniciar Raid</h2></div>
-            <p className="text-sm text-slate-400">Um raid é sua missão de apostas. Você começa com {formatBRL(mandate.cycleBudget)} e o Zé encerra sozinho quando você chegar na meta ou pra te proteger de perder demais.</p>
+            <div className="flex items-center gap-2 text-stone-100"><Target className="h-5 w-5 text-green-400" /><h2 className="text-lg font-bold">⚔️ Iniciar Raid</h2></div>
+            <p className="text-sm text-stone-400">Um raid é sua missão de apostas. Você começa com {formatBRL(mandate.cycleBudget)} e o Zé encerra sozinho quando você chegar na meta ou pra te proteger de perder demais.</p>
             <RiskPicker riskLevel={riskLevel} setRiskLevel={setRiskLevel} targetMultiplier={targetMultiplier} setTargetMultiplier={setTargetMultiplier} />
-            <Button data-tour="start" onClick={startCycle} loading={loading} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">⚔️ Entrar no Raid</Button>
+            <Button data-tour="start" onClick={startCycle} loading={loading} className="w-full bg-green-500 text-stone-950 hover:bg-green-400">⚔️ Entrar no Raid</Button>
           </div>
         )}
 
         {/* Ciclo ativo */}
         {cycle && !closed && (
           <>
-            <div data-tour="banca" className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+            <div data-tour="banca" className="space-y-2 rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Banca do Raid</span>
-                <span className="font-bold text-emerald-400">{formatBRL(cycle.currentBankroll)}</span>
+                <span className="text-stone-400">Banca do Raid</span>
+                <span className="font-bold text-green-400">{formatBRL(cycle.currentBankroll)}</span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all" style={{ width: `${progressPct}%` }} />
+              <div className="h-2.5 overflow-hidden rounded-full bg-stone-800">
+                <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-sky-400 transition-all" style={{ width: `${progressPct}%` }} />
               </div>
-              <div className="flex justify-between text-xs text-slate-500">
+              <div className="flex justify-between text-xs text-stone-500">
                 <span>Início {formatBRL(cycle.budget)}</span>
                 <span>Meta {formatBRL(target)}</span>
               </div>
@@ -209,10 +209,10 @@ export function Betting() {
                 <GuidedBetCard cycleId={cycle.id} round={latestPending} referralCode={referralCode} onUpdated={loadCycle} />
               </div>
             ) : (
-              <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+              <div className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-100">⚔️ Próximo Encontro</h2>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <h2 className="text-lg font-bold text-stone-100">⚔️ Próximo Encontro</h2>
+                  <p className="mt-1 text-sm text-stone-400">
                     Abre a Betano, escolha um jogo e tira um print. O Zé lê as odds e monta a melhor estratégia pra você.
                   </p>
                 </div>
@@ -229,12 +229,12 @@ export function Betting() {
 
                 {/* Jogo lido → mostra confirmação + botão de análise */}
                 {extractedSlip?.homeTeam && (
-                  <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                    <span className="text-sm font-semibold text-slate-100">
+                  <div className="flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />
+                    <span className="text-sm font-semibold text-stone-100">
                       {extractedSlip.homeTeam} x {extractedSlip.awayTeam}
                     </span>
-                    {extractedSlip.league && <span className="ml-auto text-xs text-slate-500">{extractedSlip.league}</span>}
+                    {extractedSlip.league && <span className="ml-auto text-xs text-stone-500">{extractedSlip.league}</span>}
                   </div>
                 )}
 
@@ -244,7 +244,7 @@ export function Betting() {
                   data-tour="build"
                   onClick={() => buildRound(extractedSlip)}
                   loading={building}
-                  className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                  className="w-full bg-green-500 text-stone-950 hover:bg-green-400"
                 >
                   {extractedSlip?.homeTeam ? (
                     <><Sparkles className="h-4 w-4" /> {building ? 'Analisando…' : `Analisar: ${extractedSlip.homeTeam} x ${extractedSlip.awayTeam}`}</>
@@ -258,34 +258,34 @@ export function Betting() {
             {/* Histórico de rodadas */}
             {rounds.filter((r) => r.outcome !== 'pending' || r.skip).length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-400">Encontros Anteriores</h3>
+                <h3 className="text-sm font-semibold text-stone-400">Encontros Anteriores</h3>
                 {rounds.filter((r) => r.outcome !== 'pending').map((r) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm">
-                    <span className="text-slate-300">{r.type === 'multiple' ? `Múltipla ${r.legs.length}j` : r.legs[0]?.selection} @{r.combinedOdd}</span>
-                    <span className={cn('font-semibold', r.outcome === 'won' ? 'text-emerald-400' : 'text-red-400')}>{r.outcome === 'won' ? `+${formatBRL(r.payout || 0)}` : 'Perdeu'}</span>
+                  <div key={r.id} className="flex items-center justify-between rounded-xl border border-stone-800 bg-stone-900/40 px-3 py-2 text-sm">
+                    <span className="text-stone-300">{r.type === 'multiple' ? `Múltipla ${r.legs.length}j` : r.legs[0]?.selection} @{r.combinedOdd}</span>
+                    <span className={cn('font-semibold', r.outcome === 'won' ? 'text-green-400' : 'text-red-400')}>{r.outcome === 'won' ? `+${formatBRL(r.payout || 0)}` : 'Perdeu'}</span>
                   </div>
                 ))}
               </div>
             )}
 
-            <button onClick={abortCycle} className="w-full rounded-xl border border-slate-800 py-2 text-xs text-slate-500 hover:text-slate-300">Abandonar Raid</button>
+            <button onClick={abortCycle} className="w-full rounded-xl border border-stone-800 py-2 text-xs text-stone-500 hover:text-stone-300">Abandonar Raid</button>
           </>
         )}
 
         {/* Ferramentas extras: desmascarador de guru */}
-        <div data-tour="tools" className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+        <div data-tour="tools" className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/40 p-4">
           <div>
-            <h3 className="text-sm font-semibold text-slate-400">Ferramentas da Guilda <span className="font-normal text-slate-600">· opcional</span></h3>
-            <p className="text-xs text-slate-600">Tem um palpite de guru? Manda o print e o Zé calcula a chance real.</p>
+            <h3 className="text-sm font-semibold text-stone-400">Ferramentas da Guilda <span className="font-normal text-stone-600">· opcional</span></h3>
+            <p className="text-xs text-stone-600">Tem um palpite de guru? Manda o print e o Zé calcula a chance real.</p>
           </div>
           <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
-            className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-slate-700 text-slate-300')}>
+            className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-stone-700 text-stone-300')}>
             <Search className="h-4 w-4" /> Desmascarar guru
           </button>
           {tool === 'guru' && <GuruAudit />}
         </div>
 
-        <p className="px-2 text-center text-[11px] leading-relaxed text-slate-600">
+        <p className="px-2 text-center text-[11px] leading-relaxed text-stone-600">
           Análise educacional, sem garantia de resultado. Apostas têm risco de perda total. +18. Jogue com responsabilidade.
         </p>
       </div>
@@ -302,20 +302,20 @@ function RiskPicker({ riskLevel, setRiskLevel, targetMultiplier, setTargetMultip
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-slate-400">Dificuldade do Raid</p>
+      <p className="text-xs text-stone-400">Dificuldade do Raid</p>
       <div className="grid grid-cols-2 gap-2">
         {ZE_RISK_LEVELS.filter((r) => r.level !== 3).map((r) => (
-          <button key={r.level} onClick={() => setRiskLevel(r.level)} className={cn('rounded-xl border p-2 text-left text-xs', riskLevel === r.level ? 'border-emerald-400 bg-emerald-400/10' : 'border-slate-700')}>
-            <span className="font-semibold text-slate-100">{r.emoji} {r.label}</span>
+          <button key={r.level} onClick={() => setRiskLevel(r.level)} className={cn('rounded-xl border p-2 text-left text-xs', riskLevel === r.level ? 'border-green-400 bg-green-400/10' : 'border-stone-700')}>
+            <span className="font-semibold text-stone-100">{r.emoji} {r.label}</span>
           </button>
         ))}
       </div>
       {riskLevel === 2 && (
         <div className="space-y-1">
-          <p className="text-xs text-slate-400">Tentar multiplicar por quanto? Quanto mais alto, mais difícil acertar.</p>
+          <p className="text-xs text-stone-400">Tentar multiplicar por quanto? Quanto mais alto, mais difícil acertar.</p>
           <div className="flex gap-2">
             {TARGET_OPTIONS.map((t) => (
-              <button key={t} onClick={() => setTargetMultiplier(t)} className={cn('flex-1 rounded-lg border px-2 py-1.5 text-sm', targetMultiplier === t ? 'border-amber-400 bg-amber-400/15 text-amber-300' : 'border-slate-700 text-slate-300')}>{t}x</button>
+              <button key={t} onClick={() => setTargetMultiplier(t)} className={cn('flex-1 rounded-lg border px-2 py-1.5 text-sm', targetMultiplier === t ? 'border-amber-400 bg-amber-400/15 text-amber-300' : 'border-stone-700 text-stone-300')}>{t}x</button>
             ))}
           </div>
         </div>

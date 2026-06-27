@@ -51,6 +51,10 @@ export default {
           DEFAULT: 'hsl(var(--raid-amber, 25 95% 53%))',
           foreground: '#0f1117',
         },
+        info: {
+          DEFAULT: 'hsl(var(--sky-info, 190 50% 48%))',
+          foreground: '#15110b',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

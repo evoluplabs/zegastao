@@ -415,6 +415,12 @@ export interface Profile {
     freelancer?: number;
     investidor?: number;
   };
+  // Personagem & companion (MMORPG)
+  characterClass?: 'guardiao' | 'cacador' | 'mercador' | 'arcano';
+  avatarId?: string;
+  companionSpeciesId?: string;
+  companionName?: string;
+  tourDone?: boolean;
 }
 
 export interface InventoryItem {

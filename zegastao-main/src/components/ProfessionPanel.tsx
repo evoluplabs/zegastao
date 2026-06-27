@@ -45,7 +45,7 @@ export function ProfessionPanel({ professionXP = {}, className }: ProfessionPane
             <div className="space-y-1">
               <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>

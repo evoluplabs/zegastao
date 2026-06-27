@@ -33,8 +33,8 @@ const PHASES = [
     lv: 'Lv 4',
     emoji: '🪙',
     name: 'Acumulador de Ouro',
-    border: 'border-emerald-500/20 bg-emerald-500/5',
-    badge: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+    border: 'border-green-500/20 bg-green-500/5',
+    badge: 'bg-green-500/15 border-green-500/30 text-green-400',
     pain: 'Reserva formada. Quer fazer o ouro trabalhar.',
     gain: 'Começar a investir com segurança.',
     desc: 'O app sugere onde começar (Tesouro, CDB, renda variável) de acordo com seu perfil de combate.',
@@ -53,20 +53,20 @@ const PHASES = [
 
 export function JourneySection() {
   return (
-    <section className="border-b border-[#2a2d3e] py-16 md:py-24 bg-[#141720]">
+    <section className="border-b border-[#3a2e1d] py-16 md:py-24 bg-[#1a130b]">
       <div className="mx-auto max-w-5xl px-4">
         <div className="text-center mb-12 reveal">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">— A Jornada —</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-slate-100">
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">— A Jornada —</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-stone-100">
             Do vermelho à liberdade em 5 níveis.
           </h2>
-          <p className="text-slate-500 max-w-xl mx-auto">
+          <p className="text-stone-500 max-w-xl mx-auto">
             O Zé Gastão detecta sua fase automaticamente. O tom, os conselhos e as missões mudam com você — sem julgamento.
           </p>
         </div>
 
         <div className="relative">
-          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-red-500/40 via-emerald-500/40 to-amber-400/40 hidden md:block" />
+          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-red-500/40 via-green-500/40 to-amber-400/40 hidden md:block" />
 
           <div className="space-y-4">
             {PHASES.map((p, i) => (
@@ -81,9 +81,9 @@ export function JourneySection() {
                     <span className="text-2xl hidden md:block">{p.emoji}</span>
                     <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${p.badge}`}>{p.lv} · {p.name}</span>
                   </div>
-                  <p className="text-xs font-semibold text-slate-500 mb-0.5">Situação: {p.pain}</p>
-                  <p className="text-sm font-bold mb-1 text-slate-200">Foco: {p.gain}</p>
-                  <p className="text-sm text-slate-500">{p.desc}</p>
+                  <p className="text-xs font-semibold text-stone-500 mb-0.5">Situação: {p.pain}</p>
+                  <p className="text-sm font-bold mb-1 text-stone-200">Foco: {p.gain}</p>
+                  <p className="text-sm text-stone-500">{p.desc}</p>
                 </div>
               </div>
             ))}

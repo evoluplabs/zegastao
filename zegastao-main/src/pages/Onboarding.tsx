@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
+import { CharacterCreation, type CharacterDraft } from '@/components/rpg/CharacterCreation';
 import type { AccountType } from '@/types';
 
 const SKILL_CATEGORIES = [
@@ -77,7 +78,14 @@ export function Onboarding() {
   const { user, profile, authLoading, setProfile: setStoreProfile } = useStore();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(profile?.name || '');
+  const [character, setCharacter] = useState<CharacterDraft>({
+    name: profile?.name || '',
+    classId: 'guardiao',
+    avatarId: 'mage',
+    companionSpeciesId: 'dragon',
+    companionName: 'Fagulha',
+  });
+  const name = character.name;
   const [income, setIncome] = useState(0);
   // Contas bancárias (step 1)
   const [accounts, setAccounts] = useState<OnboardingAccount[]>([]);
@@ -124,6 +132,12 @@ export function Onboarding() {
         alreadyInvests: invest === 'skip' ? 'no_idea' : invest,
         riskProfile: 'conservative',
         onboardingDone: true,
+        // Personagem & companion
+        characterClass: character.classId,
+        avatarId: character.avatarId,
+        companionSpeciesId: character.companionSpeciesId,
+        companionName: character.companionName.trim() || 'Fagulha',
+        tourDone: false,
       });
 
       // Salvar contas bancárias
@@ -144,7 +158,7 @@ export function Onboarding() {
         });
       }
 
-      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false });
+      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false, characterClass: character.classId, avatarId: character.avatarId, companionSpeciesId: character.companionSpeciesId, companionName: character.companionName.trim() || 'Fagulha', tourDone: false });
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length, accounts: accounts.length });
       if (user) registerForPushNotifications(user.uid).catch(() => {});
       navigate('/dashboard?welcome=1');
@@ -226,20 +240,27 @@ export function Onboarding() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Step 0: Você */}
+          {/* Step 0: Criação de personagem */}
           {step === 0 && (
             <>
               <div className="space-y-1">
                 <Label>Nome do seu aventureiro</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
+                <Input
+                  value={name}
+                  onChange={(e) => setCharacter({ ...character, name: e.target.value })}
+                  placeholder="Seu nome"
+                />
               </div>
+
+              <CharacterCreation value={character} onChange={setCharacter} />
+
               <CurrencyInput
                 label="Ouro mensal (renda líquida)"
                 value={income}
                 onChange={setIncome}
               />
               <Button className="w-full" onClick={() => setStep(1)} disabled={!name || !income}>
-                Continuar
+                Continuar a aventura →
               </Button>
             </>
           )}

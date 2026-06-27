@@ -150,7 +150,7 @@ export function Debts() {
               onAttack={canAttack ? () => quickPayInstallment(d) : undefined}
             />
             {paidThisMonth && (
-              <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-1.5 rounded-lg bg-green-500/5 border border-green-500/20 px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400">
                 ✅ Ataque deste mês registrado — próximo round no mês que vem
               </div>
             )}

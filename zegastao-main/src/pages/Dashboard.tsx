@@ -6,6 +6,8 @@ import {
   ChevronLeft, RefreshCw, Skull, Package,
 } from 'lucide-react';
 import { CharacterPanel } from '@/components/CharacterPanel';
+import { CompanionWidget } from '@/components/rpg/CompanionWidget';
+import { GuidedTour } from '@/components/rpg/GuidedTour';
 import { hpFinanceiro, hpStatus } from '@/lib/xp';
 import { useStore } from '@/store/useStore';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -235,12 +237,20 @@ export function Dashboard() {
     );
   }
 
+  const companionHP = hpFinanceiro(actualIncome || income, expenses);
+
   return (
     <>
+      {/* Tour guiado pós-onboarding (overlay) */}
+      <GuidedTour />
+
       <div className="space-y-4">
 
         {/* Character Panel — RPG identity */}
         <CharacterPanel />
+
+        {/* Companion — reage ao HP financeiro */}
+        <CompanionWidget hp={companionHP} />
 
         {/* Boas-vindas pós-onboarding */}
         {showWelcome && (

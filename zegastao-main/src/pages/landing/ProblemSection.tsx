@@ -23,21 +23,21 @@ const PAINS = [
     title: 'Não sabe quanto deve no total',
     desc: 'Medo de somar e ver o número real. É mais fácil não olhar. Mas Boss que você não vê... continua crescendo no escuro.',
     highlight: '🗺️ Mapa de Boss: conheça todos os inimigos.',
-    cls: 'border-slate-700/60 bg-slate-800/30',
-    hlCls: 'bg-slate-700/30 border-slate-600/30 text-slate-400',
+    cls: 'border-stone-700/60 bg-stone-800/30',
+    hlCls: 'bg-stone-700/30 border-stone-600/30 text-stone-400',
   },
 ];
 
 export function ProblemSection() {
   return (
-    <section className="border-b border-[#2a2d3e] py-16 md:py-24 bg-[#0f1117]">
+    <section className="border-b border-[#3a2e1d] py-16 md:py-24 bg-[#15110b]">
       <div className="mx-auto max-w-5xl px-4">
         <div className="text-center mb-12 reveal">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">— Você se identifica? —</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-slate-100">
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">— Você se identifica? —</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-stone-100">
             Qual é o seu Boss financeiro?
           </h2>
-          <p className="text-slate-500 max-w-xl mx-auto">
+          <p className="text-stone-500 max-w-xl mx-auto">
             A maioria dos brasileiros não tem problema de renda — tem problema de informação e de plano de ataque.
           </p>
         </div>
@@ -51,10 +51,10 @@ export function ProblemSection() {
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-4xl">{p.emoji}</span>
-                <span className="rounded-full border border-slate-600/40 bg-slate-700/30 px-2 py-0.5 text-[10px] font-bold text-slate-400">{p.tier}</span>
+                <span className="rounded-full border border-stone-600/40 bg-stone-700/30 px-2 py-0.5 text-[10px] font-bold text-stone-400">{p.tier}</span>
               </div>
-              <h3 className="font-bold text-base mb-2 leading-snug text-slate-100">{p.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed mb-4">{p.desc}</p>
+              <h3 className="font-bold text-base mb-2 leading-snug text-stone-100">{p.title}</h3>
+              <p className="text-sm text-stone-500 leading-relaxed mb-4">{p.desc}</p>
               <div className={`rounded-lg border px-3 py-2 ${p.hlCls}`}>
                 <p className="text-xs font-semibold">{p.highlight}</p>
               </div>

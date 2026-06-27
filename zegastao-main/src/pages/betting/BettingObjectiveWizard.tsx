@@ -59,16 +59,16 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
               <div className="flex flex-col items-center gap-1">
                 <div className={cn(
                   'flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors',
-                  done ? 'border-emerald-500 bg-emerald-500 text-white'
-                    : active ? 'border-emerald-400 text-emerald-400'
-                    : 'border-slate-700 text-slate-500'
+                  done ? 'border-green-500 bg-green-500 text-white'
+                    : active ? 'border-green-400 text-green-400'
+                    : 'border-stone-700 text-stone-500'
                 )}>
                   {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                 </div>
-                <span className={cn('text-[10px]', active ? 'text-emerald-400' : 'text-slate-500')}>{s.title}</span>
+                <span className={cn('text-[10px]', active ? 'text-green-400' : 'text-stone-500')}>{s.title}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div className={cn('mx-1 h-0.5 flex-1', i < step ? 'bg-emerald-500' : 'bg-slate-700')} />
+                <div className={cn('mx-1 h-0.5 flex-1', i < step ? 'bg-green-500' : 'bg-stone-700')} />
               )}
             </div>
           );
@@ -76,12 +76,12 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
       </div>
 
       {/* Step content */}
-      <div className="min-h-52 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+      <div className="min-h-52 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
         {step === 0 && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-100">Quais campeonatos?</h3>
-              <p className="text-sm text-slate-400">Escolha um ou mais. Vamos buscar os jogos do dia.</p>
+              <h3 className="text-lg font-bold text-stone-100">Quais campeonatos?</h3>
+              <p className="text-sm text-stone-400">Escolha um ou mais. Vamos buscar os jogos do dia.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {BETTING_LEAGUES.map((l) => {
@@ -92,8 +92,8 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
                     onClick={() => toggleLeague(l.key)}
                     className={cn(
                       'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                      sel ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300'
-                        : 'border-slate-700 text-slate-300 hover:border-slate-500'
+                      sel ? 'border-green-400 bg-green-400/15 text-green-300'
+                        : 'border-stone-700 text-stone-300 hover:border-stone-500'
                     )}
                   >
                     {l.label}
@@ -107,12 +107,12 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-100">Orçamento desta sessão</h3>
-              <p className="text-sm text-slate-400">Disponível esta semana: {formatBRL(remainingBudget)}</p>
+              <h3 className="text-lg font-bold text-stone-100">Orçamento desta sessão</h3>
+              <p className="text-sm text-stone-400">Disponível esta semana: {formatBRL(remainingBudget)}</p>
             </div>
             <div className="space-y-3">
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-extrabold text-emerald-400">{formatBRL(budget)}</span>
+                <span className="text-3xl font-extrabold text-green-400">{formatBRL(budget)}</span>
               </div>
               <input
                 type="range"
@@ -121,13 +121,13 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
                 step={1}
                 value={Math.min(budget, maxBudget)}
                 onChange={(e) => setBudget(Number(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-green-500"
               />
-              <div className="flex justify-between text-xs text-slate-500">
+              <div className="flex justify-between text-xs text-stone-500">
                 <span>R$ 5</span>
                 <span>{formatBRL(maxBudget)}</span>
               </div>
-              <p className="rounded-lg bg-slate-800/60 px-3 py-2 text-xs text-slate-400">
+              <p className="rounded-lg bg-stone-800/60 px-3 py-2 text-xs text-stone-400">
                 Distribuímos esse valor entre os jogos com maior confiança. Você nunca aposta mais que o definido aqui.
               </p>
             </div>
@@ -137,14 +137,14 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-100">Qual dia?</h3>
-              <p className="text-sm text-slate-400">Buscamos os jogos dos campeonatos nessa data.</p>
+              <h3 className="text-lg font-bold text-stone-100">Qual dia?</h3>
+              <p className="text-sm text-stone-400">Buscamos os jogos dos campeonatos nessa data.</p>
             </div>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 text-slate-100 focus:border-emerald-400 focus:outline-none"
+              className="h-11 w-full rounded-xl border border-stone-700 bg-stone-800 px-3 text-stone-100 focus:border-green-400 focus:outline-none"
             />
           </div>
         )}
@@ -152,21 +152,21 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-100">Times de preferência</h3>
-              <p className="text-sm text-slate-400">Opcional. Separe por vírgula, ou deixe vazio para todos os jogos do dia.</p>
+              <h3 className="text-lg font-bold text-stone-100">Times de preferência</h3>
+              <p className="text-sm text-stone-400">Opcional. Separe por vírgula, ou deixe vazio para todos os jogos do dia.</p>
             </div>
             <input
               type="text"
               value={teamsText}
               onChange={(e) => setTeamsText(e.target.value)}
               placeholder="Ex: Flamengo, Palmeiras"
-              className="h-11 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 text-slate-100 placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none"
+              className="h-11 w-full rounded-xl border border-stone-700 bg-stone-800 px-3 text-stone-100 placeholder:text-stone-600 focus:border-green-400 focus:outline-none"
             />
             <button
               onClick={() => setTeamsText('')}
               className={cn(
                 'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                !teamsText ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300' : 'border-slate-700 text-slate-300'
+                !teamsText ? 'border-green-400 bg-green-400/15 text-green-300' : 'border-stone-700 text-stone-300'
               )}
             >
               Analisar todos os jogos do dia
@@ -179,7 +179,7 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
       <div className="flex items-center justify-between gap-3">
         <button
           onClick={() => (step === 0 ? onCancel() : setStep(step - 1))}
-          className="flex items-center gap-1 rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 hover:border-slate-500"
+          className="flex items-center gap-1 rounded-xl border border-stone-700 px-4 py-2.5 text-sm text-stone-300 hover:border-stone-500"
         >
           <ChevronLeft className="h-4 w-4" />
           {step === 0 ? 'Cancelar' : 'Voltar'}
@@ -189,7 +189,7 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
           <button
             onClick={() => canAdvance && setStep(step + 1)}
             disabled={!canAdvance}
-            className="flex items-center gap-1 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-40"
+            className="flex items-center gap-1 rounded-xl bg-green-500 px-5 py-2.5 text-sm font-semibold text-stone-950 hover:bg-green-400 disabled:opacity-40"
           >
             Continuar
             <ChevronRight className="h-4 w-4" />
@@ -197,7 +197,7 @@ export function BettingObjectiveWizard({ profile, remainingBudget, onAnalyze, on
         ) : (
           <button
             onClick={finish}
-            className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+            className="flex items-center gap-2 rounded-xl bg-green-500 px-5 py-2.5 text-sm font-semibold text-stone-950 hover:bg-green-400"
           >
             <Sparkles className="h-4 w-4" />
             Analisar agora

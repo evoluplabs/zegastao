@@ -53,7 +53,7 @@ export function ShareableBetCard({ homeTeam, awayTeam, selection, odd, profit, r
         </div>
       </div>
 
-      <button onClick={handleShareImage} disabled={state === 'working'} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50">
+      <button onClick={handleShareImage} disabled={state === 'working'} className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 py-2.5 text-sm font-semibold text-stone-950 hover:bg-green-400 disabled:opacity-50">
         {state === 'done' ? <><Check className="h-4 w-4" /> Pronto!</> : state === 'working' ? 'Gerando imagem…' : <><Share2 className="h-4 w-4" /> Compartilhar green</>}
       </button>
       <button
@@ -62,7 +62,7 @@ export function ShareableBetCard({ homeTeam, awayTeam, selection, odd, profit, r
       >
         <MessageCircle className="h-4 w-4" /> Mandar no WhatsApp
       </button>
-      <p className="flex items-center gap-1 text-[11px] text-slate-500"><Download className="h-3 w-3" /> Imagem ideal pra status e stories</p>
+      <p className="flex items-center gap-1 text-[11px] text-stone-500"><Download className="h-3 w-3" /> Imagem ideal pra status e stories</p>
     </div>
   );
 }

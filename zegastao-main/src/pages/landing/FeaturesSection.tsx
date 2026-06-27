@@ -16,23 +16,23 @@ const FEATURES = [
 ];
 
 const TIER_STYLE: Record<string, string> = {
-  T1: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+  T1: 'bg-green-500/15 border-green-500/30 text-green-400',
   T2: 'bg-sky-500/15 border-sky-500/30 text-sky-400',
   T3: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
 };
 
 export function FeaturesSection() {
   return (
-    <section className="border-b border-[#2a2d3e] py-16 md:py-24 bg-[#0f1117]">
+    <section className="border-b border-[#3a2e1d] py-16 md:py-24 bg-[#15110b]">
       <div className="mx-auto max-w-5xl px-4">
         <div className="text-center mb-12 reveal">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">
             — Arsenal de Habilidades —
           </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-100">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-100">
             Tudo que o Zé faz por você
           </h2>
-          <p className="text-slate-500 mt-3 max-w-xl mx-auto">
+          <p className="text-stone-500 mt-3 max-w-xl mx-auto">
             Do controle de dívidas ao Imposto de Renda — sem planilha, sem contador caro. O RPG de finanças mais honesto do Brasil.
           </p>
         </div>
@@ -50,15 +50,15 @@ export function FeaturesSection() {
           {FEATURES.map((f, i) => (
             <div
               key={i}
-              className="reveal group relative rounded-2xl border border-[#2a2d3e] bg-[#1a1d27] p-5 space-y-2 hover:border-emerald-500/30 hover:bg-[#1e2235] transition-all duration-200"
+              className="reveal group relative rounded-2xl border border-[#3a2e1d] bg-[#211a11] p-5 space-y-2 hover:border-green-500/30 hover:bg-[#2b2115] transition-all duration-200"
               data-delay={`${(i % 6) * 60}`}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-2xl">{f.emoji}</span>
                 <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${TIER_STYLE[f.tier]}`}>{f.tier}</span>
               </div>
-              <p className="font-bold text-sm text-slate-100">{f.title}</p>
-              <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+              <p className="font-bold text-sm text-stone-100">{f.title}</p>
+              <p className="text-xs text-stone-500 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>

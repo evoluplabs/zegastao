@@ -4,6 +4,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { levelFromXP, xpProgressInLevel, levelName, hpFinanceiro, hpStatus, PROFESSION_ICONS, PROFESSION_LABELS } from '@/lib/xp';
 import { isNeutral, currentMonthISO } from '@/lib/finance';
 import { cn } from '@/lib/utils';
+import { getAvatar, getClass } from '@/lib/rpg/character';
 import type { Profession } from '@/lib/xp';
 
 interface CharacterPanelProps {
@@ -46,29 +47,33 @@ export function CharacterPanel({ compact = false }: CharacterPanelProps) {
     .join('')
     .toUpperCase();
 
+  // Avatar e classe escolhidos no onboarding
+  const avatar = profile?.avatarId ? getAvatar(profile.avatarId) : null;
+  const charClass = profile?.characterClass ? getClass(profile.characterClass) : null;
+
   const hpColorClass = {
-    emerald: 'bg-emerald-500',
+    emerald: 'bg-green-500',
     yellow:  'bg-yellow-400',
     orange:  'bg-orange-500',
     red:     'bg-red-500',
-  }[hpColor] ?? 'bg-emerald-500';
+  }[hpColor] ?? 'bg-green-500';
 
   const hpTextClass = {
-    emerald: 'text-emerald-400',
+    emerald: 'text-green-400',
     yellow:  'text-yellow-400',
     orange:  'text-orange-400',
     red:     'text-red-400',
-  }[hpColor] ?? 'text-emerald-400';
+  }[hpColor] ?? 'text-green-400';
 
   if (compact) {
     return (
       <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-sm shrink-0 ring-2 ring-emerald-500/30">
-          {initials}
+        <div className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0 ring-2 ring-gold/20">
+          {avatar ? <span className="text-xl">{avatar.emoji}</span> : <span className="text-white font-bold text-sm">{initials}</span>}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground truncate">{profile?.name ?? 'Aventureiro'}</p>
-          <p className="text-[10px] text-muted-foreground">Lv {lv} · {PROFESSION_ICONS[primaryProfession]} {PROFESSION_LABELS[primaryProfession]}</p>
+          <p className="text-[10px] text-muted-foreground">Lv {lv} · {charClass ? `${charClass.emoji} ${charClass.name}` : `${PROFESSION_ICONS[primaryProfession]} ${PROFESSION_LABELS[primaryProfession]}`}</p>
         </div>
         <div className={cn('text-xs font-bold tabular-nums', hpTextClass)}>
           {hp >= 0 ? hp : 0}%
@@ -81,18 +86,19 @@ export function CharacterPanel({ compact = false }: CharacterPanelProps) {
     <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       {/* Avatar + name */}
       <div className="flex items-center gap-3">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-xl shrink-0 ring-2 ring-emerald-500/30 shadow-lg">
-          {initials}
+        <div className="w-14 h-14 rounded-2xl bg-secondary border border-border flex items-center justify-center shrink-0 ring-2 ring-gold/25 shadow-lg">
+          {avatar ? <span className="text-3xl">{avatar.emoji}</span> : <span className="text-white font-bold text-xl">{initials}</span>}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-bold text-foreground text-lg leading-tight truncate">
+          <h2 className="font-display font-bold text-foreground text-lg leading-tight truncate">
             {profile?.name ?? 'Aventureiro'}
           </h2>
           <p className="text-sm text-muted-foreground">
             Lv {lv} · {title}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {PROFESSION_ICONS[primaryProfession]} {PROFESSION_LABELS[primaryProfession]}
+            {charClass ? `${charClass.emoji} ${charClass.name}` : `${PROFESSION_ICONS[primaryProfession]} ${PROFESSION_LABELS[primaryProfession]}`}
+            {' · '}{PROFESSION_ICONS[primaryProfession]} {PROFESSION_LABELS[primaryProfession]}
           </p>
         </div>
       </div>

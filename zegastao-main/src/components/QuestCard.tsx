@@ -10,7 +10,7 @@ interface QuestCardProps {
 }
 
 const DIFFICULTY_CONFIG = {
-  easy:   { label: 'Fácil',   color: 'emerald', xp: XP_EVENTS.task_easy,   icon: '🌿', badgeClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+  easy:   { label: 'Fácil',   color: 'emerald', xp: XP_EVENTS.task_easy,   icon: '🌿', badgeClass: 'bg-green-500/20 text-green-400 border-green-500/30' },
   medium: { label: 'Médio',   color: 'amber',   xp: XP_EVENTS.task_medium, icon: '⚔️', badgeClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
   hard:   { label: 'Difícil', color: 'red',     xp: XP_EVENTS.task_hard,   icon: '🔥', badgeClass: 'bg-red-500/20 text-red-400 border-red-500/30' },
 };
@@ -29,7 +29,7 @@ export function QuestCard({ task, onComplete, completed = false, className }: Qu
     <div className={cn(
       'rounded-xl border p-4 space-y-3 transition-all duration-200',
       completed
-        ? 'border-emerald-500/30 bg-emerald-950/20 opacity-60'
+        ? 'border-green-500/30 bg-green-950/20 opacity-60'
         : 'border-border bg-card hover:border-primary/30 hover:shadow-md hover:shadow-primary/5',
       className
     )}>
@@ -58,7 +58,7 @@ export function QuestCard({ task, onComplete, completed = false, className }: Qu
             {task.title}
           </h3>
           {task.estimatedReturn && (
-            <p className="text-xs text-emerald-400 font-medium mt-0.5">
+            <p className="text-xs text-green-400 font-medium mt-0.5">
               💰 Recompensa: {task.estimatedReturn}
             </p>
           )}
@@ -84,7 +84,7 @@ export function QuestCard({ task, onComplete, completed = false, className }: Qu
       )}
 
       {completed && (
-        <div className="flex items-center gap-2 text-xs text-emerald-500 font-medium pl-12">
+        <div className="flex items-center gap-2 text-xs text-green-500 font-medium pl-12">
           <span>✅</span>
           <span>Missão concluída · +{diff.xp} XP ganhos</span>
         </div>

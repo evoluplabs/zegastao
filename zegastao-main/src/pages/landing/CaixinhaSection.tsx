@@ -104,18 +104,18 @@ const BENEFITS = [
 
 export function CaixinhaSection() {
   return (
-    <section className="py-20 md:py-28 border-b border-[#2a2d3e] bg-[#141720]">
+    <section className="py-20 md:py-28 border-b border-[#3a2e1d] bg-[#1a130b]">
       <div className="mx-auto max-w-5xl px-4">
         {/* Header */}
         <div className="text-center mb-14 reveal">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-400 mb-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-1.5 text-xs font-bold text-green-400 mb-5">
             <PiggyBank className="h-3.5 w-3.5" />
             🏛️ Cofres da Guilda — sugerido pelos aventureiros
           </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-slate-100">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-stone-100">
             Seu cofre inteligente com missão diária
           </h2>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto">
+          <p className="text-stone-400 text-lg max-w-xl mx-auto">
             Defina um objetivo e uma data. O Zé faz as contas por você — todo dia.
           </p>
         </div>
@@ -127,31 +127,31 @@ export function CaixinhaSection() {
           </div>
 
           <div className="reveal-left order-2 md:order-2 space-y-6">
-            <p className="text-xl font-bold leading-snug text-slate-100">
+            <p className="text-xl font-bold leading-snug text-stone-100">
               Você não precisa de força de vontade.<br />
               Você precisa do sistema certo.
             </p>
-            <p className="text-slate-400 leading-relaxed">
+            <p className="text-stone-400 leading-relaxed">
               Diga o quanto quer juntar e quando precisa. O Zé calcula o valor exato a depositar por dia
               — e se você pular um dia, ele recalcula tudo automaticamente, sem drama.
             </p>
 
             <ul className="space-y-3">
               {BENEFITS.map((b) => (
-                <li key={b} className="flex items-center gap-3 text-sm font-medium text-slate-200">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+                <li key={b} className="flex items-center gap-3 text-sm font-medium text-stone-200">
+                  <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
                   {b}
                 </li>
               ))}
             </ul>
 
-            <blockquote className="border-l-4 border-emerald-500/30 pl-4 text-sm italic text-slate-500">
+            <blockquote className="border-l-4 border-green-500/30 pl-4 text-sm italic text-stone-500">
               "Criei o cofre da viagem pra Disney. Depois de 3 meses depositando o valor diário,
               comprei as passagens. Nunca achei que ia conseguir."
-              <span className="block mt-1 font-semibold not-italic text-slate-300">— Beta testador</span>
+              <span className="block mt-1 font-semibold not-italic text-stone-300">— Beta testador</span>
             </blockquote>
 
-            <Button asChild size="lg" className="rounded-xl gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold">
+            <Button asChild size="lg" className="rounded-xl gap-2 bg-green-500 hover:bg-green-400 text-stone-950 font-bold">
               <Link to="/login">
                 🏛️ Criar meu Cofre grátis
                 <ArrowRight className="h-4 w-4" />

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export function CtaSection() {
   return (
-    <section className="py-20 md:py-28 bg-[#0f1117] border-b border-[#2a2d3e] relative overflow-hidden">
+    <section className="py-20 md:py-28 bg-[#15110b] border-b border-[#3a2e1d] relative overflow-hidden">
       {/* Grid glow */}
       <div
         className="absolute inset-0 opacity-15"
@@ -13,17 +13,17 @@ export function CtaSection() {
           backgroundSize: '28px 28px',
         }}
       />
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/8 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-sky-500/6 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative mx-auto max-w-2xl px-4 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 mb-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs font-bold text-green-400 mb-6">
           <Sword className="h-3 w-3" /> Sua aventura começa agora
         </div>
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-5 text-slate-100 text-balance">
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-5 text-stone-100 text-balance">
           ⚔️ Pronto para derrotar seus Bosses financeiros?
         </h2>
-        <p className="text-slate-400 text-lg mb-8">
+        <p className="text-stone-400 text-lg mb-8">
           Crie seu personagem, mapeie seus inimigos e suba de nível — comece grátis agora. Assine quando quiser.
         </p>
 
@@ -31,7 +31,7 @@ export function CtaSection() {
           <Button
             asChild
             size="lg"
-            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl gap-2 px-8 shadow-lg shadow-emerald-500/20 w-full sm:w-auto"
+            className="bg-green-500 hover:bg-green-400 text-stone-950 font-bold rounded-xl gap-2 px-8 shadow-lg shadow-green-500/20 w-full sm:w-auto"
           >
             <Link to="/login">
               ⚔️ Criar Personagem — Grátis
@@ -42,7 +42,7 @@ export function CtaSection() {
             asChild
             size="lg"
             variant="outline"
-            className="border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-slate-100 rounded-xl gap-2 px-8 w-full sm:w-auto"
+            className="border-stone-700 bg-stone-800/50 text-stone-300 hover:bg-stone-800 hover:text-stone-100 rounded-xl gap-2 px-8 w-full sm:w-auto"
           >
             <Link to="/pricing">
               <Users className="h-4 w-4" />
@@ -51,14 +51,14 @@ export function CtaSection() {
           </Button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-5 text-sm text-slate-500">
+        <div className="flex flex-wrap items-center justify-center gap-5 text-sm text-stone-500">
           {[
             'Personagem grátis, sem cartão',
             'Cancele quando quiser',
             'Seus dados são seus (LGPD)',
           ].map((t) => (
             <span key={t} className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
               {t}
             </span>
           ))}

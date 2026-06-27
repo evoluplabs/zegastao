@@ -174,8 +174,8 @@ export function BettingTour({ autoStart = true, betsCompleted = 0 }: Props) {
         className={cn(
           'fixed bottom-20 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-colors',
           betsCompleted > 0
-            ? 'border-slate-700 bg-slate-900 text-slate-500 hover:text-slate-300'
-            : 'border-emerald-500/40 bg-slate-900 text-emerald-400 hover:bg-slate-800',
+            ? 'border-stone-700 bg-stone-900 text-stone-500 hover:text-stone-300'
+            : 'border-green-500/40 bg-stone-900 text-green-400 hover:bg-stone-800',
         )}
       >
         <HelpCircle className="h-5 w-5" />
@@ -194,7 +194,7 @@ export function BettingTour({ autoStart = true, betsCompleted = 0 }: Props) {
 
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const MASK = 'fixed bg-slate-950/80 z-50';
+  const MASK = 'fixed bg-stone-950/80 z-50';
 
   let tipStyle: CSSProperties;
   if (!hole) {
@@ -223,38 +223,38 @@ export function BettingTour({ autoStart = true, betsCompleted = 0 }: Props) {
           <div className={MASK} style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} onClick={close} />
           {/* Anel animado ao redor do alvo */}
           <div
-            className="pointer-events-none fixed z-50 rounded-2xl border-2 border-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.2)] animate-pulse"
+            className="pointer-events-none fixed z-50 rounded-2xl border-2 border-green-400 shadow-[0_0_0_4px_rgba(16,185,129,0.2)] animate-pulse"
             style={{ top: hole.top, left: hole.left, width: hole.width, height: hole.height }}
           />
         </>
       ) : (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm" onClick={close} />
+        <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm" onClick={close} />
       )}
 
       {/* Balão */}
-      <div className="z-[60] rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-2xl" style={tipStyle}>
-        <button onClick={close} className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors">
+      <div className="z-[60] rounded-2xl border border-stone-700 bg-stone-900 p-4 shadow-2xl" style={tipStyle}>
+        <button onClick={close} className="absolute right-3 top-3 text-stone-500 hover:text-stone-300 transition-colors">
           <X className="h-4 w-4" />
         </button>
 
         <div className="mb-1 flex items-center gap-2">
           <span className="text-2xl">{current?.emoji}</span>
         </div>
-        <h3 className="mb-1 pr-6 text-base font-bold text-slate-100">{current?.title}</h3>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">{current?.body}</p>
+        <h3 className="mb-1 pr-6 text-base font-bold text-stone-100">{current?.title}</h3>
+        <p className="mb-3 text-sm leading-relaxed text-stone-400">{current?.body}</p>
 
         {/* Indicação de clique obrigatório */}
         {requiresClick && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
-            <MousePointerClick className="h-4 w-4 shrink-0 text-emerald-400" />
-            <p className="text-xs font-semibold text-emerald-300">Toca no botão destacado acima para continuar</p>
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2">
+            <MousePointerClick className="h-4 w-4 shrink-0 text-green-400" />
+            <p className="text-xs font-semibold text-green-300">Toca no botão destacado acima para continuar</p>
           </div>
         )}
 
         {/* Barra de progresso */}
         <div className="mb-3 flex gap-1">
           {Array.from({ length: total }).map((_, i) => (
-            <div key={i} className={cn('h-1 flex-1 rounded-full transition-all', i <= step ? 'bg-emerald-400' : 'bg-slate-700')} />
+            <div key={i} className={cn('h-1 flex-1 rounded-full transition-all', i <= step ? 'bg-green-400' : 'bg-stone-700')} />
           ))}
         </div>
 
@@ -262,13 +262,13 @@ export function BettingTour({ autoStart = true, betsCompleted = 0 }: Props) {
         {!requiresClick && (
           <div className="flex items-center gap-2">
             {!isFirst && (
-              <button onClick={prev} className="flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">
+              <button onClick={prev} className="flex items-center gap-1 rounded-lg border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 hover:bg-stone-800">
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
             )}
             <button
               onClick={next}
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-slate-950 hover:bg-emerald-400"
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-green-500 px-3 py-2 text-sm font-bold text-stone-950 hover:bg-green-400"
             >
               {isLast ? 'Entendi, bora! 🍀' : <>Próximo <ChevronRight className="h-4 w-4" /></>}
             </button>
@@ -276,7 +276,7 @@ export function BettingTour({ autoStart = true, betsCompleted = 0 }: Props) {
         )}
 
         {isFirst && (
-          <button onClick={close} className="mt-2 w-full text-center text-xs text-slate-600 hover:text-slate-400 transition-colors">
+          <button onClick={close} className="mt-2 w-full text-center text-xs text-stone-600 hover:text-stone-400 transition-colors">
             Pular tour
           </button>
         )}

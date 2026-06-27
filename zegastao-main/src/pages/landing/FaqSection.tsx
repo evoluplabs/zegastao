@@ -44,33 +44,33 @@ export function FaqSection() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section className="border-b border-[#2a2d3e] py-16 md:py-24 bg-[#0f1117]">
+    <section className="border-b border-[#3a2e1d] py-16 md:py-24 bg-[#15110b]">
       <div className="mx-auto max-w-2xl px-4">
         <div className="text-center mb-10 reveal">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">— Taverna das Dúvidas —</p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-100">
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">— Taverna das Dúvidas —</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-stone-100">
             Perguntas que você vai ter.
           </h2>
         </div>
 
         <div className="space-y-2">
           {FAQ.map((item, i) => (
-            <div key={i} className="reveal border border-[#2a2d3e] rounded-xl overflow-hidden bg-[#1a1d27]" data-delay={`${i * 50}`}>
+            <div key={i} className="reveal border border-[#3a2e1d] rounded-xl overflow-hidden bg-[#211a11]" data-delay={`${i * 50}`}>
               <button
-                className="w-full flex items-center justify-between px-5 py-4 text-left font-semibold text-sm text-slate-200 hover:bg-[#1e2235] transition-colors"
+                className="w-full flex items-center justify-between px-5 py-4 text-left font-semibold text-sm text-stone-200 hover:bg-[#2b2115] transition-colors"
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
               >
                 {item.q}
                 <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${open === i ? 'rotate-180 text-emerald-400' : ''}`}
+                  className={`h-4 w-4 shrink-0 text-stone-500 transition-transform duration-200 ${open === i ? 'rotate-180 text-green-400' : ''}`}
                 />
               </button>
               <div
                 className="overflow-hidden transition-all duration-300 ease-in-out"
                 style={{ maxHeight: open === i ? '300px' : '0px' }}
               >
-                <p className="px-5 pb-4 text-sm text-slate-500 leading-relaxed">{item.a}</p>
+                <p className="px-5 pb-4 text-sm text-stone-500 leading-relaxed">{item.a}</p>
               </div>
             </div>
           ))}

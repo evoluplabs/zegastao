@@ -44,7 +44,7 @@ function getPasswordStrength(pwd: string): { score: number; label: string; color
   if (score === 2) return { score: 2, label: 'Fraca', color: 'bg-amber-500' };
   if (score === 3) return { score: 3, label: 'Razoável', color: 'bg-yellow-400' };
   if (score === 4) return { score: 4, label: 'Boa', color: 'bg-sky-500' };
-  return { score: 5, label: 'Forte', color: 'bg-emerald-500' };
+  return { score: 5, label: 'Forte', color: 'bg-green-500' };
 }
 
 function PasswordStrengthBar({ password }: { password: string }) {
@@ -61,19 +61,19 @@ function PasswordStrengthBar({ password }: { password: string }) {
     <div className="space-y-2 mt-1">
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= score ? color : 'bg-slate-700'}`} />
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= score ? color : 'bg-stone-700'}`} />
         ))}
       </div>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-stone-500">{label}</p>
       <div className="space-y-1">
         {requirements.map((r) => (
           <div key={r.text} className="flex items-center gap-1.5">
             {r.met ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="h-3 w-3 text-green-400 shrink-0" />
             ) : (
-              <XCircle className="h-3 w-3 text-slate-600 shrink-0" />
+              <XCircle className="h-3 w-3 text-stone-600 shrink-0" />
             )}
-            <span className={`text-xs ${r.met ? 'text-emerald-400' : 'text-slate-500'}`}>{r.text}</span>
+            <span className={`text-xs ${r.met ? 'text-green-400' : 'text-stone-500'}`}>{r.text}</span>
           </div>
         ))}
       </div>
@@ -175,45 +175,45 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1117] p-4 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#15110b] p-4 relative">
       {/* Ambient grid */}
       <div className="fixed inset-0 opacity-15 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #10b98115 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-      <div className="fixed top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed top-0 right-0 w-96 h-96 bg-green-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-0 left-0 w-64 h-64 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Logo */}
       <Link to="/" className="relative mb-8 flex items-center gap-2 group">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30 group-hover:bg-emerald-500/30 transition-colors">
-          <Sword className="h-5 w-5 text-emerald-400" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/20 border border-green-500/30 group-hover:bg-green-500/30 transition-colors">
+          <Sword className="h-5 w-5 text-green-400" />
         </div>
         <div>
-          <p className="font-extrabold text-lg leading-none text-slate-100">
-            Zé <span className="text-emerald-400">Gastão</span>
+          <p className="font-extrabold text-lg leading-none text-stone-100">
+            Zé <span className="text-green-400">Gastão</span>
           </p>
-          <p className="text-[10px] text-slate-500">Idle MMO de Finanças</p>
+          <p className="text-[10px] text-stone-500">Idle MMO de Finanças</p>
         </div>
       </Link>
 
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">{TITLES[mode]}</h1>
-          <p className="text-sm text-slate-500 mt-1">{SUBTITLES[mode]}</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-stone-100">{TITLES[mode]}</h1>
+          <p className="text-sm text-stone-500 mt-1">{SUBTITLES[mode]}</p>
         </div>
 
-        <div className="rounded-2xl border border-[#2a2d3e] bg-[#1a1d27] shadow-xl shadow-black/40 p-6 space-y-4">
+        <div className="rounded-2xl border border-[#3a2e1d] bg-[#211a11] shadow-xl shadow-black/40 p-6 space-y-4">
           {/* Mode tabs */}
           {mode !== 'reset' && (
-            <div className="flex rounded-xl border border-[#2a2d3e] bg-[#141720] p-0.5 mb-2">
+            <div className="flex rounded-xl border border-[#3a2e1d] bg-[#1a130b] p-0.5 mb-2">
               <button
                 onClick={() => switchMode('login')}
-                className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === 'login' ? 'bg-emerald-500 text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === 'login' ? 'bg-green-500 text-stone-950' : 'text-stone-500 hover:text-stone-300'}`}
               >
                 ⚔️ Entrar
               </button>
               <button
                 onClick={() => switchMode('register')}
-                className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === 'register' ? 'bg-emerald-500 text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === 'register' ? 'bg-green-500 text-stone-950' : 'text-stone-500 hover:text-stone-300'}`}
               >
                 🧙 Criar Personagem
               </button>
@@ -225,7 +225,7 @@ export function Login() {
             <>
               <Button
                 variant="outline"
-                className="w-full gap-3 h-11 font-semibold border-[#2a2d3e] bg-[#141720] text-slate-200 hover:bg-[#1e2235] hover:border-slate-600 transition-all"
+                className="w-full gap-3 h-11 font-semibold border-[#3a2e1d] bg-[#1a130b] text-stone-200 hover:bg-[#2b2115] hover:border-stone-600 transition-all"
                 onClick={google}
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -239,10 +239,10 @@ export function Login() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#2a2d3e]" />
+                  <div className="w-full border-t border-[#3a2e1d]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-[#1a1d27] px-2 text-slate-500">ou com e-mail</span>
+                  <span className="bg-[#211a11] px-2 text-stone-500">ou com e-mail</span>
                 </div>
               </div>
             </>
@@ -250,7 +250,7 @@ export function Login() {
 
           <form onSubmit={submit} className="space-y-3">
             <div className="space-y-1">
-              <label htmlFor="email" className="text-xs font-semibold text-slate-400">E-mail</label>
+              <label htmlFor="email" className="text-xs font-semibold text-stone-400">E-mail</label>
               <input
                 id="email"
                 type="email"
@@ -259,16 +259,16 @@ export function Login() {
                 placeholder="seu@email.com"
                 required
                 autoComplete="email"
-                className="h-10 w-full rounded-lg border border-[#2a2d3e] bg-[#141720] px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                className="h-10 w-full rounded-lg border border-[#3a2e1d] bg-[#1a130b] px-3 text-sm text-stone-100 placeholder:text-stone-600 focus:border-green-500/50 focus:outline-none focus:ring-1 focus:ring-green-500/20 transition-all"
               />
             </div>
 
             {mode !== 'reset' && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-xs font-semibold text-slate-400">Senha</label>
+                  <label htmlFor="password" className="text-xs font-semibold text-stone-400">Senha</label>
                   {mode === 'login' && (
-                    <button type="button" onClick={() => switchMode('reset')} className="text-xs text-emerald-400 hover:text-emerald-300">
+                    <button type="button" onClick={() => switchMode('reset')} className="text-xs text-green-400 hover:text-green-300">
                       Esqueci minha senha
                     </button>
                   )}
@@ -282,12 +282,12 @@ export function Login() {
                     placeholder="••••••••"
                     required
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    className="h-10 w-full rounded-lg border border-[#2a2d3e] bg-[#141720] px-3 pr-10 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                    className="h-10 w-full rounded-lg border border-[#3a2e1d] bg-[#1a130b] px-3 pr-10 text-sm text-stone-100 placeholder:text-stone-600 focus:border-green-500/50 focus:outline-none focus:ring-1 focus:ring-green-500/20 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-300"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -298,7 +298,7 @@ export function Login() {
 
             {mode === 'register' && (
               <div className="space-y-1">
-                <label htmlFor="confirm-password" className="text-xs font-semibold text-slate-400">Confirmar senha</label>
+                <label htmlFor="confirm-password" className="text-xs font-semibold text-stone-400">Confirmar senha</label>
                 <input
                   id="confirm-password"
                   type={showPassword ? 'text' : 'password'}
@@ -307,7 +307,7 @@ export function Login() {
                   placeholder="••••••••"
                   required
                   autoComplete="new-password"
-                  className={`h-10 w-full rounded-lg border bg-[#141720] px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 transition-all ${passwordMismatch ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : 'border-[#2a2d3e] focus:border-emerald-500/50 focus:ring-emerald-500/20'}`}
+                  className={`h-10 w-full rounded-lg border bg-[#1a130b] px-3 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:ring-1 transition-all ${passwordMismatch ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : 'border-[#3a2e1d] focus:border-green-500/50 focus:ring-green-500/20'}`}
                 />
                 {passwordMismatch && (
                   <p className="text-xs text-red-400">As senhas não coincidem.</p>
@@ -321,14 +321,14 @@ export function Login() {
               </p>
             )}
             {success && (
-              <p className="text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+              <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
                 {success}
               </p>
             )}
 
             <Button
               type="submit"
-              className="w-full h-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg"
+              className="w-full h-10 bg-green-500 hover:bg-green-400 text-stone-950 font-bold rounded-lg"
               disabled={busy}
             >
               {busy
@@ -341,27 +341,27 @@ export function Login() {
             </Button>
 
             {mode === 'register' && (
-              <p className="text-xs text-slate-500 text-center leading-relaxed">
+              <p className="text-xs text-stone-500 text-center leading-relaxed">
                 Ao criar seu personagem você concorda com os{' '}
-                <Link to="/termos" className="text-emerald-400 hover:underline" target="_blank">Termos de Uso</Link>
+                <Link to="/termos" className="text-green-400 hover:underline" target="_blank">Termos de Uso</Link>
                 {' '}e a{' '}
-                <Link to="/privacidade" className="text-emerald-400 hover:underline" target="_blank">Política de Privacidade</Link>.
+                <Link to="/privacidade" className="text-green-400 hover:underline" target="_blank">Política de Privacidade</Link>.
               </p>
             )}
           </form>
         </div>
 
         {mode === 'reset' && (
-          <p className="text-center text-sm text-slate-500 mt-4">
+          <p className="text-center text-sm text-stone-500 mt-4">
             Lembrou a senha?{' '}
-            <button className="font-semibold text-emerald-400 hover:text-emerald-300" onClick={() => switchMode('login')}>
+            <button className="font-semibold text-green-400 hover:text-green-300" onClick={() => switchMode('login')}>
               Voltar ao login
             </button>
           </p>
         )}
 
-        <p className="text-center text-xs text-slate-600 mt-6">
-          <Link to="/" className="hover:text-slate-400 transition-colors">← Voltar para o início</Link>
+        <p className="text-center text-xs text-stone-600 mt-6">
+          <Link to="/" className="hover:text-stone-400 transition-colors">← Voltar para o início</Link>
         </p>
       </div>
     </div>
