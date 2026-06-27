@@ -7,10 +7,7 @@ import { auth, functions } from '@/firebase';
 import { authActions } from '@/hooks/useAuth';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/ui/Logo';
-import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, XCircle, Sword } from 'lucide-react';
 
 const recordReferralFn = httpsCallable<{ referralCode: string }, { ok: boolean }>(
   functions, 'recordReferral'
@@ -22,7 +19,7 @@ async function maybeRecordReferral() {
   sessionStorage.removeItem('pendingRef');
   try {
     await recordReferralFn({ referralCode: pending });
-  } catch { /* silently ignore — referral tracking is non-critical */ }
+  } catch { /* silently ignore */ }
 }
 
 const ERRORS: Record<string, string> = {
@@ -43,12 +40,11 @@ function getPasswordStrength(pwd: string): { score: number; label: string; color
   if (/[A-Z]/.test(pwd)) score++;
   if (/[0-9]/.test(pwd)) score++;
   if (/[^A-Za-z0-9]/.test(pwd)) score++;
-
   if (score <= 1) return { score: 1, label: 'Muito fraca', color: 'bg-red-500' };
-  if (score === 2) return { score: 2, label: 'Fraca', color: 'bg-orange-400' };
+  if (score === 2) return { score: 2, label: 'Fraca', color: 'bg-amber-500' };
   if (score === 3) return { score: 3, label: 'Razoável', color: 'bg-yellow-400' };
-  if (score === 4) return { score: 4, label: 'Boa', color: 'bg-blue-500' };
-  return { score: 5, label: 'Forte', color: 'bg-green-500' };
+  if (score === 4) return { score: 4, label: 'Boa', color: 'bg-sky-500' };
+  return { score: 5, label: 'Forte', color: 'bg-emerald-500' };
 }
 
 function PasswordStrengthBar({ password }: { password: string }) {
@@ -65,26 +61,19 @@ function PasswordStrengthBar({ password }: { password: string }) {
     <div className="space-y-2 mt-1">
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i <= score ? color : 'bg-muted'
-            }`}
-          />
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= score ? color : 'bg-slate-700'}`} />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xs text-slate-500">{label}</p>
       <div className="space-y-1">
         {requirements.map((r) => (
           <div key={r.text} className="flex items-center gap-1.5">
             {r.met ? (
-              <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+              <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
             ) : (
-              <XCircle className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              <XCircle className="h-3 w-3 text-slate-600 shrink-0" />
             )}
-            <span className={`text-xs ${r.met ? 'text-green-600' : 'text-muted-foreground'}`}>
-              {r.text}
-            </span>
+            <span className={`text-xs ${r.met ? 'text-emerald-400' : 'text-slate-500'}`}>{r.text}</span>
           </div>
         ))}
       </div>
@@ -106,7 +95,6 @@ export function Login() {
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Capture referral code from URL and store it for post-login processing
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) sessionStorage.setItem('pendingRef', ref);
@@ -128,7 +116,7 @@ export function Login() {
       setBusy(true);
       try {
         await sendPasswordResetEmail(auth, email);
-        setSuccess('Link de redefinição enviado para ' + email + '. Verifique sua caixa de entrada.');
+        setSuccess('Link enviado para ' + email + '. Verifique sua caixa de entrada.');
       } catch (err) {
         const code = err instanceof FirebaseError ? err.code : '';
         setError(ERRORS[code] || 'Não foi possível enviar o e-mail. Tente novamente.');
@@ -176,34 +164,71 @@ export function Login() {
   }
 
   const TITLES: Record<Mode, string> = {
-    login: 'Bem-vindo de volta',
-    register: 'Crie sua conta',
-    reset: 'Redefinir senha',
+    login: 'Bem-vindo de volta, aventureiro!',
+    register: 'Criar seu Personagem',
+    reset: 'Recuperar acesso',
   };
   const SUBTITLES: Record<Mode, string> = {
-    login: 'O Zé Gastão está te esperando.',
-    register: 'Comece a sair das dívidas hoje. É grátis.',
-    reset: 'Enviaremos um link para você redefinir sua senha.',
+    login: 'Entre no Realm e continue sua aventura.',
+    register: 'Comece a derrotar seus bosses hoje. É grátis.',
+    reset: 'Enviaremos um link para redefinir sua senha.',
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <Link to="/" className="mb-8">
-        <Logo size="md" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1117] p-4 relative">
+      {/* Ambient grid */}
+      <div className="fixed inset-0 opacity-15 pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(circle, #10b98115 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="fixed top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-64 h-64 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Logo */}
+      <Link to="/" className="relative mb-8 flex items-center gap-2 group">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30 group-hover:bg-emerald-500/30 transition-colors">
+          <Sword className="h-5 w-5 text-emerald-400" />
+        </div>
+        <div>
+          <p className="font-extrabold text-lg leading-none text-slate-100">
+            Zé <span className="text-emerald-400">Gastão</span>
+          </p>
+          <p className="text-[10px] text-slate-500">Idle MMO de Finanças</p>
+        </div>
       </Link>
 
-      <div className="w-full max-w-sm">
+      <div className="relative w-full max-w-sm">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">{TITLES[mode]}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{SUBTITLES[mode]}</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">{TITLES[mode]}</h1>
+          <p className="text-sm text-slate-500 mt-1">{SUBTITLES[mode]}</p>
         </div>
 
-        <div className="bg-card rounded-2xl border shadow-sm p-6 space-y-4">
+        <div className="rounded-2xl border border-[#2a2d3e] bg-[#1a1d27] shadow-xl shadow-black/40 p-6 space-y-4">
+          {/* Mode tabs */}
+          {mode !== 'reset' && (
+            <div className="flex rounded-xl border border-[#2a2d3e] bg-[#141720] p-0.5 mb-2">
+              <button
+                onClick={() => switchMode('login')}
+                className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === 'login' ? 'bg-emerald-500 text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                ⚔️ Entrar
+              </button>
+              <button
+                onClick={() => switchMode('register')}
+                className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${mode === 'register' ? 'bg-emerald-500 text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                🧙 Criar Personagem
+              </button>
+            </div>
+          )}
+
           {/* Google — só em login/register */}
           {mode !== 'reset' && (
             <>
-              <Button variant="outline" className="w-full gap-3 h-12 font-semibold text-base border-2 hover:bg-accent hover:border-border transition-all" onClick={google}>
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <Button
+                variant="outline"
+                className="w-full gap-3 h-11 font-semibold border-[#2a2d3e] bg-[#141720] text-slate-200 hover:bg-[#1e2235] hover:border-slate-600 transition-all"
+                onClick={google}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
@@ -214,10 +239,10 @@ export function Login() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t" />
+                  <div className="w-full border-t border-[#2a2d3e]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card px-2 text-muted-foreground">ou com e-mail</span>
+                  <span className="bg-[#1a1d27] px-2 text-slate-500">ou com e-mail</span>
                 </div>
               </div>
             </>
@@ -225,8 +250,8 @@ export function Login() {
 
           <form onSubmit={submit} className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
+              <label htmlFor="email" className="text-xs font-semibold text-slate-400">E-mail</label>
+              <input
                 id="email"
                 type="email"
                 value={email}
@@ -234,25 +259,22 @@ export function Login() {
                 placeholder="seu@email.com"
                 required
                 autoComplete="email"
+                className="h-10 w-full rounded-lg border border-[#2a2d3e] bg-[#141720] px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all"
               />
             </div>
 
             {mode !== 'reset' && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
+                  <label htmlFor="password" className="text-xs font-semibold text-slate-400">Senha</label>
                   {mode === 'login' && (
-                    <button
-                      type="button"
-                      onClick={() => switchMode('reset')}
-                      className="text-xs text-primary hover:underline"
-                    >
+                    <button type="button" onClick={() => switchMode('reset')} className="text-xs text-emerald-400 hover:text-emerald-300">
                       Esqueci minha senha
                     </button>
                   )}
                 </div>
                 <div className="relative">
-                  <Input
+                  <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
@@ -260,12 +282,12 @@ export function Login() {
                     placeholder="••••••••"
                     required
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    className="pr-10"
+                    className="h-10 w-full rounded-lg border border-[#2a2d3e] bg-[#141720] px-3 pr-10 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -276,8 +298,8 @@ export function Login() {
 
             {mode === 'register' && (
               <div className="space-y-1">
-                <Label htmlFor="confirm-password">Confirmar senha</Label>
-                <Input
+                <label htmlFor="confirm-password" className="text-xs font-semibold text-slate-400">Confirmar senha</label>
+                <input
                   id="confirm-password"
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
@@ -285,72 +307,61 @@ export function Login() {
                   placeholder="••••••••"
                   required
                   autoComplete="new-password"
-                  className={passwordMismatch ? 'border-destructive' : ''}
+                  className={`h-10 w-full rounded-lg border bg-[#141720] px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 transition-all ${passwordMismatch ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : 'border-[#2a2d3e] focus:border-emerald-500/50 focus:ring-emerald-500/20'}`}
                 />
                 {passwordMismatch && (
-                  <p className="text-xs text-destructive">As senhas não coincidem.</p>
+                  <p className="text-xs text-red-400">As senhas não coincidem.</p>
                 )}
               </div>
             )}
 
             {error && (
-              <p className="text-sm text-destructive bg-destructive/5 rounded-lg px-3 py-2">
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
             {success && (
-              <p className="text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg px-3 py-2">
+              <p className="text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
                 {success}
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={busy}>
+            <Button
+              type="submit"
+              className="w-full h-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg"
+              disabled={busy}
+            >
               {busy
                 ? 'Aguarde…'
                 : mode === 'login'
-                ? 'Entrar'
+                ? '⚔️ Entrar no Realm'
                 : mode === 'register'
-                ? 'Criar conta grátis'
-                : 'Enviar link de redefinição'}
+                ? '🧙 Criar Personagem — Grátis'
+                : '📨 Enviar link de redefinição'}
             </Button>
 
             {mode === 'register' && (
-              <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                Ao criar sua conta você concorda com os{' '}
-                <Link to="/termos" className="text-primary hover:underline" target="_blank">Termos de Uso</Link>
+              <p className="text-xs text-slate-500 text-center leading-relaxed">
+                Ao criar seu personagem você concorda com os{' '}
+                <Link to="/termos" className="text-emerald-400 hover:underline" target="_blank">Termos de Uso</Link>
                 {' '}e a{' '}
-                <Link to="/privacidade" className="text-primary hover:underline" target="_blank">Política de Privacidade</Link>.
+                <Link to="/privacidade" className="text-emerald-400 hover:underline" target="_blank">Política de Privacidade</Link>.
               </p>
             )}
           </form>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          {mode === 'login' && (
-            <>Ainda não tem conta?{' '}
-              <button className="font-semibold text-primary hover:underline" onClick={() => switchMode('register')}>
-                Cadastre-se grátis
-              </button>
-            </>
-          )}
-          {mode === 'register' && (
-            <>Já tem conta?{' '}
-              <button className="font-semibold text-primary hover:underline" onClick={() => switchMode('login')}>
-                Entrar
-              </button>
-            </>
-          )}
-          {mode === 'reset' && (
-            <>Lembrou a senha?{' '}
-              <button className="font-semibold text-primary hover:underline" onClick={() => switchMode('login')}>
-                Voltar ao login
-              </button>
-            </>
-          )}
-        </p>
+        {mode === 'reset' && (
+          <p className="text-center text-sm text-slate-500 mt-4">
+            Lembrou a senha?{' '}
+            <button className="font-semibold text-emerald-400 hover:text-emerald-300" onClick={() => switchMode('login')}>
+              Voltar ao login
+            </button>
+          </p>
+        )}
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          <Link to="/" className="hover:underline">← Voltar para o início</Link>
+        <p className="text-center text-xs text-slate-600 mt-6">
+          <Link to="/" className="hover:text-slate-400 transition-colors">← Voltar para o início</Link>
         </p>
       </div>
     </div>
