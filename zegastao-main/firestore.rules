@@ -50,5 +50,13 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
+
+    // Mercado P2P da Guilda — leitura pública, escrita por autenticados, remoção só pelo dono.
+    match /marketplace/{listingId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+    }
   }
 }

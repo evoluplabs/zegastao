@@ -428,6 +428,21 @@ export interface InventoryItem {
   addedAt: string;
   soldAt?: string;
   soldFor?: number;
+  marketplaceId?: string;
+}
+
+export interface MarketplaceListing {
+  id: string;
+  itemId: string;
+  userId: string;
+  userAlias: string;
+  itemName: string;
+  category: string;
+  categoryIcon: string;
+  price: number;
+  whatsappLink?: string;
+  listedAt: string;
+  status: 'active' | 'sold';
 }
 
 export interface Milestone {
