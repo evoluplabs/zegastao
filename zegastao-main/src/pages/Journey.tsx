@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon } from 'lucide-react';
+import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon, Scroll } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { updateUserDoc } from '@/lib/firestore';
@@ -10,13 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShareableCard } from '@/components/share/ShareableCard';
+import { QuestCard } from '@/components/QuestCard';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { MILESTONE_ORDER, PHASE_LABELS, type Milestone } from '@/types';
 import { formatBRL, formatPct } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
-
-const DIFFICULTY: Record<string, string> = { easy: 'fácil', medium: 'média', hard: 'difícil' };
 
 const MILESTONE_EMOJIS: Record<string, string> = {
   first_positive: '🌱',
@@ -30,13 +29,6 @@ const MILESTONE_EMOJIS: Record<string, string> = {
   passive_10: '💰',
   passive_100: '🏆',
   caixinha_completed: '🐷',
-};
-
-const TASK_CATEGORY_ICONS: Record<string, string> = {
-  renda_extra: '💰',
-  economia: '✂️',
-  aprendizado: '📚',
-  investimento: '📈',
 };
 
 function CelebrationModal({
@@ -63,7 +55,7 @@ function CelebrationModal({
         <div className="px-6 pt-7 pb-2 text-center">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-success/15 border border-success/30 px-3 py-1 text-xs font-semibold text-success mb-4">
             <PartyPopper className="h-3 w-3" />
-            Marco conquistado!
+            Conquista desbloqueada!
           </div>
 
           {/* Card compartilhável como IMAGEM (alavanca 1) */}
@@ -92,7 +84,7 @@ function CelebrationModal({
 
         <div className="px-6 pb-6">
           <Button variant="ghost" className="w-full" onClick={onClose}>
-            Continuar a jornada
+            Continuar a aventura
           </Button>
         </div>
 
@@ -152,7 +144,9 @@ export function Journey() {
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Sua trilha</h2>
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <Scroll className="h-5 w-5 text-primary" /> Quest Log
+        </h2>
         {phase && (
           <Badge variant="success" className="gap-1">
             <Trophy className="h-3 w-3" />
@@ -161,11 +155,11 @@ export function Journey() {
         )}
       </div>
 
-      {/* Progresso de quitação */}
+      {/* Boss em foco */}
       {topDebt && (
         <div className="rounded-2xl border bg-card p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Foco de quitação</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🎯 Boss em Foco</p>
             <Badge variant="destructive" className="text-[10px]">
               {formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.
             </Badge>
@@ -190,68 +184,58 @@ export function Journey() {
         </div>
       )}
 
-      {/* Tarefas de hoje */}
+      {/* Missões de hoje */}
       <div>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ações de hoje</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+          <Zap className="h-3.5 w-3.5 text-amber-500" /> Missões de hoje
+        </h3>
         {tasks.length === 0 ? (
           <div className="rounded-xl border bg-card p-5 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Suas tarefas personalizadas aparecem aqui após o processamento noturno (00:00).
+              Suas missões personalizadas aparecem aqui após o processamento noturno (00:00).
             </p>
             {incomeTaskSuggestions.length > 0 && (
               <p className="text-xs text-primary">
-                Enquanto isso, veja sugestões de renda extra no{' '}
-                <Link to="/copilot?tab=historico" className="underline font-medium">Copiloto → Persona & Contexto</Link>
+                Enquanto isso, veja bounties no{' '}
+                <Link to="/copilot?tab=historico" className="underline font-medium">Sábio → Persona & Contexto</Link>
               </p>
             )}
           </div>
         ) : (
           <div className="space-y-2">
             {tasks.map((t, i) => (
-              <div key={i} className="flex items-start gap-3 rounded-xl border bg-card p-4 transition-all hover:border-primary/20">
-                <span className="text-lg shrink-0">{TASK_CATEGORY_ICONS[t.category] || '⚡'}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{t.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    ⏱ {t.estimatedTime}
-                    {t.estimatedReturn && ` · 💰 ${t.estimatedReturn}`}
-                    {t.platform && ` · ${t.platform}`}
-                  </p>
-                </div>
-                <Badge variant="outline" className="shrink-0 text-xs">
-                  {DIFFICULTY[t.difficulty] || t.difficulty}
-                </Badge>
-              </div>
+              <QuestCard key={i} task={t} />
             ))}
           </div>
         )}
       </div>
 
-      {/* Renda Extra Suggestions (always visible) */}
+      {/* Bounty Board — renda extra */}
       {incomeTaskSuggestions.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-amber-500" /> Ideias de renda extra
+              💰 Bounty Board
             </h3>
             <Link to="/copilot?tab=historico" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-              ver todas <LinkIcon className="h-3 w-3" />
+              ver todos <LinkIcon className="h-3 w-3" />
             </Link>
           </div>
           <div className="space-y-2">
             {incomeTaskSuggestions.map((t) => (
-              <div key={t.id} className="rounded-xl border bg-card p-4 flex items-start gap-3">
-                <span className="text-lg shrink-0">💰</span>
+              <div key={t.id} className="rounded-xl border bg-card p-4 flex items-start gap-3 hover:border-amber-500/30 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg shrink-0">💰</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm leading-snug">{t.title}</p>
                   {t.debtContext && (
-                    <p className="text-[11px] font-semibold text-green-600 mt-0.5">{t.debtContext}</p>
+                    <p className="text-[11px] font-semibold text-emerald-500 mt-0.5">{t.debtContext}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-0.5">
                     💰 {t.estimatedReturn} · ⏱ {t.estimatedTime}
                     {t.platform && ` · ${t.platform}`}
                   </p>
                 </div>
+                <span className="shrink-0 text-xs font-bold text-amber-400">+100 XP</span>
               </div>
             ))}
           </div>
@@ -263,7 +247,7 @@ export function Journey() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <Trophy className="h-4 w-4 text-amber-500" />
-            Marcos da jornada financeira
+            🏆 Trilha de Conquistas
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -294,12 +278,12 @@ export function Journey() {
                     </div>
                     {done && (
                       <Badge variant="outline" className="shrink-0 text-xs border-success/30 text-success">
-                        ✓ feito
+                        ✓ conquistado
                       </Badge>
                     )}
                     {!done && i === Array.from(achieved).length && (
                       <Badge variant="outline" className="shrink-0 text-xs border-primary/30 text-primary">
-                        próximo
+                        próxima missão
                       </Badge>
                     )}
                   </li>

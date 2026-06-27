@@ -120,7 +120,7 @@ function CaixinhaDetail({
       } catch {
         // não-crítico
       }
-      toast('🎉 Meta atingida! Parabéns!');
+      toast('🏆 Baú completo! Missão concluída!');
     } else {
       toast('Depósito registrado!');
     }
@@ -152,7 +152,7 @@ function CaixinhaDetail({
         </div>
         {streak > 1 && (
           <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 px-3 py-1 text-xs font-bold">
-            <Flame className="h-3.5 w-3.5" /> {streak} dias
+            <Flame className="h-3.5 w-3.5" /> {streak} dias no cofre
           </span>
         )}
       </div>
@@ -164,7 +164,7 @@ function CaixinhaDetail({
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        {plan.progressPct.toFixed(0)}% concluído
+        {plan.progressPct.toFixed(0)}% do baú
         {plan.daysRemaining > 0 && ` · ${plan.daysRemaining} dia${plan.daysRemaining !== 1 ? 's' : ''} restantes`}
       </p>
 
@@ -286,7 +286,7 @@ export function Caixinha() {
     });
     setForm({ name: '', emoji: '✈️', target: 0, date: '', shared: false, frequency: 'daily' });
     setOpen(false);
-    toast('Caixinha criada!');
+    toast('🏛️ Cofre criado!');
   }
 
   async function remove(id: string) {
@@ -314,15 +314,15 @@ export function Caixinha() {
       {celebrating && <Confetti />}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Caixinhas</h2>
+          <h2 className="text-lg font-semibold">🏛️ Cofres da Guilda</h2>
           <p className="text-xs text-muted-foreground">
-            Para o dia a dia. Objetivos maiores e de longo prazo?{' '}
+            Guarde ouro para seus objetivos. Metas maiores?{' '}
             <Link to="/financas?tab=goals" className="text-primary hover:underline">Use as Metas</Link>.
           </p>
         </div>
         {!atLimit && (
           <Button size="sm" onClick={() => setOpen(!open)}>
-            <Plus className="h-4 w-4" /> Nova caixinha
+            <Plus className="h-4 w-4" /> Novo Cofre
           </Button>
         )}
       </div>
@@ -341,7 +341,7 @@ export function Caixinha() {
           >
             <Bell className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm">
-              Hora de guardar <span className="font-semibold text-primary">{formatBRL(pending.plan.periodTarget)}</span> em
+              Deposite <span className="font-semibold text-primary">{formatBRL(pending.plan.periodTarget)}</span> no cofre
               {' '}{pending.c.emoji} {pending.c.name}{pending.plan.isWeekly ? ' esta semana.' : ' hoje.'}
             </span>
           </button>
@@ -434,7 +434,7 @@ export function Caixinha() {
               </label>
             )}
             <Button onClick={save} className="w-full" disabled={!form.name || form.target <= 0 || !form.date}>
-              Criar caixinha
+              Criar Cofre
             </Button>
           </CardContent>
         </Card>
@@ -443,12 +443,12 @@ export function Caixinha() {
       {caixinhas.length === 0 && partnerCaixinhas.length === 0 && !open && !atLimit && (
         <div className="rounded-2xl border border-dashed bg-card/50 p-8 text-center space-y-3">
           <PiggyBank className="h-10 w-10 mx-auto text-muted-foreground/40" />
-          <p className="font-medium">Nenhuma caixinha ainda</p>
+          <p className="font-medium">🏛️ Nenhum cofre ainda</p>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            Defina um objetivo, uma data e o Zé Gastão calcula exatamente quanto poupar por dia.
+            Defina um objetivo, uma data e o Zé calcula quanto depositar por dia para encher o baú.
           </p>
           <Button size="sm" onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" /> Criar primeira caixinha
+            <Plus className="h-4 w-4" /> Criar Primeiro Cofre
           </Button>
         </div>
       )}
@@ -462,7 +462,7 @@ export function Caixinha() {
       {partnerCaixinhas.length > 0 && (
         <>
           <h3 className="text-sm font-semibold text-muted-foreground pt-2 flex items-center gap-2">
-            <Users className="h-4 w-4" /> Caixinhas do casal
+            <Users className="h-4 w-4" /> Cofres da Guilda do Casal
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
             {partnerCaixinhas.map((c) => (
@@ -510,7 +510,7 @@ function CaixinhaCard({ c, onOpen, onRemove }: { c: CaixinhaType; onOpen: () => 
           />
         </div>
         {c.status === 'completed' ? (
-          <p className="mt-2 text-xs font-semibold text-green-600">🎉 Meta atingida!</p>
+          <p className="mt-2 text-xs font-semibold text-green-600">🏆 Baú completo!</p>
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">
             {plan.isWeekly ? 'Esta semana:' : 'Hoje:'}{' '}

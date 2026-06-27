@@ -21,14 +21,14 @@ interface ChatMessage {
 }
 
 const SUGGESTIONS = [
-  'Qual dívida devo pagar primeiro?',
-  'Quando vou quitar minhas dívidas no ritmo atual?',
+  'Qual boss devo atacar primeiro?',
+  'Quando vou derrotar todos os bosses no ritmo atual?',
   'Tô pensando em comprar um tênis de R$400, posso?',
-  'Me cria uma regra para guardar 30% de toda renda extra',
+  'Me ajuda a guardar 30% de toda renda extra',
 ];
 
 const TABS = [
-  { id: 'chat', label: 'Chat' },
+  { id: 'chat', label: '🧙 Consultar Sábio' },
   { id: 'documentos', label: 'Documentos' },
   { id: 'historico', label: 'Persona & Contexto' },
 ] as const;
@@ -205,8 +205,8 @@ function ChatView() {
         {messages.length === 0 && (
           <div className="space-y-4">
             <div className="rounded-2xl rounded-tl-sm bg-secondary px-4 py-3 text-sm">
-              <p className="font-medium text-foreground">Olá! Sou seu copiloto financeiro. 👋</p>
-              <p className="mt-1 text-muted-foreground text-xs">Pergunte qualquer coisa sobre suas finanças. Sou direto, honesto e estou aqui pra te ajudar a sair das dívidas.</p>
+              <p className="font-medium text-foreground">🧙 O que traz você à minha tenda, aventureiro?</p>
+              <p className="mt-1 text-muted-foreground text-xs">Sou o Sábio Financeiro. Faço análise honesta das suas finanças, sem enrolação. Aqui você planeja batalhas, não sonhos vazios.</p>
             </div>
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">Sugestões</p>
@@ -302,7 +302,7 @@ function ChatView() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte ao copiloto…"
+              placeholder="Pergunte ao Sábio…"
               disabled={busy}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
             />

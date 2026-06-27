@@ -154,21 +154,30 @@ export function Onboarding() {
   }
 
   const STEPS = [
-    { label: 'Você', emoji: '👤' },
-    { label: 'Contas', emoji: '🏦' },
-    { label: 'Dívidas', emoji: '💳' },
+    { label: 'Aventureiro', emoji: '⚔️' },
+    { label: 'Equipamentos', emoji: '🛡️' },
+    { label: 'Inimigos', emoji: '☠️' },
     { label: 'Habilidades', emoji: '⚡' },
-    { label: 'Sonhos', emoji: '🎯' },
-    { label: 'Investimentos', emoji: '📈' },
+    { label: 'Objetivos', emoji: '🏆' },
+    { label: 'Estilo', emoji: '📈' },
+  ];
+
+  const STEP_TITLES = [
+    'Criação de Personagem ⚔️',
+    'Seus Equipamentos 🛡️',
+    'Seus Inimigos ☠️',
+    'Suas Habilidades ⚡',
+    'Seus Objetivos 🏆',
+    'Estilo de Combate 📈',
   ];
 
   const STEP_DESCRIPTIONS = [
-    'Vamos começar com o básico.',
-    'Qual o saldo das suas contas? (opcional)',
-    'Tem alguma dívida? (opcional)',
-    'O que você sabe fazer bem?',
-    'Qual é seu maior sonho financeiro?',
-    'Você já investe em algo?',
+    'Qual é o nome do seu aventureiro?',
+    'Suas contas e armas financeiras (opcional)',
+    'Os bosses que você precisa derrotar (opcional)',
+    'O que você sabe fazer bem para ganhar ouro extra?',
+    'Qual é o seu objetivo final nesta aventura?',
+    'Como você prefere acumular ouro?',
   ];
 
   return (
@@ -211,7 +220,7 @@ export function Onboarding() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Vamos montar seu plano 👋</CardTitle>
+          <CardTitle>{STEP_TITLES[step]}</CardTitle>
           <CardDescription>
             {STEP_DESCRIPTIONS[step]}
           </CardDescription>
@@ -221,11 +230,11 @@ export function Onboarding() {
           {step === 0 && (
             <>
               <div className="space-y-1">
-                <Label>Como prefere ser chamado?</Label>
+                <Label>Nome do seu aventureiro</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
               </div>
               <CurrencyInput
-                label="Renda mensal líquida"
+                label="Ouro mensal (renda líquida)"
                 value={income}
                 onChange={setIncome}
               />
@@ -239,7 +248,7 @@ export function Onboarding() {
           {step === 1 && (
             <>
               <p className="text-sm text-muted-foreground">
-                Registre o saldo das suas contas para ver seu patrimônio total no dashboard. 100% opcional.
+                Registre seus equipamentos (contas bancárias) para ver seu patrimônio total. 100% opcional.
               </p>
 
               {/* Lista de contas adicionadas */}
@@ -325,7 +334,7 @@ export function Onboarding() {
           {step === 2 && (
             <>
               <div className="space-y-1">
-                <Label>Credor</Label>
+                <Label>Nome do inimigo (credor)</Label>
                 <Input value={debt.name} onChange={(e) => setDebt({ ...debt, name: e.target.value })} placeholder="Ex: Cartão Nubank" />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -337,7 +346,7 @@ export function Onboarding() {
                 <span className="text-lg">📤</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-primary">Tem extrato do banco?</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Importe depois e o app detecta suas dívidas automaticamente.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Importe depois e o sistema detecta os bosses automaticamente.</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -351,7 +360,7 @@ export function Onboarding() {
           {step === 3 && (
             <>
               <p className="text-sm text-muted-foreground">
-                Usamos isso para sugerir renda extra sob medida. Selecione pelo menos 1.
+                Usamos isso para gerar bounties (missões de renda extra) sob medida. Selecione pelo menos 1.
               </p>
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                 {SKILL_CATEGORIES.map((cat) => (
@@ -424,7 +433,7 @@ export function Onboarding() {
                 ))}
               </div>
               <Button className="w-full" onClick={finish} disabled={busy}>
-                {busy ? 'Salvando…' : 'Começar a usar'}
+                {busy ? 'Criando personagem…' : '⚔️ Criar Personagem e Entrar'}
               </Button>
             </>
           )}

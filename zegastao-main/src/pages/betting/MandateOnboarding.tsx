@@ -23,7 +23,7 @@ const CLAUSES = [
   'Aceito ser alertado e pausado pelo Zé se eu começar a exagerar.',
 ];
 
-const STEPS = ['Orçamento', 'Meta', 'Campeonatos', 'Risco', 'Termos'];
+const STEPS = ['Banca', 'Objetivo', 'Arena', 'Dificuldade', 'Pacto'];
 
 export function MandateOnboarding({ onComplete }: Props) {
   const [step, setStep] = useState(0);
@@ -92,10 +92,10 @@ export function MandateOnboarding({ onComplete }: Props) {
     <div className="mx-auto max-w-md space-y-6 p-4">
       <div className="text-center">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-          <Sparkles className="h-3 w-3" /> Zé Apostador 2.0
+          <Sparkles className="h-3 w-3" /> ⚔️ Sistema de Raid
         </div>
-        <h2 className="text-2xl font-bold text-slate-100">Monte seu mandato</h2>
-        <p className="text-sm text-slate-400">Defina as regras uma vez. Depois o Zé trabalha por você.</p>
+        <h2 className="text-2xl font-bold text-slate-100">Configuração do Raid</h2>
+        <p className="text-sm text-slate-400">Configure seu raid uma vez. Depois o Zé trabalha por você.</p>
       </div>
 
       {/* Stepper */}
@@ -118,8 +118,8 @@ export function MandateOnboarding({ onComplete }: Props) {
       <div className="min-h-56 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
         {step === 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-100"><Wallet className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Orçamento do ciclo</h3></div>
-            <p className="text-sm text-slate-400">Quanto você topa colocar neste ciclo? É o teto — o Zé nunca passa disso.</p>
+            <div className="flex items-center gap-2 text-slate-100"><Wallet className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Banca do Raid</h3></div>
+            <p className="text-sm text-slate-400">Quanto você coloca neste raid? É o teto — o Zé nunca passa disso.</p>
             <div className="text-3xl font-extrabold text-emerald-400">{formatBRL(budget)}</div>
             <input type="range" min={2} max={100} step={1} value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="w-full accent-emerald-500" />
             <div className="flex justify-between text-xs text-slate-500"><span>R$ 2</span><span>R$ 100</span></div>
@@ -132,8 +132,8 @@ export function MandateOnboarding({ onComplete }: Props) {
 
         {step === 1 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-100"><Target className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Meta do ciclo</h3></div>
-            <p className="text-sm text-slate-400">Quanto você quer fazer a banca crescer antes de sacar?</p>
+            <div className="flex items-center gap-2 text-slate-100"><Target className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Objetivo do Raid</h3></div>
+            <p className="text-sm text-slate-400">Quanto você quer fazer a banca crescer antes de encerrar?</p>
             {/* Alterna entre meta em % e meta em R$ */}
             <div className="flex rounded-xl border border-slate-700 p-0.5 text-xs">
               <button onClick={() => setGoalMode('pct')} className={cn('flex-1 rounded-lg py-1.5 font-semibold', goalMode === 'pct' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400')}>Em %</button>
@@ -164,7 +164,7 @@ export function MandateOnboarding({ onComplete }: Props) {
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-100"><Trophy className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Onde apostar</h3></div>
+            <div className="flex items-center gap-2 text-slate-100"><Trophy className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold">Escolha a Arena</h3></div>
             <div className="flex flex-wrap gap-2">
               {BETTING_LEAGUES.map((l) => (
                 <button key={l.key} onClick={() => toggleLeague(l.key)} className={cn('rounded-full border px-3 py-1.5 text-sm', leagues.includes(l.key) ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300' : 'border-slate-700 text-slate-300')}>{l.label}</button>
@@ -179,8 +179,8 @@ export function MandateOnboarding({ onComplete }: Props) {
 
         {step === 3 && (
           <div className="space-y-3">
-            <h3 className="text-lg font-bold text-slate-100">Quanto controle dar ao Zé?</h3>
-            <p className="text-sm text-slate-400">Você sempre confirma antes de apostar. Isso define o estilo das sugestões.</p>
+            <h3 className="text-lg font-bold text-slate-100">Dificuldade do Raid</h3>
+            <p className="text-sm text-slate-400">Você sempre confirma antes de apostar. Isso define o estilo dos encontros.</p>
             {ZE_RISK_LEVELS.map((r) => (
               <button key={r.level} onClick={() => setRiskLevel(r.level)} className={cn('w-full rounded-xl border p-3 text-left transition-colors', riskLevel === r.level ? 'border-emerald-400 bg-emerald-400/10' : 'border-slate-700 hover:border-slate-600')}>
                 <div className="flex items-center gap-2 font-semibold text-slate-100">{r.emoji} {r.label}</div>
@@ -192,7 +192,7 @@ export function MandateOnboarding({ onComplete }: Props) {
 
         {step === 4 && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold text-slate-100">Jogo responsável</h3></div>
+            <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-400" /><h3 className="text-lg font-bold text-slate-100">⚔️ Pacto do Aventureiro</h3></div>
             {CLAUSES.map((clause, i) => (
               <label key={i} className={cn('flex items-start gap-3 rounded-xl border p-3 cursor-pointer', accepted[i] ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-slate-700')}>
                 <input type="checkbox" checked={accepted[i]} onChange={(e) => { const n = [...accepted]; n[i] = e.target.checked; setAccepted(n); }} className="mt-0.5 h-4 w-4 accent-emerald-500" />
@@ -211,7 +211,7 @@ export function MandateOnboarding({ onComplete }: Props) {
         {step < STEPS.length - 1 ? (
           <button onClick={() => canAdvance && setStep(step + 1)} disabled={!canAdvance} className="flex items-center gap-1 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-40">Continuar <ChevronRight className="h-4 w-4" /></button>
         ) : (
-          <Button onClick={save} loading={saving} disabled={!allAccepted} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Ativar Zé Apostador</Button>
+          <Button onClick={save} loading={saving} disabled={!allAccepted} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400">⚔️ Entrar no Raid</Button>
         )}
       </div>
     </div>

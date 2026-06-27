@@ -96,7 +96,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
       <div className={cn('space-y-4 rounded-2xl border p-5', won ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/20 bg-red-500/5')}>
         <div className="flex items-center gap-2 font-bold text-slate-100">
           {won ? <Trophy className="h-5 w-5 text-emerald-400" /> : <Frown className="h-5 w-5 text-red-400" />}
-          {won ? 'Green! 🟢' : 'Dessa vez não foi 🔴'}
+          {won ? '🏆 Monstro derrotado!' : '🔴 Você foi derrotado.'}
         </div>
         {won ? (
           <ShareableBetCard
@@ -105,7 +105,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
             odd={card.combinedOdd} profit={Math.max(0, (parseFloat(payout) || stake * card.combinedOdd) - stake)} referralCode={referralCode}
           />
         ) : (
-          <p className="text-sm text-slate-400">Faz parte do ciclo. O importante é a disciplina — sem correr atrás do prejuízo.</p>
+          <p className="text-sm text-slate-400">Faz parte do raid. O importante é a disciplina — sem correr atrás do prejuízo.</p>
         )}
       </div>
     );
@@ -116,7 +116,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
       {/* Cabeçalho */}
       <div className="border-b border-slate-800 bg-gradient-to-r from-emerald-500/10 to-sky-500/5 px-4 py-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-100">{card.type === 'multiple' ? `Múltipla de ${card.legs.length} jogos` : 'Aposta simples'}</span>
+          <span className="text-sm font-bold text-slate-100">{card.type === 'multiple' ? `⚔️ Raid: ${card.legs.length} Encontros` : '⚔️ Encontro Único'}</span>
           <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-sm font-extrabold text-emerald-400">@{card.combinedOdd}</span>
         </div>
         <p className="text-xs text-slate-400">Chance estimada {card.combinedProbPct}% · EV {card.evPct > 0 ? '+' : ''}{card.evPct}%</p>
@@ -210,17 +210,17 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
             {/* Ações */}
             {!placed ? (
               <Button onClick={confirmPlaced} loading={loading} disabled={stake <= 0} className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400">
-                Apostei {formatBRL(stake)} ✅
+                ⚔️ Entrei no Encontro — {formatBRL(stake)}
               </Button>
             ) : (
               <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-800/30 p-3">
-                <p className="text-sm font-medium text-slate-200">E aí, deu no que? 👀</p>
+                <p className="text-sm font-medium text-slate-200">Resultado do Encontro 👀</p>
                 <div className="flex items-center gap-2">
                   <input type="number" step="0.01" inputMode="decimal" value={payout} onChange={(e) => setPayout(e.target.value)} placeholder="Quanto recebeu (R$)" className="h-9 flex-1 rounded-md border border-slate-700 bg-slate-900 px-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none" />
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => recordResult('won')} loading={loading} className="flex-1 bg-emerald-500 text-slate-950 hover:bg-emerald-400">Ganhei 🟢</Button>
-                  <Button onClick={() => recordResult('lost')} loading={loading} variant="outline" className="flex-1 border-slate-700 text-slate-300">Perdi 🔴</Button>
+                  <Button onClick={() => recordResult('won')} loading={loading} className="flex-1 bg-emerald-500 text-slate-950 hover:bg-emerald-400">Vitória! 🏆</Button>
+                  <Button onClick={() => recordResult('lost')} loading={loading} variant="outline" className="flex-1 border-slate-700 text-slate-300">Derrota 🔴</Button>
                 </div>
                 <p className="text-[11px] text-slate-500">Confirmar o resultado deixa o Zé mais esperto com você 🧠</p>
               </div>
