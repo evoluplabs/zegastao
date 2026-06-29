@@ -421,6 +421,9 @@ export interface Profile {
   companionSpeciesId?: string;
   companionName?: string;
   tourDone?: boolean;
+  // Daily check-in / streak
+  lastCheckIn?: string;   // YYYY-MM-DD
+  dailyStreak?: number;
 }
 
 export interface InventoryItem {

@@ -89,6 +89,7 @@ import { Admin } from '@/pages/Admin';
 import { ImpostoRenda } from '@/pages/ImpostoRenda';
 import { Referrals } from '@/pages/Referrals';
 import { Caixinha } from '@/pages/Caixinha';
+import { Vila } from '@/pages/Vila';
 import { AdminRoute } from '@/components/AdminRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -143,6 +144,7 @@ export default function App() {
           <Route path="/referrals" element={<ErrorBoundary><Referrals /></ErrorBoundary>} />
           <Route path="/caixinha" element={<ErrorBoundary><Caixinha /></ErrorBoundary>} />
           <Route path="/inventario" element={<ErrorBoundary><Inventory /></ErrorBoundary>} />
+          <Route path="/vila" element={<ErrorBoundary><Vila /></ErrorBoundary>} />
           {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<ErrorBoundary><Betting /></ErrorBoundary>} />}
         </Route>
       </Routes>

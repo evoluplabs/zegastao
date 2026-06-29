@@ -58,5 +58,27 @@ service cloud.firestore {
       allow update, delete: if request.auth != null &&
         request.auth.uid == resource.data.userId;
     }
+
+    // Stats sociais públicos — SOMENTE dados de jogo (alias, nível, XP, streak, conquistas).
+    // NUNCA expõe valores financeiros (R$, dívidas, saldo).
+    match /social_stats/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Ranking global — gerado 1×/dia pela Cloud Function buildLeaderboard (Admin SDK).
+    // Leitura para autenticados; escrita apenas via Admin SDK (função).
+    match /leaderboard/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Mural da Vila — leitura pública, criação por autenticados, edição/remoção pelo autor.
+    match /vila_posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+    }
   }
 }

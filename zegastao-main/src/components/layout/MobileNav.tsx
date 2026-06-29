@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Wallet,
   Plus,
-  MessageCircle,
   UserCircle,
   Receipt,
   ArrowDownCircle,
@@ -12,6 +11,7 @@ import {
   Upload,
   CreditCard,
   Package,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionSheet } from '@/components/ActionSheet';
@@ -23,7 +23,7 @@ const NAV = [
   { to: '/dashboard', label: 'Castelo', icon: LayoutDashboard, end: true },
   { to: '/carteira', label: 'Arsenal', icon: Wallet },
   null, // FAB placeholder
-  { to: '/inventario', label: 'Inventário', icon: Package },
+  { to: '/vila', label: 'Vila', icon: Home },
   { to: '/profile', label: 'Ficha', icon: UserCircle },
 ];
 

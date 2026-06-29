@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon, Scroll, Map, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon, Scroll, Map, Award, Swords, BookOpen, Star } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { updateUserDoc } from '@/lib/firestore';
 import { useMilestones, useDailyTasks } from '@/hooks/useJourney';
@@ -12,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { ShareableCard } from '@/components/share/ShareableCard';
 import { QuestCard } from '@/components/QuestCard';
 import { SagaTrail } from '@/components/rpg/SagaTrail';
+import { HuntBoard } from '@/components/rpg/HuntBoard';
+import { SkillTree } from '@/components/rpg/SkillTree';
+import { Bestiary } from '@/components/rpg/Bestiary';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { MILESTONE_ORDER, PHASE_LABELS, type Milestone } from '@/types';
-import { formatBRL, formatPct } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { formatBRL, formatPct, cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 
 const MILESTONE_EMOJIS: Record<string, string> = {
@@ -59,7 +60,6 @@ function CelebrationModal({
             Conquista desbloqueada!
           </div>
 
-          {/* Card compartilhável como IMAGEM (alavanca 1) */}
           <ShareableCard
             emoji={emoji}
             title={milestoneName}
@@ -70,7 +70,6 @@ function CelebrationModal({
           />
         </div>
 
-        {/* CTA de indicação no momento de maior orgulho (alavanca 3) */}
         <div className="mx-6 mb-4 mt-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
           <p className="flex items-center justify-center gap-1.5 text-sm font-semibold">
             <Gift className="h-4 w-4 text-primary" /> Chama um amigo pra essa jornada
@@ -100,7 +99,7 @@ function CelebrationModal({
   );
 }
 
-type JourneyTab = 'trilha' | 'missoes' | 'conquistas';
+type JourneyTab = 'trilha' | 'cacada' | 'missoes' | 'skills' | 'conquistas';
 
 export function Journey() {
   const profile = useStore((s) => s.profile);
@@ -116,12 +115,10 @@ export function Journey() {
   const skills = profile?.skills || [];
   const incomeTaskSuggestions = generateIncomeTaskSuggestions(skills, debts, []).slice(0, 3);
 
-  // Debt payoff context
   const activeDebts = debts.filter((d) => d.status === 'active');
   const topDebt = [...activeDebts].sort((a, b) => b.interestRateMonthly - a.interestRateMonthly)[0];
   const totalDebtBalance = activeDebts.reduce((s, d) => s + d.totalBalance, 0);
 
-  // Detecta novos milestones não celebrados
   useEffect(() => {
     const uncelebrated = milestones.find((m) => !m.celebrationShown);
     if (uncelebrated) {
@@ -135,16 +132,18 @@ export function Journey() {
     try {
       await updateUserDoc('journey_milestones', celebrating.id, { celebrationShown: true });
     } catch {
-      // Ignora erro de rede — fecha o modal mesmo assim
+      // Ignora erro de rede
     } finally {
       setCelebrating(null);
     }
   }
 
   const TABS: { id: JourneyTab; label: string; icon: typeof Map }[] = [
-    { id: 'trilha', label: 'Trilha', icon: Map },
-    { id: 'missoes', label: 'Missões', icon: Zap },
-    { id: 'conquistas', label: 'Conquistas', icon: Award },
+    { id: 'trilha',    label: 'Trilha',     icon: Map },
+    { id: 'cacada',   label: 'Caçada',     icon: Swords },
+    { id: 'missoes',  label: 'Missões',    icon: Zap },
+    { id: 'skills',   label: 'Skills',     icon: Star },
+    { id: 'conquistas', label: 'Álbum',   icon: Award },
   ];
 
   return (
@@ -165,8 +164,8 @@ export function Journey() {
         )}
       </div>
 
-      {/* Abas */}
-      <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-secondary p-1">
+      {/* Abas — scrollável no mobile */}
+      <div className="flex gap-1 rounded-xl bg-secondary p-1 overflow-x-auto no-scrollbar">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
@@ -174,7 +173,7 @@ export function Journey() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
-                'flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors',
+                'flex items-center justify-center gap-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0',
                 tab === t.id ? 'bg-gold text-gold-foreground' : 'text-muted-foreground'
               )}
             >
@@ -187,6 +186,19 @@ export function Journey() {
 
       {/* ── Trilha (Saga) ── */}
       {tab === 'trilha' && <SagaTrail />}
+
+      {/* ── Caçada de Renda Extra ── */}
+      {tab === 'cacada' && (
+        <div className="space-y-3">
+          <div className="rounded-2xl border bg-card p-3 flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Conclua missões de renda extra. Seu poder aumenta com o nível de Freelancer.
+            </p>
+          </div>
+          <HuntBoard />
+        </div>
+      )}
 
       {/* ── Missões ── */}
       {tab === 'missoes' && (
@@ -232,8 +244,13 @@ export function Journey() {
                 </p>
                 {incomeTaskSuggestions.length > 0 && (
                   <p className="text-xs text-primary">
-                    Enquanto isso, veja bounties no{' '}
-                    <Link to="/copilot?tab=historico" className="underline font-medium">Sábio → Persona & Contexto</Link>
+                    Enquanto isso, veja bounties na aba{' '}
+                    <button
+                      onClick={() => setTab('cacada')}
+                      className="underline font-medium"
+                    >
+                      Caçada
+                    </button>
                   </p>
                 )}
               </div>
@@ -246,16 +263,19 @@ export function Journey() {
             )}
           </div>
 
-          {/* Bounty Board — renda extra */}
+          {/* Bounty Board */}
           {incomeTaskSuggestions.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                   💰 Bounty Board
                 </h3>
-                <Link to="/copilot?tab=historico" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                <button
+                  onClick={() => setTab('cacada')}
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
                   ver todos <LinkIcon className="h-3 w-3" />
-                </Link>
+                </button>
               </div>
               <div className="space-y-2">
                 {incomeTaskSuggestions.map((t) => (
@@ -280,59 +300,11 @@ export function Journey() {
         </div>
       )}
 
-      {/* ── Conquistas ── */}
-      {tab === 'conquistas' && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-              <Trophy className="h-4 w-4 text-amber-500" />
-              🏆 Trilha de Conquistas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <div className="absolute left-[17px] top-2 bottom-2 w-0.5 bg-border" />
-              <ol className="space-y-2 relative">
-                {MILESTONE_ORDER.map((m, i) => {
-                  const done = achieved.has(m.id);
-                  const emoji = MILESTONE_EMOJIS[m.id] || '🎯';
-                  return (
-                    <li key={m.id} className={cn(
-                      'flex items-center gap-3 rounded-xl p-3 transition-all',
-                      done ? 'bg-success/5 border border-success/20' : 'border border-transparent'
-                    )}>
-                      <div className={cn(
-                        'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm border',
-                        done ? 'bg-success text-success-foreground border-success' : 'bg-card border-border text-muted-foreground/40'
-                      )}>
-                        {done ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          'text-sm',
-                          done ? 'font-semibold text-foreground' : 'text-muted-foreground'
-                        )}>
-                          {emoji} {m.name}
-                        </p>
-                      </div>
-                      {done && (
-                        <Badge variant="outline" className="shrink-0 text-xs border-success/30 text-success">
-                          ✓ conquistado
-                        </Badge>
-                      )}
-                      {!done && i === Array.from(achieved).length && (
-                        <Badge variant="outline" className="shrink-0 text-xs border-primary/30 text-primary">
-                          próxima missão
-                        </Badge>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* ── Skills ── */}
+      {tab === 'skills' && <SkillTree />}
+
+      {/* ── Álbum de Conquistas (Bestiário) ── */}
+      {tab === 'conquistas' && <Bestiary />}
     </div>
   );
 }

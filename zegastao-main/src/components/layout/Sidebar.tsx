@@ -13,6 +13,7 @@ import {
   Users,
   PiggyBank,
   Package,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -46,6 +47,7 @@ export function Sidebar() {
     { to: '/transactions', label: 'Livro de Ouro', sub: 'Histórico e extratos', icon: Receipt },
     { to: '/copilot', label: 'Sábio', sub: 'Conselho com IA', icon: MessageCircle },
     { to: '/journey', label: 'Quest Log', sub: 'Missões e conquistas', icon: Trophy },
+    { to: '/vila', label: 'A Vila', sub: 'Aliados, ranking e hub', icon: Home },
   ];
 
   return (
