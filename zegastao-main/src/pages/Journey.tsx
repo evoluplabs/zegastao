@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon, Scroll } from 'lucide-react';
+import { CheckCircle2, Circle, Trophy, X, PartyPopper, Gift, Zap, Link as LinkIcon, Scroll, Map, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { updateUserDoc } from '@/lib/firestore';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShareableCard } from '@/components/share/ShareableCard';
 import { QuestCard } from '@/components/QuestCard';
+import { SagaTrail } from '@/components/rpg/SagaTrail';
 import { generateIncomeTaskSuggestions } from '@/lib/incomeTaskSuggestions';
 import { MILESTONE_ORDER, PHASE_LABELS, type Milestone } from '@/types';
 import { formatBRL, formatPct } from '@/lib/utils';
@@ -99,6 +100,8 @@ function CelebrationModal({
   );
 }
 
+type JourneyTab = 'trilha' | 'missoes' | 'conquistas';
+
 export function Journey() {
   const profile = useStore((s) => s.profile);
   const user = useStore((s) => s.user);
@@ -108,6 +111,7 @@ export function Journey() {
   const achieved = new Set(milestones.map((m) => m.id));
   const phase = profile?.financialPhase;
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
+  const [tab, setTab] = useState<JourneyTab>('trilha');
 
   const skills = profile?.skills || [];
   const incomeTaskSuggestions = generateIncomeTaskSuggestions(skills, debts, []).slice(0, 3);
@@ -137,6 +141,12 @@ export function Journey() {
     }
   }
 
+  const TABS: { id: JourneyTab; label: string; icon: typeof Map }[] = [
+    { id: 'trilha', label: 'Trilha', icon: Map },
+    { id: 'missoes', label: 'Missões', icon: Zap },
+    { id: 'conquistas', label: 'Conquistas', icon: Award },
+  ];
+
   return (
     <div className="space-y-5">
       {celebrating && (
@@ -144,8 +154,8 @@ export function Journey() {
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Scroll className="h-5 w-5 text-primary" /> Quest Log
+        <h2 className="font-display text-lg font-bold flex items-center gap-2">
+          <Scroll className="h-5 w-5 text-gold" /> Jornada
         </h2>
         {phase && (
           <Badge variant="success" className="gap-1">
@@ -155,144 +165,174 @@ export function Journey() {
         )}
       </div>
 
-      {/* Boss em foco */}
-      {topDebt && (
-        <div className="rounded-2xl border bg-card p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🎯 Boss em Foco</p>
-            <Badge variant="destructive" className="text-[10px]">
-              {formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.
-            </Badge>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <p className="font-bold text-base">{topDebt.creditor}</p>
-            <p className="text-sm font-semibold">{formatBRL(topDebt.totalBalance)}</p>
-          </div>
-          {totalDebtBalance > 0 && (
-            <>
-              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full"
-                  style={{ width: `${Math.max(5, 100 - (topDebt.totalBalance / totalDebtBalance) * 100)}%` }}
-                />
+      {/* Abas */}
+      <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-secondary p-1">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                'flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors',
+                tab === t.id ? 'bg-gold text-gold-foreground' : 'text-muted-foreground'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Trilha (Saga) ── */}
+      {tab === 'trilha' && <SagaTrail />}
+
+      {/* ── Missões ── */}
+      {tab === 'missoes' && (
+        <div className="space-y-5">
+          {/* Boss em foco */}
+          {topDebt && (
+            <div className="rounded-2xl border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🎯 Boss em Foco</p>
+                <Badge variant="destructive" className="text-[10px]">
+                  {formatPct(topDebt.interestRateMonthly * 100, 1)} a.m.
+                </Badge>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                {activeDebts.length} dívida{activeDebts.length !== 1 ? 's' : ''} ativa{activeDebts.length !== 1 ? 's' : ''} · Total {formatBRL(totalDebtBalance)}
-              </p>
-            </>
+              <div className="flex items-baseline justify-between">
+                <p className="font-bold text-base">{topDebt.creditor}</p>
+                <p className="text-sm font-semibold">{formatBRL(topDebt.totalBalance)}</p>
+              </div>
+              {totalDebtBalance > 0 && (
+                <>
+                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full"
+                      style={{ width: `${Math.max(5, 100 - (topDebt.totalBalance / totalDebtBalance) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {activeDebts.length} dívida{activeDebts.length !== 1 ? 's' : ''} ativa{activeDebts.length !== 1 ? 's' : ''} · Total {formatBRL(totalDebtBalance)}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Missões de hoje */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-amber-500" /> Missões de hoje
+            </h3>
+            {tasks.length === 0 ? (
+              <div className="rounded-xl border bg-card p-5 text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Suas missões personalizadas aparecem aqui após o processamento noturno (00:00).
+                </p>
+                {incomeTaskSuggestions.length > 0 && (
+                  <p className="text-xs text-primary">
+                    Enquanto isso, veja bounties no{' '}
+                    <Link to="/copilot?tab=historico" className="underline font-medium">Sábio → Persona & Contexto</Link>
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {tasks.map((t, i) => (
+                  <QuestCard key={i} task={t} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bounty Board — renda extra */}
+          {incomeTaskSuggestions.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  💰 Bounty Board
+                </h3>
+                <Link to="/copilot?tab=historico" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                  ver todos <LinkIcon className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {incomeTaskSuggestions.map((t) => (
+                  <div key={t.id} className="rounded-xl border bg-card p-4 flex items-start gap-3 hover:border-amber-500/30 transition-colors">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg shrink-0">💰</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm leading-snug">{t.title}</p>
+                      {t.debtContext && (
+                        <p className="text-[11px] font-semibold text-green-500 mt-0.5">{t.debtContext}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        💰 {t.estimatedReturn} · ⏱ {t.estimatedTime}
+                        {t.platform && ` · ${t.platform}`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs font-bold text-amber-400">+100 XP</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
 
-      {/* Missões de hoje */}
-      <div>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
-          <Zap className="h-3.5 w-3.5 text-amber-500" /> Missões de hoje
-        </h3>
-        {tasks.length === 0 ? (
-          <div className="rounded-xl border bg-card p-5 text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Suas missões personalizadas aparecem aqui após o processamento noturno (00:00).
-            </p>
-            {incomeTaskSuggestions.length > 0 && (
-              <p className="text-xs text-primary">
-                Enquanto isso, veja bounties no{' '}
-                <Link to="/copilot?tab=historico" className="underline font-medium">Sábio → Persona & Contexto</Link>
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {tasks.map((t, i) => (
-              <QuestCard key={i} task={t} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Bounty Board — renda extra */}
-      {incomeTaskSuggestions.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-              💰 Bounty Board
-            </h3>
-            <Link to="/copilot?tab=historico" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-              ver todos <LinkIcon className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {incomeTaskSuggestions.map((t) => (
-              <div key={t.id} className="rounded-xl border bg-card p-4 flex items-start gap-3 hover:border-amber-500/30 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg shrink-0">💰</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm leading-snug">{t.title}</p>
-                  {t.debtContext && (
-                    <p className="text-[11px] font-semibold text-green-500 mt-0.5">{t.debtContext}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    💰 {t.estimatedReturn} · ⏱ {t.estimatedTime}
-                    {t.platform && ` · ${t.platform}`}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs font-bold text-amber-400">+100 XP</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Trilha de marcos */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <Trophy className="h-4 w-4 text-amber-500" />
-            🏆 Trilha de Conquistas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <div className="absolute left-[17px] top-2 bottom-2 w-0.5 bg-border" />
-            <ol className="space-y-2 relative">
-              {MILESTONE_ORDER.map((m, i) => {
-                const done = achieved.has(m.id);
-                const emoji = MILESTONE_EMOJIS[m.id] || '🎯';
-                return (
-                  <li key={m.id} className={cn(
-                    'flex items-center gap-3 rounded-xl p-3 transition-all',
-                    done ? 'bg-success/5 border border-success/20' : 'border border-transparent'
-                  )}>
-                    <div className={cn(
-                      'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm border',
-                      done ? 'bg-success text-success-foreground border-success' : 'bg-card border-border text-muted-foreground/40'
+      {/* ── Conquistas ── */}
+      {tab === 'conquistas' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Trophy className="h-4 w-4 text-amber-500" />
+              🏆 Trilha de Conquistas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <div className="absolute left-[17px] top-2 bottom-2 w-0.5 bg-border" />
+              <ol className="space-y-2 relative">
+                {MILESTONE_ORDER.map((m, i) => {
+                  const done = achieved.has(m.id);
+                  const emoji = MILESTONE_EMOJIS[m.id] || '🎯';
+                  return (
+                    <li key={m.id} className={cn(
+                      'flex items-center gap-3 rounded-xl p-3 transition-all',
+                      done ? 'bg-success/5 border border-success/20' : 'border border-transparent'
                     )}>
-                      {done ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        'text-sm',
-                        done ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                      <div className={cn(
+                        'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm border',
+                        done ? 'bg-success text-success-foreground border-success' : 'bg-card border-border text-muted-foreground/40'
                       )}>
-                        {emoji} {m.name}
-                      </p>
-                    </div>
-                    {done && (
-                      <Badge variant="outline" className="shrink-0 text-xs border-success/30 text-success">
-                        ✓ conquistado
-                      </Badge>
-                    )}
-                    {!done && i === Array.from(achieved).length && (
-                      <Badge variant="outline" className="shrink-0 text-xs border-primary/30 text-primary">
-                        próxima missão
-                      </Badge>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        </CardContent>
-      </Card>
+                        {done ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          'text-sm',
+                          done ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                        )}>
+                          {emoji} {m.name}
+                        </p>
+                      </div>
+                      {done && (
+                        <Badge variant="outline" className="shrink-0 text-xs border-success/30 text-success">
+                          ✓ conquistado
+                        </Badge>
+                      )}
+                      {!done && i === Array.from(achieved).length && (
+                        <Badge variant="outline" className="shrink-0 text-xs border-primary/30 text-primary">
+                          próxima missão
+                        </Badge>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
