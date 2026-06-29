@@ -188,7 +188,7 @@ function VilaHub() {
 export function Vila() {
   const [tab, setTab] = useState<VilaTab>('vila');
 
-  const TABS: { id: VilaTab; label: string; icon: typeof MessageCircle }[] = [
+  const TABS: { id: VilaTab; label: string; icon: typeof MapPin }[] = [
     { id: 'vila',    label: 'Vila',    icon: MapPin },
     { id: 'fazenda', label: 'Fazenda', icon: ShoppingBag },
     { id: 'aliados', label: 'Aliados', icon: Package },
