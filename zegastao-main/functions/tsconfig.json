@@ -8,7 +8,7 @@
     "noUnusedLocals": false,
     "outDir": "lib",
     "rootDir": "src",
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "sourceMap": true,
     "strict": true,
     "skipLibCheck": true,
