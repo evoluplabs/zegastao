@@ -424,6 +424,9 @@ export interface Profile {
   // Daily check-in / streak
   lastCheckIn?: string;   // YYYY-MM-DD
   dailyStreak?: number;
+  // WhatsApp
+  whatsappPhone?: string;
+  whatsappVerified?: boolean;
 }
 
 export interface InventoryItem {

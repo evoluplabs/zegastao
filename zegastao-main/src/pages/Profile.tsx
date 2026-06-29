@@ -25,6 +25,7 @@ import { PHASE_LABELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { PersonalContext } from './PersonalContext';
 import { FinancialSetupWizard } from '@/components/flows/FinancialSetupWizard';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 function Avatar({ name }: { name?: string }) {
   const initials = name
@@ -165,6 +166,9 @@ export function Profile() {
         </div>
         <ChevronRight className="h-4 w-4 text-amber-500/60 shrink-0" />
       </Link>
+
+      {/* WhatsApp */}
+      <WhatsAppLink />
 
       {/* Resumo financeiro */}
       <div className="space-y-2">

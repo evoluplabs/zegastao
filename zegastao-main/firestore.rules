@@ -80,5 +80,23 @@ service cloud.firestore {
       allow update, delete: if request.auth != null &&
         request.auth.uid == resource.data.userId;
     }
+
+    // Vínculo WhatsApp ↔ uid — criado/lido pelo webhook via Admin SDK.
+    // Sem leitura pública: apenas Admin SDK acessa.
+    match /whatsapp_links/{phone} {
+      allow read, write: if isAdmin();
+    }
+
+    // PINs de vinculação WhatsApp (expiram em 10 min).
+    // Criados pelo frontend autenticado; consumidos e deletados pelo webhook (Admin SDK).
+    match /whatsapp_pins/{pin} {
+      allow create: if request.auth != null;
+      allow read, delete: if isAdmin();
+    }
+
+    // Log de mensagens recebidas (sem PII financeiro, sem corpo da mensagem).
+    match /whatsapp_messages/{msgId} {
+      allow read, write: if isAdmin();
+    }
   }
 }
