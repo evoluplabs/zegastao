@@ -167,10 +167,14 @@ export interface ResolvedSaga {
 }
 
 /**
- * Resolve a Saga combinando dois sinais:
- *  - `financialPhase` (autoritativo, calculado pelo backend) define done/current/locked
+ * Resolve a Saga de forma SERVER-AUTHORITATIVE (à prova de burla):
+ *  - `financialPhase` (calculado pelo backend) é a verdade que define done/current/locked
  *    do capítulo → lida bem com casos extremos (ex.: usuário sem dívidas pula a Caçada).
- *  - as missões mostram o checklist real dentro de cada capítulo (orientação + progresso).
+ *  - Um capítulo só "fecha" sozinho pelas missões quando TODAS são baseadas em
+ *    milestones do backend (imutáveis). Capítulos com checks de contagem
+ *    (conta/cofre/investimento adicionados — facilmente forjáveis no cliente) só
+ *    avançam quando o backend promove a fase. As contagens seguem como checklist
+ *    de orientação, mas não destravam o próximo capítulo.
  */
 export function resolveSaga(ctx: SagaContext): ResolvedSaga {
   const userPhase = phaseIndex(ctx.phase);
@@ -184,9 +188,13 @@ export function resolveSaga(ctx: SagaContext): ResolvedSaga {
     const completed = missions.filter((m) => m.done).length;
     const total = missions.length;
     const allMissionsDone = completed === total;
+    // Só conta como "concluído pelas missões" se TODAS forem milestones do backend
+    // (imutáveis). Checks de contagem no cliente não fecham o capítulo.
+    const allMilestoneBased = ch.missions.every((m) => m.check.startsWith('milestone:'));
+    const doneByMissions = allMissionsDone && allMilestoneBased;
 
     let status: ChapterStatus;
-    if (chPhase < userPhase || allMissionsDone) status = 'done';
+    if (chPhase < userPhase || doneByMissions) status = 'done';
     else if (chPhase === userPhase) status = 'current';
     else status = 'locked';
 
