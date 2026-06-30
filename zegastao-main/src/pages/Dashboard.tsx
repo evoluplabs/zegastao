@@ -247,10 +247,14 @@ export function Dashboard() {
       <div className="space-y-4">
 
         {/* Character Panel — RPG identity */}
-        <CharacterPanel />
+        <div data-tour="character">
+          <CharacterPanel />
+        </div>
 
         {/* Companion — reage ao HP financeiro */}
-        <CompanionWidget hp={companionHP} />
+        <div data-tour="companion">
+          <CompanionWidget hp={companionHP} />
+        </div>
 
         {/* Boas-vindas pós-onboarding */}
         {showWelcome && (
@@ -268,7 +272,7 @@ export function Dashboard() {
         )}
 
         {/* ── 1. HERO ─────────────────────────────────────── */}
-        <div className="rounded-3xl border bg-card overflow-hidden">
+        <div data-tour="ouro" className="rounded-3xl border bg-card overflow-hidden">
 
           {/* Patrimônio: saldo das contas */}
           <div className="px-5 pt-5 pb-4">
@@ -337,7 +341,7 @@ export function Dashboard() {
           </div>
 
           {/* Fluxo do mês: Entradas / Saídas / Sobra — vocabulário RPG */}
-          <div className="grid grid-cols-3 divide-x border-t">
+          <div data-tour="fluxo" className="grid grid-cols-3 divide-x border-t">
             <div className="min-w-0 px-3 py-3">
               <p className="text-[10px] font-medium text-muted-foreground mb-1">💰 Ouro Ganho</p>
               <p className="text-sm font-bold text-success tabular-nums truncate">
@@ -509,7 +513,7 @@ export function Dashboard() {
         )}
 
         {/* ── 4. AÇÕES RÁPIDAS ─────────────────────────── */}
-        <div className="grid grid-cols-4 gap-2">
+        <div data-tour="acoes" className="grid grid-cols-4 gap-2">
           {[
             { icon: Plus, label: 'Lançar', onClick: () => setOpenTx(true), color: 'bg-primary/10 text-primary' },
             { icon: Upload, label: 'Extrato', to: '/upload', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
@@ -557,7 +561,7 @@ export function Dashboard() {
 
         {/* ── 5. PERGAMINHO DO SÁBIO ────────────────────── */}
         {insights.length > 0 && (
-          <div className="rounded-3xl border bg-card overflow-hidden">
+          <div data-tour="sabio" className="rounded-3xl border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b">
               <h2 className="text-sm font-semibold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />

@@ -7,6 +7,7 @@ import {
   Infinity as InfinityIcon, Lock,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { setProfile } from '@/lib/firestore';
 import { useMilestones } from '@/hooks/useJourney';
 import { DailyRewardCard } from '@/components/rpg/DailyRewardCard';
 import { FriendsPanel } from '@/components/rpg/FriendsPanel';
@@ -31,9 +32,18 @@ const COMPANION_UNLOCKS: { speciesId: string; requiredXP: number; label: string 
 
 function CompanionUnlockPanel() {
   const profile = useStore((s) => s.profile);
+  const setStoreProfile = useStore((s) => s.setProfile);
   const xp = profile?.xp ?? 0;
   const level = levelFromXP(xp);
   const currentSpeciesId = profile?.companionSpeciesId ?? 'dragon';
+
+  // Equipa um companion desbloqueado: grava no perfil (Firestore + store).
+  // O listener em tempo real propaga para Dashboard, tour e demais telas.
+  function equip(speciesId: string) {
+    if (!profile || speciesId === currentSpeciesId) return;
+    setStoreProfile({ ...profile, companionSpeciesId: speciesId });
+    setProfile({ companionSpeciesId: speciesId }).catch(() => {});
+  }
 
   return (
     <div className="rounded-2xl border bg-card overflow-hidden">
@@ -41,7 +51,7 @@ function CompanionUnlockPanel() {
         <span className="text-xl">🥚</span>
         <div>
           <p className="font-display font-bold text-sm">Companions</p>
-          <p className="text-xs text-muted-foreground">Ovos desbloqueados por XP</p>
+          <p className="text-xs text-muted-foreground">Toque para equipar — desbloqueie mais por XP</p>
         </div>
         <div className="ml-auto">
           <p className="text-xs font-bold text-gold">{xp.toLocaleString('pt-BR')} XP · Lv {level}</p>
@@ -53,29 +63,39 @@ function CompanionUnlockPanel() {
           const unlocked = xp >= requiredXP;
           const isActive = speciesId === currentSpeciesId;
           return (
-            <div key={speciesId} className={cn(
-              'rounded-xl border p-3 flex flex-col items-center gap-1 text-center transition-all',
-              isActive ? 'border-gold/40 bg-gold/10' : unlocked ? 'border-primary/20 bg-primary/5' : 'border-border opacity-50'
-            )}>
+            <button
+              key={speciesId}
+              type="button"
+              disabled={!unlocked}
+              onClick={() => equip(speciesId)}
+              className={cn(
+                'rounded-xl border p-3 flex flex-col items-center gap-1 text-center transition-all',
+                isActive ? 'border-gold/40 bg-gold/10 ring-2 ring-gold/30'
+                  : unlocked ? 'border-primary/20 bg-primary/5 hover:border-gold/40 hover:bg-gold/5 active:scale-95 cursor-pointer'
+                  : 'border-border opacity-50 cursor-not-allowed'
+              )}
+            >
               <div className={cn(
                 'h-12 w-12 rounded-xl flex items-center justify-center text-2xl',
                 unlocked ? 'bg-background' : 'bg-secondary grayscale'
               )}>
                 {unlocked ? (
-                  <span className={unlocked ? 'companion-idle' : ''}>{species.emoji}</span>
+                  <span className="companion-idle">{species.emoji}</span>
                 ) : (
                   <Lock className="h-5 w-5 text-muted-foreground/30" />
                 )}
               </div>
               <p className={cn(
-                'text-[10px] font-semibold',
+                'text-[10px] font-semibold truncate max-w-full w-full',
                 isActive ? 'text-gold' : unlocked ? 'text-foreground' : 'text-muted-foreground/40'
               )}>
                 {species.name}
               </p>
               <p className="text-[9px] text-muted-foreground">{label}</p>
-              {isActive && <span className="text-[9px] text-gold font-bold">ativo</span>}
-            </div>
+              {isActive
+                ? <span className="text-[9px] text-gold font-bold">✓ ativo</span>
+                : unlocked && <span className="text-[9px] text-primary font-bold">equipar</span>}
+            </button>
           );
         })}
       </div>

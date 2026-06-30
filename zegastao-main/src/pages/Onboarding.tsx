@@ -195,7 +195,7 @@ export function Onboarding() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5 p-4 gap-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5 px-3 py-4 sm:p-4 gap-6">
       <Link to="/"><Logo size="sm" /></Link>
       {/* Progress indicator */}
       <div className="w-full max-w-md">
@@ -220,10 +220,10 @@ export function Onboarding() {
             style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
           />
         </div>
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between mt-1 gap-0.5">
           {STEPS.map((s, i) => (
             <span key={i} className={cn(
-              'text-xs flex-1 text-center transition-colors',
+              'text-[9px] sm:text-xs flex-1 min-w-0 text-center leading-tight truncate transition-colors',
               i === step ? 'text-primary font-medium' : 'text-muted-foreground'
             )}>
               {s.label}
@@ -358,7 +358,7 @@ export function Onboarding() {
                 <Label>Nome do inimigo (credor)</Label>
                 <Input value={debt.name} onChange={(e) => setDebt({ ...debt, name: e.target.value })} placeholder="Ex: Cartão Nubank" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <CurrencyInput label="Saldo" value={debt.balance} onChange={(v) => setDebt({ ...debt, balance: v })} />
                 <CurrencyInput label="Parcela/mês" value={debt.payment} onChange={(v) => setDebt({ ...debt, payment: v })} />
               </div>

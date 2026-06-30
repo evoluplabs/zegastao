@@ -80,7 +80,7 @@ export function CharacterCreation({ value, onChange }: Props) {
             key={t}
             onClick={() => setSub(i as 0 | 1 | 2)}
             className={cn(
-              'py-2 rounded-lg text-xs font-bold transition-colors',
+              'py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition-colors truncate',
               sub === i ? 'bg-gold text-gold-foreground' : 'text-muted-foreground'
             )}
           >
@@ -135,7 +135,7 @@ export function CharacterCreation({ value, onChange }: Props) {
       {sub === 1 && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">Escolha a aparência do seu aventureiro.</p>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
             {AVATARS.map((a) => {
               const active = value.avatarId === a.id;
               return (
@@ -143,12 +143,12 @@ export function CharacterCreation({ value, onChange }: Props) {
                   key={a.id}
                   onClick={() => set({ avatarId: a.id })}
                   className={cn(
-                    'aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all',
+                    'aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 px-1 transition-all min-w-0',
                     active ? 'border-gold ring-2 ring-gold/30 bg-secondary' : 'border-border bg-card hover:border-muted-foreground/30'
                   )}
                 >
                   <span className="text-2xl">{a.emoji}</span>
-                  <span className="text-[8px] text-muted-foreground">{a.label}</span>
+                  <span className="text-[8px] sm:text-[9px] text-muted-foreground truncate max-w-full w-full text-center">{a.label}</span>
                 </button>
               );
             })}
@@ -179,12 +179,12 @@ export function CharacterCreation({ value, onChange }: Props) {
                     companionName: value.companionName?.trim() ? value.companionName : s.suggestedName,
                   })}
                   className={cn(
-                    'rounded-xl border-2 p-2.5 flex flex-col items-center gap-1 transition-all',
+                    'rounded-xl border-2 p-2.5 flex flex-col items-center gap-1 transition-all min-w-0',
                     active ? 'border-gold ring-2 ring-gold/30 bg-secondary' : 'border-border bg-card hover:border-muted-foreground/30'
                   )}
                 >
                   <span className={cn('text-3xl', active && 'companion-happy')}>{s.emoji}</span>
-                  <span className="text-[10px] font-bold text-foreground">{s.name}</span>
+                  <span className="text-[10px] font-bold text-foreground truncate max-w-full w-full text-center">{s.name}</span>
                 </button>
               );
             })}
