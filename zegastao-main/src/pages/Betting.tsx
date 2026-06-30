@@ -59,7 +59,7 @@ export function Betting() {
         const res = await zeMandate({ action: 'get' });
         setMandate(res.data.mandate);
         if (res.data.mandate) {
-          setRiskLevel(res.data.mandate.maxAutoRiskLevel);
+          setRiskLevel(res.data.mandate.maxAutoRiskLevel ?? 1);
           await loadCycle();
         }
       } catch {
@@ -89,16 +89,20 @@ export function Betting() {
     setError('');
     setNoBetMsg('');
     try {
-      const printFixture = slip?.homeTeam && slip.awayTeam ? {
+      const validMarkets = (slip?.markets ?? []).filter(
+        (m) => typeof m.odd === 'number' && m.odd > 0,
+      );
+      const printFixture = slip?.homeTeam && slip.awayTeam && validMarkets.length > 0 ? {
         homeTeam: slip.homeTeam,
         awayTeam: slip.awayTeam,
         league: slip.league,
-        markets: slip.markets,
+        markets: validMarkets,
       } : undefined;
+      const safeRiskLevel = riskLevel ?? 1;
       const res = await zeCycle({
         action: 'build',
-        riskLevel,
-        targetMultiplier: riskLevel === 2 ? targetMultiplier : undefined,
+        riskLevel: safeRiskLevel,
+        targetMultiplier: safeRiskLevel === 2 ? targetMultiplier : undefined,
         ...(printFixture ? { printFixture } : {}),
       });
       if (res.data.empty) {
