@@ -1,8 +1,16 @@
 // Ponto de entrada das Cloud Functions. Inicializa o Admin SDK e exporta tudo.
 import { initializeApp } from 'firebase-admin/app';
+import { setGlobalOptions } from 'firebase-functions/v2';
 import * as Sentry from '@sentry/node';
 
 initializeApp();
+
+// Teto global de instâncias por função (2ª geração = serviço Cloud Run, cada um
+// reserva CPU). Mantém a soma de CPU dentro da cota regional de southamerica-east1.
+// Funções que precisarem de mais podem sobrescrever maxInstances individualmente.
+// IMPORTANTE: deve rodar ANTES dos `export { ... } from './functions/...'` abaixo
+// (no output CommonJS as re-exports carregam os módulos na ordem do arquivo).
+setGlobalOptions({ maxInstances: 10 });
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
