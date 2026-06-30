@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 interface ExtractedMarket { market: string; selection: string; odd: number; }
 interface ExtractedSlip {
-  homeTeam?: string; awayTeam?: string; league?: string;
+  homeTeam?: string; awayTeam?: string; league?: string; matchDate?: string;
   markets: ExtractedMarket[]; confidence: number; superOdds?: boolean;
 }
 type ExtractResult = { slip: ExtractedSlip; source: 'ocr' | 'vision' };
@@ -229,8 +229,14 @@ export function UploadOdds({ onExtracted }: Props) {
 }
 
 function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: MarketGroup[]; source: 'ocr' | 'vision' }) {
+  const isPastGame = slip.matchDate ? new Date(`${slip.matchDate}T23:59:59Z`) < new Date() : false;
   return (
     <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+      {isPastGame && (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300">
+          ⚠️ Jogo já realizado ({slip.matchDate}) — você pode ver as odds mas não é possível analisar.
+        </p>
+      )}
       {/* Header do jogo */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -238,6 +244,7 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
             {slip.homeTeam || 'Jogo'} {slip.awayTeam ? `x ${slip.awayTeam}` : ''}
           </p>
           {slip.league && <p className="text-[11px] text-stone-500">{slip.league}</p>}
+          {slip.matchDate && <p className="text-[11px] text-stone-500">{new Date(slip.matchDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</p>}
         </div>
         <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
           source === 'ocr' ? 'bg-green-500/15 text-green-300' : 'bg-sky-500/15 text-sky-300')}>

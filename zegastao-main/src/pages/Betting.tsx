@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { doc, getDoc } from 'firebase/firestore';
 import { functionsUsEast, db } from '@/firebase';
@@ -19,7 +19,7 @@ const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycl
 interface CycleGetResponse { cycle: ZeCycle | null; rounds: ZeRound[] }
 interface BuildResponse { roundId?: string | null; empty?: boolean; card?: ZeGuidedCard }
 interface ExtractedMarket { market: string; selection: string; odd: number; }
-interface ExtractedSlip { homeTeam?: string; awayTeam?: string; league?: string; markets: ExtractedMarket[]; confidence: number; }
+interface ExtractedSlip { homeTeam?: string; awayTeam?: string; league?: string; matchDate?: string; markets: ExtractedMarket[]; confidence: number; superOdds?: boolean; }
 
 const TARGET_OPTIONS = [10, 25, 50, 100];
 
@@ -37,6 +37,7 @@ export function Betting() {
   const [targetMultiplier, setTargetMultiplier] = useState(25);
   const [tool, setTool] = useState<'none' | 'guru'>('none');
   const [extractedSlip, setExtractedSlip] = useState<ExtractedSlip | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const loadCycle = useCallback(async () => {
     setLoading(true);
@@ -89,16 +90,26 @@ export function Betting() {
     setError('');
     setNoBetMsg('');
     try {
+      // Valida se o jogo já foi realizado (antes de chamar o backend).
+      if (slip?.matchDate) {
+        const gameDay = new Date(`${slip.matchDate}T23:59:59Z`);
+        if (gameDay < new Date()) {
+          setError(`Este jogo (${slip.homeTeam} x ${slip.awayTeam}) já foi realizado em ${slip.matchDate}. Envie o print de um jogo que ainda vai acontecer!`);
+          return;
+        }
+      }
+
       const validMarkets = (slip?.markets ?? []).filter(
-        (m) => typeof m.odd === 'number' && m.odd > 0,
+        (m) => m != null && typeof m === 'object' && typeof m.odd === 'number' && m.odd > 0,
       );
       const printFixture = slip?.homeTeam && slip.awayTeam && validMarkets.length > 0 ? {
         homeTeam: slip.homeTeam,
         awayTeam: slip.awayTeam,
-        league: slip.league,
+        league: slip.league ?? undefined,
+        matchDate: slip.matchDate ?? undefined,
         markets: validMarkets,
       } : undefined;
-      const safeRiskLevel = riskLevel ?? 1;
+      const safeRiskLevel: ZeRiskLevel = (riskLevel ?? 1) as ZeRiskLevel;
       const res = await zeCycle({
         action: 'build',
         riskLevel: safeRiskLevel,
@@ -107,13 +118,15 @@ export function Betting() {
       });
       if (res.data.empty) {
         setNoBetMsg(printFixture
-          ? 'Não encontrei apostas com valor neste jogo. Tenta outro jogo ou outro mercado.'
+          ? 'O Zé não encontrou apostas com valor suficiente neste jogo. Tenta outro jogo ou outro mercado.'
           : 'Não encontrei jogos hoje. Manda um print da Betano do jogo que você quer apostar!'
         );
       } else if (res.data.card?.skip) {
         setNoBetMsg(res.data.card.reasoning || 'Não achei uma aposta que valha a pena aqui. Prefiro não sugerir do que sugerir aposta ruim.');
       }
       await loadCycle();
+      // Rola suavemente para o card de análise após sucesso.
+      setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Não consegui montar a aposta agora.');
     } finally {
@@ -209,7 +222,21 @@ export function Betting() {
             </div>
 
             {latestPending ? (
-              <div data-tour="card">
+              <div data-tour="card" ref={cardRef}>
+                {/* Jogo analisado (contexto acima do card) */}
+                {extractedSlip?.homeTeam && (
+                  <div className="mb-2 flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2">
+                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                    <span className="text-sm font-semibold text-stone-100">
+                      {extractedSlip.homeTeam} <span className="text-stone-500">x</span> {extractedSlip.awayTeam}
+                    </span>
+                    {extractedSlip.matchDate && (
+                      <span className="ml-auto text-[11px] text-stone-500">
+                        {new Date(extractedSlip.matchDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <GuidedBetCard cycleId={cycle.id} round={latestPending} referralCode={referralCode} onUpdated={loadCycle} />
               </div>
             ) : (

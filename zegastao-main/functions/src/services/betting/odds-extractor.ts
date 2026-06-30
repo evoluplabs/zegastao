@@ -13,6 +13,7 @@ export interface ExtractedSlip {
   homeTeam?: string;
   awayTeam?: string;
   league?: string;
+  matchDate?: string; // YYYY-MM-DD extraído do print (data do jogo)
   markets: ExtractedMarket[];
   confidence: number; // 0-1 — abaixo de MIN_CONFIDENCE, use o Vision
   superOdds?: boolean; // print traz "SuperOdds"/"SO" — sinal forte (turbinado), não verdade absoluta
@@ -50,6 +51,35 @@ function findTeams(text: string): { home?: string; away?: string } {
   const m = text.match(/([A-Za-zÀ-ú][\w .'-]{1,30}?)\s*(?:x|vs\.?|-)\s*([A-Za-zÀ-ú][\w .'-]{1,30})/i);
   if (m) return { home: m[1].trim(), away: m[2].trim() };
   return {};
+}
+
+const MONTH_MAP: Record<string, string> = {
+  jan: '01', fev: '02', mar: '03', abr: '04', mai: '05', jun: '06',
+  jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12',
+};
+
+// Tenta extrair a data do jogo do print (formatos: "15/06", "15/06/2025", "15 jun", "15 de jun").
+function findMatchDate(text: string): string | undefined {
+  const year = new Date().getFullYear();
+
+  // Formatos DD/MM ou DD/MM/AAAA
+  const m1 = text.match(/\b(\d{1,2})\/(\d{2})(?:\/(\d{4}))?\b/);
+  if (m1) {
+    const d = m1[1].padStart(2, '0');
+    const mo = m1[2];
+    const y = m1[3] || year.toString();
+    return `${y}-${mo}-${d}`;
+  }
+
+  // Formato DD MON ou DD de MON (em português)
+  const m2 = text.match(/\b(\d{1,2})\s+(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)/i);
+  if (m2) {
+    const d = m2[1].padStart(2, '0');
+    const mo = MONTH_MAP[m2[2].toLowerCase().slice(0, 3)] || '01';
+    return `${year}-${mo}-${d}`;
+  }
+
+  return undefined;
 }
 
 /**
@@ -102,7 +132,8 @@ export function parseBetanoText(text: string): ExtractedSlip {
   if (totalOddTokens > 0 && plausibleOdds / totalOddTokens > 0.8) confidence += 0.15;
   confidence = Math.min(1, Math.round(confidence * 100) / 100);
 
-  return { homeTeam: home, awayTeam: away, markets, confidence, superOdds };
+  const matchDate = findMatchDate(text);
+  return { homeTeam: home, awayTeam: away, league: undefined, matchDate, markets, confidence, superOdds };
 }
 
 function cleanSel(s: string): string {

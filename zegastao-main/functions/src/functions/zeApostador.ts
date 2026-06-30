@@ -120,15 +120,30 @@ interface PrintFixtureInput {
   homeTeam: string;
   awayTeam: string;
   league?: string;
+  matchDate?: string; // YYYY-MM-DD: data do jogo extraída do print
   markets: Array<{ market: string; selection: string; odd: number }>;
 }
+
+// Converte null → undefined para campos opcionais (Firebase callable pode enviar null ao invés de undefined).
+const n2u = (v: unknown) => (v === null ? undefined : v);
 
 /** Converte os mercados extraídos do print em um OddsEvent sintético para o pipeline. */
 function slipToOddsEvent(fix: PrintFixtureInput): OddsEvent {
   const marketMap = new Map<string, Array<{ name: string; price: number }>>();
   for (const mk of fix.markets) {
     let name = mk.selection;
-    if (mk.market === 'totals') {
+    if (mk.market === 'h2h') {
+      // Normaliza seleções h2h (1/X/2, Casa/Empate/Fora, etc.) para o formato
+      // esperado por analyzeFixture: home_team name, 'Draw', away_team name.
+      const s = name.trim().toLowerCase();
+      if (s === '1' || /^casa$|^home$|^mandante$/.test(s) || s === fix.homeTeam.toLowerCase()) {
+        name = fix.homeTeam;
+      } else if (s === '2' || /^fora$|^away$|^visitante$/.test(s) || s === fix.awayTeam.toLowerCase()) {
+        name = fix.awayTeam;
+      } else if (s === 'x' || /^empate$|^draw$/.test(s)) {
+        name = 'Draw';
+      }
+    } else if (mk.market === 'totals') {
       const s = name.toLowerCase();
       if (/mais de|over|\+/.test(s)) name = 'Over';
       else if (/menos de|under/.test(s)) name = 'Under';
@@ -141,10 +156,14 @@ function slipToOddsEvent(fix: PrintFixtureInput): OddsEvent {
     list.push({ name, price: mk.odd });
     marketMap.set(mk.market, list);
   }
+  // Kickoff: usa a data do jogo extraída do print; se ausente, assume hoje.
+  const kickoff = fix.matchDate
+    ? new Date(`${fix.matchDate}T15:00:00Z`).toISOString()
+    : new Date().toISOString();
   return {
     id: `print_${Date.now()}`,
     sport_key: 'soccer_fifa_world_cup',
-    commence_time: new Date().toISOString(),
+    commence_time: kickoff,
     home_team: fix.homeTeam,
     away_team: fix.awayTeam,
     bookmakers: [{
@@ -173,15 +192,28 @@ async function buildRoundForCycle(
   const oddsBySport: Record<string, Awaited<ReturnType<typeof getCachedOdds>>> = {};
 
   if (opts.printFixture) {
+    // Valida que o jogo ainda não foi realizado (se a data foi extraída do print).
+    if (opts.printFixture.matchDate) {
+      const gameDay = new Date(`${opts.printFixture.matchDate}T23:59:59Z`);
+      if (gameDay < new Date()) {
+        throw new HttpsError(
+          'failed-precondition',
+          `Este jogo (${opts.printFixture.homeTeam} x ${opts.printFixture.awayTeam}) já foi realizado em ${opts.printFixture.matchDate}. Envie o print de um jogo que ainda vai acontecer!`,
+        );
+      }
+    }
     // Print-first: usa o jogo extraído do print, sem chamar API-Football nem Odds API.
     // homeTeamId/awayTeamId = 0 → teamAverages usa defaults (1.2 gols/jogo), justo para Copa.
+    const kickoff = opts.printFixture.matchDate
+      ? new Date(`${opts.printFixture.matchDate}T15:00:00Z`).toISOString()
+      : new Date().toISOString();
     fixtures = [{
       fixtureId: 0,
       homeTeam: opts.printFixture.homeTeam,
       homeTeamId: 0,
       awayTeam: opts.printFixture.awayTeam,
       awayTeamId: 0,
-      kickoff: new Date().toISOString(),
+      kickoff,
       leagueId: 1, // FIFA World Cup
       leagueName: opts.printFixture.league || 'Copa do Mundo',
     }];
@@ -348,23 +380,38 @@ export const zeMandate = onCall({ region: REGION }, async (request) => {
 
 const CycleSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('get') }),
-  z.object({ action: z.literal('start'), riskLevel: z.number().int().min(0).max(3).optional() }),
+  z.object({
+    action: z.literal('start'),
+    // Firebase callable pode enviar null para campos opcionais — n2u converte null→undefined.
+    riskLevel: z.preprocess(n2u, z.number().int().min(0).max(3).optional()),
+  }),
   z.object({
     action: z.literal('build'),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    riskLevel: z.number().int().min(0).max(3).optional(),
-    targetMultiplier: z.number().min(1.1).max(1000).optional(),
+    date: z.preprocess(n2u, z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
+    riskLevel: z.preprocess(n2u, z.number().int().min(0).max(3).optional()),
+    targetMultiplier: z.preprocess(n2u, z.number().min(1.1).max(1000).optional()),
     // Print-first: fixture extraída do print da Betano (bypassa API-Football + Odds API).
-    printFixture: z.object({
-      homeTeam: z.string().min(1),
-      awayTeam: z.string().min(1),
-      league: z.string().optional(),
-      markets: z.array(z.object({
-        market: z.string(),
-        selection: z.string(),
-        odd: z.number().positive(),
-      })).min(1),
-    }).optional(),
+    printFixture: z.preprocess(n2u, z.object({
+      homeTeam: z.string().min(1).max(100),
+      awayTeam: z.string().min(1).max(100),
+      league: z.preprocess(n2u, z.string().max(100).optional()),
+      matchDate: z.preprocess(n2u, z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
+      markets: z.preprocess(
+        // Remove mercados com odd nula/inválida antes da validação Zod
+        (arr) => Array.isArray(arr)
+          ? arr.filter((m): boolean => {
+              if (!m || typeof m !== 'object') return false;
+              const odd = (m as { odd?: unknown }).odd;
+              return typeof odd === 'number' && odd > 0;
+            })
+          : arr,
+        z.array(z.object({
+          market: z.string().max(50),
+          selection: z.string().max(80),
+          odd: z.number().positive(),
+        })).min(1).max(30),
+      ),
+    }).optional()),
   }),
   z.object({ action: z.literal('abort') }),
 ]);

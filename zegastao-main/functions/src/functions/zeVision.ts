@@ -33,8 +33,8 @@ const ExtractSchema = z.object({
 
 const VISION_PROMPT = `Você está lendo um print da casa de apostas Betano. Extraia TODOS os mercados visíveis e suas odds.
 Responda APENAS com JSON válido:
-{"homeTeam":"","awayTeam":"","league":"","markets":[{"market":"h2h|totals|btts|corners|cards|shots|fouls|other","selection":"texto curto da seleção","odd":1.85}]}
-Regras: "market" usa exatamente uma das chaves listadas (escanteios=corners, cartões=cards, chutes=shots, faltas=fouls, ambas marcam=btts, resultado/1x2=h2h, total de gols=totals). odd como número decimal. Não invente mercados que não estão na imagem.`;
+{"homeTeam":"","awayTeam":"","league":"","matchDate":"YYYY-MM-DD","markets":[{"market":"h2h|totals|btts|corners|cards|shots|fouls|other","selection":"texto curto da seleção","odd":1.85}]}
+Regras: "market" usa exatamente uma das chaves listadas (escanteios=corners, cartões=cards, chutes=shots, faltas=fouls, ambas marcam=btts, resultado/1x2=h2h, total de gols=totals). odd como número decimal. matchDate no formato YYYY-MM-DD se visível no print, caso contrário omita. Não invente mercados que não estão na imagem.`;
 
 async function visionExtract(imageBase64: string, mediaType: MediaType): Promise<ExtractedSlip> {
   const client = new Anthropic();
@@ -62,10 +62,14 @@ async function visionExtract(imageBase64: string, mediaType: MediaType): Promise
           odd: m.odd,
         }))
     : [];
+  // matchDate: só aceita formato YYYY-MM-DD; descarta qualquer outra coisa.
+  const rawDate = typeof parsed.matchDate === 'string' ? parsed.matchDate : undefined;
+  const matchDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : undefined;
   return {
     homeTeam: parsed.homeTeam || undefined,
     awayTeam: parsed.awayTeam || undefined,
     league: parsed.league || undefined,
+    matchDate,
     markets,
     confidence: markets.length > 0 ? 0.9 : 0.2,
   };
