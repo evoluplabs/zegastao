@@ -1,11 +1,9 @@
-// "Fotografa a Betano": o usuário manda o print, a gente lê as odds (OCR grátis
-// primeiro, Claude Vision só no fallback) e mostra os mercados extraídos.
-// Reforça o "usuário é sensor" + alimenta o Waze das Odds (cache da comunidade).
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functionsUsEast } from '@/firebase';
+import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { functionsUsEast, db } from '@/firebase';
 import { prepareImage, tryOcr } from '@/lib/imagePrep';
-import { Camera, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Camera, Loader2, Sparkles, CheckCircle2, Users, RefreshCw, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ExtractedMarket { market: string; selection: string; odd: number; }
@@ -14,6 +12,7 @@ interface ExtractedSlip {
   markets: ExtractedMarket[]; confidence: number; superOdds?: boolean;
 }
 type ExtractResult = { slip: ExtractedSlip; source: 'ocr' | 'vision' };
+interface CachedGame { id: string; payload: ExtractedSlip; source: string; fetchedAt: Timestamp; }
 
 const zeExtractOdds = httpsCallable<
   { ocrText?: string; imageBase64?: string; mediaType?: string },
@@ -22,8 +21,39 @@ const zeExtractOdds = httpsCallable<
 
 const MARKET_PT: Record<string, string> = {
   h2h: 'Resultado', totals: 'Total de Gols', btts: 'Ambas Marcam',
-  corners: 'Escanteios', cards: 'Cartões', shots: 'Finalizações', fouls: 'Faltas', other: 'Outro',
+  corners: 'Escanteios', cards: 'Cartões', shots: 'Finalizações', fouls: 'Faltas',
 };
+
+// Agrupa mercados 1/X/2 consecutivos num bloco compacto
+type H2HGroup = { type: 'h2h'; home: ExtractedMarket; draw: ExtractedMarket; away: ExtractedMarket };
+type MarketGroup = H2HGroup | { type: 'single'; m: ExtractedMarket };
+
+function groupMarkets(markets: ExtractedMarket[]): MarketGroup[] {
+  const result: MarketGroup[] = [];
+  let i = 0;
+  while (i < markets.length) {
+    const sel = markets[i].selection.toLowerCase().trim();
+    if (sel === '1' && i + 2 < markets.length) {
+      const s1 = markets[i + 1].selection.toLowerCase().trim();
+      const s2 = markets[i + 2].selection.toLowerCase().trim();
+      if ((s1 === 'x' || s1 === 'empate') && s2 === '2') {
+        result.push({ type: 'h2h', home: markets[i], draw: markets[i + 1], away: markets[i + 2] });
+        i += 3;
+        continue;
+      }
+    }
+    result.push({ type: 'single', m: markets[i] });
+    i++;
+  }
+  return result;
+}
+
+function daysSince(ts: Timestamp): string {
+  const diff = Math.floor((Date.now() - ts.toMillis()) / 60000);
+  if (diff < 60) return `${diff}min atrás`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}h atrás`;
+  return `${Math.floor(diff / 1440)}d atrás`;
+}
 
 interface Props {
   onExtracted?: (slip: ExtractedSlip) => void;
@@ -35,17 +65,39 @@ export function UploadOdds({ onExtracted }: Props) {
   const [phase, setPhase] = useState('');
   const [result, setResult] = useState<ExtractResult | null>(null);
   const [error, setError] = useState('');
+  const [community, setCommunity] = useState<CachedGame[]>([]);
+  const [loadingComm, setLoadingComm] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const fetchCommunity = useCallback(async () => {
+    setLoadingComm(true);
+    try {
+      const snap = await getDocs(
+        query(collection(db, 'betting_cache'), orderBy('fetchedAt', 'desc'), limit(10))
+      );
+      setCommunity(
+        snap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as CachedGame))
+          .filter((g) => g.payload?.homeTeam && g.payload?.awayTeam)
+      );
+    } catch { /* best-effort */ } finally {
+      setLoadingComm(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCommunity(); }, [fetchCommunity]);
 
   async function handleFile(file: File) {
-    setBusy(true); setError(''); setResult(null);
+    setBusy(true); setError(''); setResult(null); setSelected(null);
     try {
-      setPhase('Deixando o print levinho…');
+      setPhase('Comprimindo imagem…');
       const { base64, mediaType } = await prepareImage(file);
-      setPhase('Tentando ler de graça (OCR)…');
+      setPhase('Lendo as odds (OCR)…');
       const ocrText = await tryOcr(base64);
-      setPhase(ocrText ? 'Conferindo as odds…' : 'Lendo o print com o Zé…');
+      setPhase(ocrText ? 'Conferindo as odds…' : 'Lendo com o Zé (Vision)…');
       const res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
       setResult(res.data);
+      setSelected('upload');
       onExtracted?.(res.data.slip);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não consegui ler esse print. Tenta um mais nítido.');
@@ -54,63 +106,193 @@ export function UploadOdds({ onExtracted }: Props) {
     }
   }
 
+  function useCached(game: CachedGame) {
+    setSelected(game.id);
+    setResult({ slip: game.payload, source: game.source as 'ocr' | 'vision' });
+    onExtracted?.(game.payload);
+  }
+
+  const groups = result ? groupMarkets(result.slip.markets.filter(m => typeof m.odd === 'number' && m.odd > 0)) : [];
+
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h3 className="text-lg font-bold text-stone-100">Manda o print da Betano</h3>
-        <p className="text-sm text-stone-400">Tira um print da tela do jogo na Betano. O Zé lê as odds — de todos os mercados.</p>
+    <div className="space-y-5">
+      {/* Upload */}
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-base font-bold text-stone-100">📸 Manda o print da Betano</h3>
+          <p className="text-xs text-stone-400">O Zé lê todas as odds do print — de graça via OCR, Vision só no fallback.</p>
+        </div>
+
+        <input
+          ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
+        />
+
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className={cn(
+            'flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-6 font-semibold transition-colors disabled:opacity-60',
+            result ? 'border-stone-700 bg-stone-800/40 text-stone-400 text-sm py-4' : 'border-green-500/40 bg-green-500/5 text-green-300'
+          )}
+        >
+          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          {busy ? (phase || 'Lendo…') : result ? 'Printar outro jogo' : 'Escolher / tirar foto'}
+        </button>
+
+        {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-      />
-
-      <button
-        onClick={() => inputRef.current?.click()}
-        disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-green-500/40 bg-green-500/5 px-4 py-8 text-green-300 disabled:opacity-60"
-      >
-        {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
-        <span className="font-semibold">{busy ? phase || 'Lendo…' : 'Escolher / tirar foto'}</span>
-      </button>
-
-      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
-
-      {result && (
-        <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold text-stone-100">
-              {result.slip.homeTeam || 'Jogo'} {result.slip.awayTeam ? `x ${result.slip.awayTeam}` : ''}
-            </div>
-            <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold',
-              result.source === 'ocr' ? 'bg-green-500/15 text-green-300' : 'bg-sky-500/15 text-sky-300')}>
-              {result.source === 'ocr' ? 'Lido de graça (OCR)' : 'Lido pelo Zé (Vision)'}
-            </span>
-          </div>
-          {result.slip.league && <p className="text-xs text-stone-500">{result.slip.league}</p>}
-          {result.slip.superOdds && (
-            <p className="flex items-center gap-1 rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] text-amber-300">
-              <Sparkles className="h-3 w-3" /> Tem SuperOdds nesse print — odd turbinada (sinal forte, mas não garantia).
-            </p>
-          )}
-          <ul className="space-y-1.5">
-            {result.slip.markets.map((m, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg bg-stone-800/60 px-3 py-2 text-sm">
-                <span className="text-stone-300"><span className="text-stone-500">{MARKET_PT[m.market] || m.market}:</span> {m.selection}</span>
-                <span className="font-bold text-green-400">{m.odd.toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="flex items-center gap-1 text-[11px] text-stone-500">
-            <CheckCircle2 className="h-3 w-3 text-green-500" /> Guardado no Waze das Odds — outro da turma reaproveita sem printar de novo.
-          </p>
-        </div>
+      {/* Resultado do upload */}
+      {result && selected === 'upload' && (
+        <OddsCard slip={result.slip} groups={groups} source={result.source} />
       )}
+
+      {/* Waze das Odds — feed da comunidade */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-400">
+            <Users className="h-3.5 w-3.5" /> Waze das Odds — jogos recentes da comunidade
+          </div>
+          <button onClick={fetchCommunity} className="text-stone-500 hover:text-stone-300">
+            <RefreshCw className={cn('h-3.5 w-3.5', loadingComm && 'animate-spin')} />
+          </button>
+        </div>
+
+        {loadingComm ? (
+          <div className="flex h-24 items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-stone-600" />
+          </div>
+        ) : community.length === 0 ? (
+          <p className="rounded-xl border border-stone-800 bg-stone-900/40 px-3 py-4 text-center text-xs text-stone-500">
+            Nenhum jogo ainda. Seja o primeiro a printar da Betano!
+          </p>
+        ) : (
+          <div className="grid gap-2">
+            {community.map((g) => {
+              const h2h = g.payload.markets.filter(m => typeof m.odd === 'number' && m.odd > 0).slice(0, 3);
+              const isSelected = selected === g.id;
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => useCached(g)}
+                  className={cn(
+                    'w-full rounded-xl border p-3 text-left transition-colors',
+                    isSelected
+                      ? 'border-green-500/50 bg-green-500/10'
+                      : 'border-stone-800 bg-stone-900/50 hover:border-stone-700'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-stone-100">
+                        {g.payload.homeTeam} <span className="text-stone-500">x</span> {g.payload.awayTeam}
+                      </p>
+                      {g.payload.league && (
+                        <p className="truncate text-[11px] text-stone-500">{g.payload.league}</p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="text-[10px] text-stone-600">{daysSince(g.fetchedAt)}</span>
+                      {isSelected
+                        ? <CheckCircle2 className="h-4 w-4 text-green-400" />
+                        : <ChevronRight className="h-4 w-4 text-stone-600" />
+                      }
+                    </div>
+                  </div>
+
+                  {/* Preview das primeiras odds */}
+                  {h2h.length >= 3 && (
+                    <div className="mt-2 flex gap-2">
+                      {h2h.map((m, i) => (
+                        <div key={i} className="flex-1 rounded-lg bg-stone-800/60 py-1 text-center">
+                          <div className="text-[9px] text-stone-500 uppercase">{['1', 'X', '2'][i]}</div>
+                          <div className="text-xs font-bold text-green-400">{m.odd.toFixed(2)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {g.payload.superOdds && (
+                    <p className="mt-1.5 flex items-center gap-1 text-[10px] text-amber-400">
+                      <Sparkles className="h-2.5 w-2.5" /> SuperOdds
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: MarketGroup[]; source: 'ocr' | 'vision' }) {
+  return (
+    <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+      {/* Header do jogo */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-stone-100">
+            {slip.homeTeam || 'Jogo'} {slip.awayTeam ? `x ${slip.awayTeam}` : ''}
+          </p>
+          {slip.league && <p className="text-[11px] text-stone-500">{slip.league}</p>}
+        </div>
+        <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+          source === 'ocr' ? 'bg-green-500/15 text-green-300' : 'bg-sky-500/15 text-sky-300')}>
+          {source === 'ocr' ? '⚡ OCR grátis' : '🧠 Vision'}
+        </span>
+      </div>
+
+      {slip.superOdds && (
+        <p className="flex items-center gap-1 rounded-lg bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-300">
+          <Sparkles className="h-3 w-3" /> SuperOdds detectado — odd turbinada (pode mudar até a hora do jogo)
+        </p>
+      )}
+
+      {/* Mercados agrupados */}
+      <div className="space-y-2">
+        {groups.map((g, i) => {
+          if (g.type === 'h2h') {
+            return (
+              <div key={i} className="rounded-xl border border-stone-700/60 bg-stone-800/40 p-2.5">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">Resultado</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <OddChip label="1 (Casa)" odd={g.home.odd} />
+                  <OddChip label="X (Empate)" odd={g.draw.odd} />
+                  <OddChip label="2 (Fora)" odd={g.away.odd} />
+                </div>
+              </div>
+            );
+          }
+          const m = g.m;
+          const label = MARKET_PT[m.market] || (m.market !== 'other' ? m.market : null);
+          return (
+            <div key={i} className="flex items-center justify-between rounded-lg bg-stone-800/40 px-3 py-2 text-sm">
+              <span className="text-stone-300">
+                {label && <span className="mr-1 text-stone-500">{label}:</span>}
+                {m.selection}
+              </span>
+              <span className="font-bold text-green-400">{m.odd.toFixed(2)}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="flex items-center gap-1 text-[11px] text-stone-500">
+        <CheckCircle2 className="h-3 w-3 text-green-500" />
+        Salvo no Waze das Odds — a comunidade reaproveita sem precisar printar de novo
+      </p>
+    </div>
+  );
+}
+
+function OddChip({ label, odd }: { label: string; odd: number }) {
+  return (
+    <div className="rounded-lg bg-stone-900 py-2 text-center">
+      <div className="text-[9px] text-stone-500 truncate px-1">{label}</div>
+      <div className="text-sm font-extrabold text-green-400">{odd.toFixed(2)}</div>
     </div>
   );
 }

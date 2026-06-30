@@ -44,7 +44,7 @@ export function Betting() {
       const res = await zeCycle({ action: 'get' });
       setCycle(res.data.cycle);
       setRounds(res.data.rounds || []);
-      if (res.data.cycle) setRiskLevel(res.data.cycle.riskLevel);
+      if (res.data.cycle) setRiskLevel(res.data.cycle.riskLevel ?? 1);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro ao carregar o ciclo.');
     } finally {
