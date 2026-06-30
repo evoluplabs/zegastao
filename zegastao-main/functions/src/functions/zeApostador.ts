@@ -264,8 +264,8 @@ async function buildRoundForCycle(
       // teamId=0. Para fixtures reais (teamId!=0), teamAverages busca normalmente.
       const override = opts.printFixture && teamStats
         ? {
-            home: { scored: teamStats.homeAvgScored, conceded: teamStats.homeAvgConceded },
-            away: { scored: teamStats.awayAvgScored, conceded: teamStats.awayAvgConceded },
+            home: { scored: teamStats.homeAvgScored, conceded: teamStats.homeAvgConceded, games: 8 },
+            away: { scored: teamStats.awayAvgScored, conceded: teamStats.awayAvgConceded, games: 8 },
           }
         : undefined;
       // context: multiplicadores de mercado do MatchContextAgent (lesões, árbitro,
