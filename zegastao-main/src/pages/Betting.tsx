@@ -11,7 +11,7 @@ import { GuruAudit } from './betting/GuruAudit';
 import { BettingTour } from './betting/BettingTour';
 import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel, ZeGuidedCard } from '@/types';
 import { cn, formatBRL } from '@/lib/utils';
-import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, CheckCircle2, Search } from 'lucide-react';
+import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, CheckCircle2, Search, X, ShieldAlert } from 'lucide-react';
 
 const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: boolean }>(functionsUsEast, 'zeMandate');
 const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functionsUsEast, 'zeCycle');
@@ -248,12 +248,7 @@ export function Betting() {
                   </p>
                 </div>
 
-                {noBetMsg && (
-                  <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200">
-                    <Search className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{noBetMsg}</span>
-                  </div>
-                )}
+                {/* Modal "sem aposta" — exibido como bottom-sheet após análise */}
 
                 {/* Passo 1: upload do print da Betano (fonte principal para Copa) */}
                 <UploadOdds onExtracted={(slip) => setExtractedSlip(slip)} />
@@ -323,7 +318,75 @@ export function Betting() {
     </div>
 
     <BettingTour betsCompleted={betsCompleted} />
+
+    {/* Modal "O Zé não encontrou aposta" */}
+    <NoBetModal
+      message={noBetMsg}
+      gameLabel={extractedSlip?.homeTeam ? `${extractedSlip.homeTeam} x ${extractedSlip.awayTeam}` : undefined}
+      onClose={() => setNoBetMsg('')}
+      onTryAnother={() => { setNoBetMsg(''); setExtractedSlip(null); }}
+    />
     </>
+  );
+}
+
+interface NoBetModalProps {
+  message: string;
+  gameLabel?: string;
+  onClose: () => void;
+  onTryAnother: () => void;
+}
+
+function NoBetModal({ message, gameLabel, onClose, onTryAnother }: NoBetModalProps) {
+  if (!message) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Sheet */}
+      <div className="relative w-full max-w-md rounded-2xl border border-stone-700 bg-stone-900 p-5 shadow-2xl">
+        {/* Fechar */}
+        <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-1 text-stone-500 hover:text-stone-300">
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Ícone + título */}
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+            <ShieldAlert className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <p className="font-bold text-stone-100">O Zé passou, mas não entrou</p>
+            {gameLabel && <p className="text-xs text-stone-500">{gameLabel}</p>}
+          </div>
+        </div>
+
+        {/* Mensagem */}
+        <p className="mb-4 text-sm leading-relaxed text-stone-300">{message}</p>
+
+        {/* Dica extra */}
+        <div className="mb-4 rounded-xl border border-stone-800 bg-stone-800/40 px-3 py-2.5 text-xs text-stone-400">
+          <span className="font-semibold text-stone-300">Por que isso acontece?</span> O Zé calcula a probabilidade real do resultado e a compara com o que a casa oferece. Quando nenhuma odd cobre o risco com margem suficiente, ele prefere não recomendar — isso é jogo responsável.
+        </div>
+
+        {/* Botões */}
+        <div className="flex gap-2">
+          <button
+            onClick={onTryAnother}
+            className="flex-1 rounded-xl border border-green-500/40 bg-green-500/10 py-2.5 text-sm font-semibold text-green-300 hover:bg-green-500/20"
+          >
+            Tentar outro jogo
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-stone-700 py-2.5 text-sm font-semibold text-stone-300 hover:border-stone-600"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

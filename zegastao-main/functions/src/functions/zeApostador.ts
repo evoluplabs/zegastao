@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import { findFixturesForObjective, getSportKey, FixtureSummary } from '../services/betting/fixtures-finder';
 import { analyzeFixture, getCachedOdds } from '../services/betting/pipeline';
+import { resolveTeamAverages } from '../services/betting/team-stats-search';
 import { OddsEvent } from '../services/betting/sports-api';
 import { buildRound, Candidate, RiskLevel } from '../services/betting/engine/multiples';
 import { composeCard, recalcOnRealOdd } from '../services/betting/card';
@@ -190,6 +191,7 @@ async function buildRoundForCycle(
 
   let fixtures: FixtureSummary[];
   const oddsBySport: Record<string, Awaited<ReturnType<typeof getCachedOdds>>> = {};
+  let teamStats: Awaited<ReturnType<typeof resolveTeamAverages>> | null = null;
 
   if (opts.printFixture) {
     // Valida que o jogo ainda não foi realizado (se a data foi extraída do print).
@@ -203,10 +205,12 @@ async function buildRoundForCycle(
       }
     }
     // Print-first: usa o jogo extraído do print, sem chamar API-Football nem Odds API.
-    // homeTeamId/awayTeamId = 0 → teamAverages usa defaults (1.2 gols/jogo), justo para Copa.
+    // Busca médias de gols via Claude (priors históricos) para substituir os defaults 1.2/1.2
+    // que tornariam a análise Poisson inútil para jogos com favoritos claros (Copa, etc.).
     const kickoff = opts.printFixture.matchDate
       ? new Date(`${opts.printFixture.matchDate}T15:00:00Z`).toISOString()
       : new Date().toISOString();
+    const league = opts.printFixture.league || 'Copa do Mundo';
     fixtures = [{
       fixtureId: 0,
       homeTeam: opts.printFixture.homeTeam,
@@ -215,9 +219,12 @@ async function buildRoundForCycle(
       awayTeamId: 0,
       kickoff,
       leagueId: 1, // FIFA World Cup
-      leagueName: opts.printFixture.league || 'Copa do Mundo',
+      leagueName: league,
     }];
     oddsBySport['soccer_fifa_world_cup'] = [slipToOddsEvent(opts.printFixture)];
+    // Resolve médias históricas (cacheado 24h; custo ~1 Claude call/par por dia).
+    teamStats = await resolveTeamAverages(db, opts.printFixture.homeTeam, opts.printFixture.awayTeam, league)
+      .catch(() => null);
   } else {
     fixtures = await findFixturesForObjective(sportKeys, date, mandate.preferredTeams);
     const blocked = (mandate.blockedTeams || []).map((t) => t.toLowerCase());
@@ -241,7 +248,12 @@ async function buildRoundForCycle(
   for (const fx of fixtures) {
     const sk = getSportKey(fx.leagueId) || sportKeys[0];
     try {
-      const cands = await analyzeFixture({ db, fixture: fx as FixtureSummary, sportKey: sk, oddsEvents: oddsBySport[sk] || [], model, individual });
+      // overrideAverages: usa stats inferidos via Claude quando teamId=0 (print-first).
+      // Para fixtures reais (teamId!=0), teamAverages busca do API-Football normalmente.
+      const override = opts.printFixture && teamStats
+        ? { home: teamStats.home, away: teamStats.away }
+        : undefined;
+      const cands = await analyzeFixture({ db, fixture: fx as FixtureSummary, sportKey: sk, oddsEvents: oddsBySport[sk] || [], model, individual, overrideAverages: override });
       allCands.push(...cands);
     } catch {
       // pula partida que falhar

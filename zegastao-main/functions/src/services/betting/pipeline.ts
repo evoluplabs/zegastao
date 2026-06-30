@@ -78,17 +78,21 @@ export async function analyzeFixture(params: {
   model: GlobalModel;
   individual: IndividualModel;
   context?: MarketMultipliers; // ajuste qualitativo (peso do jogo, lesões, árbitro)
+  // Médias pré-computadas (ex.: via resolveTeamAverages) para quando teamId=0
+  overrideAverages?: { home: GoalAverages; away: GoalAverages };
 }): Promise<Candidate[]> {
-  const { db, fixture, sportKey, oddsEvents, model, individual, context } = params;
+  const { db, fixture, sportKey, oddsEvents, model, individual, context, overrideAverages } = params;
   const { homeTeam, awayTeam, homeTeamId, awayTeamId, kickoff, leagueName } = fixture;
 
   const event = findEvent(oddsEvents, homeTeam, awayTeam);
   if (!event) return []; // sem odds não dá pra avaliar valor
 
-  const [home, away] = await Promise.all([
-    teamAverages(db, homeTeamId, fixture.kickoff.slice(0, 10)),
-    teamAverages(db, awayTeamId, fixture.kickoff.slice(0, 10)),
-  ]);
+  const [home, away] = overrideAverages
+    ? [overrideAverages.home, overrideAverages.away]
+    : await Promise.all([
+        teamAverages(db, homeTeamId, fixture.kickoff.slice(0, 10)),
+        teamAverages(db, awayTeamId, fixture.kickoff.slice(0, 10)),
+      ]);
 
   const goalsMult = context?.goals ?? 1;
   const lambdas = estimateLambdas({
