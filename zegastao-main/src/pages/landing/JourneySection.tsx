@@ -1,95 +1,89 @@
 const PHASES = [
   {
-    n: '01',
-    emoji: '🆘',
-    name: 'Sobrevivência',
-    color: 'border-red-300 bg-red-50',
-    badge: 'bg-red-100 text-red-700',
+    lv: 'Lv 1',
+    emoji: '☠️',
+    name: 'Iniciante Endividado',
+    border: 'border-red-500/20 bg-red-500/5',
+    badge: 'bg-red-500/15 border-red-500/30 text-red-400',
     pain: 'Gastos maiores que a renda.',
     gain: 'Parar de afundar. Respirar.',
-    desc: 'O copiloto fala na sua língua: urgente, direto, sem enrolação. Mostra onde o dinheiro some e o que cortar primeiro.',
+    desc: 'O Sábio fala direto, sem enrolação: onde o dinheiro some e o que cortar primeiro. Boss mode: ativo.',
   },
   {
-    n: '02',
-    emoji: '🔄',
-    name: 'Reorganização',
-    color: 'border-amber-300 bg-amber-50',
-    badge: 'bg-amber-100 text-amber-700',
-    pain: 'Conta equilibrada, mas ainda há dívidas.',
-    gain: 'Estratégia avalanche — atacar a mais cara.',
-    desc: 'Com a conta equilibrada, o foco muda: qual dívida pagar primeiro? O app calcula e te mostra o caminho mais rápido.',
+    lv: 'Lv 2',
+    emoji: '⚔️',
+    name: 'Guerreiro da Reorganização',
+    border: 'border-amber-500/20 bg-amber-500/5',
+    badge: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
+    pain: 'Conta equilibrada, mas ainda há Bosses.',
+    gain: 'Estratégia avalanche — atacar o Boss mais caro.',
+    desc: 'O app calcula qual Boss derrotar primeiro. Você segue o plano e vê o HP deles caindo todo mês.',
   },
   {
-    n: '03',
+    lv: 'Lv 3',
     emoji: '🛡️',
-    name: 'Estabilização',
-    color: 'border-blue-300 bg-blue-50',
-    badge: 'bg-blue-100 text-blue-700',
-    pain: 'Dívidas quitadas. E agora?',
-    gain: 'Construir reserva de emergência.',
-    desc: 'Sem dívidas, o copiloto muda de tom: hora de guardar. Meta de 3-6 meses de gastos como colchão antes de investir.',
+    name: 'Guardião Estável',
+    border: 'border-sky-500/20 bg-sky-500/5',
+    badge: 'bg-sky-500/15 border-sky-500/30 text-sky-400',
+    pain: 'Bosses derrotados. E agora?',
+    gain: 'Construir o Cofre de Emergência.',
+    desc: 'Sem Bosses, o tom muda: hora de guardar ouro. Meta de 3-6 meses de gastos como reserva antes de investir.',
   },
   {
-    n: '04',
-    emoji: '📈',
-    name: 'Acumulação',
-    color: 'border-primary/30 bg-primary/5',
-    badge: 'bg-primary/10 text-primary',
-    pain: 'Reserva formada. Quer fazer o dinheiro trabalhar.',
+    lv: 'Lv 4',
+    emoji: '🪙',
+    name: 'Acumulador de Ouro',
+    border: 'border-green-500/20 bg-green-500/5',
+    badge: 'bg-green-500/15 border-green-500/30 text-green-400',
+    pain: 'Reserva formada. Quer fazer o ouro trabalhar.',
     gain: 'Começar a investir com segurança.',
-    desc: 'Chegou a hora. O app sugere onde começar (Tesouro, CDB, renda variável) de acordo com seu perfil de risco.',
+    desc: 'O app sugere onde começar (Tesouro, CDB, renda variável) de acordo com seu perfil de combate.',
   },
   {
-    n: '05',
+    lv: 'Lv 5',
     emoji: '🏆',
-    name: 'Crescimento',
-    color: 'border-green-300 bg-green-50',
-    badge: 'bg-green-100 text-green-700',
+    name: 'Mestre Investidor',
+    border: 'border-amber-400/20 bg-amber-400/5',
+    badge: 'bg-amber-400/15 border-amber-400/30 text-amber-300',
     pain: 'Patrimônio crescendo. Quer liberdade.',
-    gain: 'Renda passiva cobrindo os gastos.',
-    desc: 'O copiloto acompanha o crescimento do patrimônio e te avisa quando a renda passiva começa a cobrir suas despesas.',
+    gain: 'Renda passiva cobrindo os gastos. FIRE desbloqueado.',
+    desc: 'O Sábio acompanha o crescimento e te avisa quando a renda passiva começa a cobrir suas despesas. Final boss vencido.',
   },
 ];
 
 export function JourneySection() {
   return (
-    <section className="border-b py-16 md:py-24">
+    <section className="border-b border-[#3a2e1d] py-16 md:py-24 bg-[#1a130b]">
       <div className="mx-auto max-w-5xl px-4">
         <div className="text-center mb-12 reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">A jornada</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-            Do vermelho à liberdade — em 5 fases.
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">— A Jornada —</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-stone-100">
+            Do vermelho à liberdade em 5 níveis.
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            O Zé Gastão detecta sua fase automaticamente. O tom, os conselhos e as tarefas mudam com você — sem julgamento.
+          <p className="text-stone-500 max-w-xl mx-auto">
+            O Zé Gastão detecta sua fase automaticamente. O tom, os conselhos e as missões mudam com você — sem julgamento.
           </p>
         </div>
 
         <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-red-300 via-primary/50 to-green-400 hidden md:block" />
+          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-red-500/40 via-green-500/40 to-amber-400/40 hidden md:block" />
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             {PHASES.map((p, i) => (
               <div
-                key={p.n}
-                className={`reveal flex gap-4 rounded-2xl border ${p.color} p-5 md:ml-10 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5`}
+                key={p.lv}
+                className={`reveal flex gap-4 rounded-2xl border ${p.border} p-5 md:ml-10 hover:-translate-y-0.5 transition-all duration-200`}
                 data-delay={`${i * 80}`}
               >
-                {/* Phase circle on the line */}
-                <div className="hidden md:flex absolute -left-3.5 h-7 w-7 rounded-full border-2 border-white bg-card items-center justify-center text-xs font-bold shadow-sm">
-                  {p.n}
-                </div>
-                <div className="text-3xl shrink-0 md:hidden">{p.emoji}</div>
+                <div className="text-2xl shrink-0 md:hidden">{p.emoji}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="text-2xl hidden md:block">{p.emoji}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${p.badge}`}>{p.name}</span>
-                    <span className="text-xs text-muted-foreground">Fase {p.n}</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${p.badge}`}>{p.lv} · {p.name}</span>
                   </div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">Situação: {p.pain}</p>
-                  <p className="text-sm font-bold mb-1">Foco: {p.gain}</p>
-                  <p className="text-sm text-muted-foreground">{p.desc}</p>
+                  <p className="text-xs font-semibold text-stone-500 mb-0.5">Situação: {p.pain}</p>
+                  <p className="text-sm font-bold mb-1 text-stone-200">Foco: {p.gain}</p>
+                  <p className="text-sm text-stone-500">{p.desc}</p>
                 </div>
               </div>
             ))}

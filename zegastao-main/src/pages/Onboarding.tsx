@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
+import { CharacterCreation, type CharacterDraft } from '@/components/rpg/CharacterCreation';
 import type { AccountType } from '@/types';
 
 const SKILL_CATEGORIES = [
@@ -77,7 +78,14 @@ export function Onboarding() {
   const { user, profile, authLoading, setProfile: setStoreProfile } = useStore();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(profile?.name || '');
+  const [character, setCharacter] = useState<CharacterDraft>({
+    name: profile?.name || '',
+    classId: 'guardiao',
+    avatarId: 'mage',
+    companionSpeciesId: 'dragon',
+    companionName: 'Fagulha',
+  });
+  const name = character.name;
   const [income, setIncome] = useState(0);
   // Contas bancárias (step 1)
   const [accounts, setAccounts] = useState<OnboardingAccount[]>([]);
@@ -124,6 +132,12 @@ export function Onboarding() {
         alreadyInvests: invest === 'skip' ? 'no_idea' : invest,
         riskProfile: 'conservative',
         onboardingDone: true,
+        // Personagem & companion
+        characterClass: character.classId,
+        avatarId: character.avatarId,
+        companionSpeciesId: character.companionSpeciesId,
+        companionName: character.companionName.trim() || 'Fagulha',
+        tourDone: false,
       });
 
       // Salvar contas bancárias
@@ -144,7 +158,7 @@ export function Onboarding() {
         });
       }
 
-      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false });
+      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false, characterClass: character.classId, avatarId: character.avatarId, companionSpeciesId: character.companionSpeciesId, companionName: character.companionName.trim() || 'Fagulha', tourDone: false });
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length, accounts: accounts.length });
       if (user) registerForPushNotifications(user.uid).catch(() => {});
       navigate('/dashboard?welcome=1');
@@ -154,25 +168,34 @@ export function Onboarding() {
   }
 
   const STEPS = [
-    { label: 'Você', emoji: '👤' },
-    { label: 'Contas', emoji: '🏦' },
-    { label: 'Dívidas', emoji: '💳' },
+    { label: 'Aventureiro', emoji: '⚔️' },
+    { label: 'Equipamentos', emoji: '🛡️' },
+    { label: 'Inimigos', emoji: '☠️' },
     { label: 'Habilidades', emoji: '⚡' },
-    { label: 'Sonhos', emoji: '🎯' },
-    { label: 'Investimentos', emoji: '📈' },
+    { label: 'Objetivos', emoji: '🏆' },
+    { label: 'Estilo', emoji: '📈' },
+  ];
+
+  const STEP_TITLES = [
+    'Criação de Personagem ⚔️',
+    'Seus Equipamentos 🛡️',
+    'Seus Inimigos ☠️',
+    'Suas Habilidades ⚡',
+    'Seus Objetivos 🏆',
+    'Estilo de Combate 📈',
   ];
 
   const STEP_DESCRIPTIONS = [
-    'Vamos começar com o básico.',
-    'Qual o saldo das suas contas? (opcional)',
-    'Tem alguma dívida? (opcional)',
-    'O que você sabe fazer bem?',
-    'Qual é seu maior sonho financeiro?',
-    'Você já investe em algo?',
+    'Qual é o nome do seu aventureiro?',
+    'Suas contas e armas financeiras (opcional)',
+    'Os bosses que você precisa derrotar (opcional)',
+    'O que você sabe fazer bem para ganhar ouro extra?',
+    'Qual é o seu objetivo final nesta aventura?',
+    'Como você prefere acumular ouro?',
   ];
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5 p-4 gap-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5 px-3 py-4 sm:p-4 gap-6">
       <Link to="/"><Logo size="sm" /></Link>
       {/* Progress indicator */}
       <div className="w-full max-w-md">
@@ -197,10 +220,10 @@ export function Onboarding() {
             style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
           />
         </div>
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between mt-1 gap-0.5">
           {STEPS.map((s, i) => (
             <span key={i} className={cn(
-              'text-xs flex-1 text-center transition-colors',
+              'text-[9px] sm:text-xs flex-1 min-w-0 text-center leading-tight truncate transition-colors',
               i === step ? 'text-primary font-medium' : 'text-muted-foreground'
             )}>
               {s.label}
@@ -211,26 +234,33 @@ export function Onboarding() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Vamos montar seu plano 👋</CardTitle>
+          <CardTitle>{STEP_TITLES[step]}</CardTitle>
           <CardDescription>
             {STEP_DESCRIPTIONS[step]}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Step 0: Você */}
+          {/* Step 0: Criação de personagem */}
           {step === 0 && (
             <>
               <div className="space-y-1">
-                <Label>Como prefere ser chamado?</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
+                <Label>Nome do seu aventureiro</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setCharacter({ ...character, name: e.target.value })}
+                  placeholder="Seu nome"
+                />
               </div>
+
+              <CharacterCreation value={character} onChange={setCharacter} />
+
               <CurrencyInput
-                label="Renda mensal líquida"
+                label="Ouro mensal (renda líquida)"
                 value={income}
                 onChange={setIncome}
               />
               <Button className="w-full" onClick={() => setStep(1)} disabled={!name || !income}>
-                Continuar
+                Continuar a aventura →
               </Button>
             </>
           )}
@@ -239,7 +269,7 @@ export function Onboarding() {
           {step === 1 && (
             <>
               <p className="text-sm text-muted-foreground">
-                Registre o saldo das suas contas para ver seu patrimônio total no dashboard. 100% opcional.
+                Registre seus equipamentos (contas bancárias) para ver seu patrimônio total. 100% opcional.
               </p>
 
               {/* Lista de contas adicionadas */}
@@ -325,10 +355,10 @@ export function Onboarding() {
           {step === 2 && (
             <>
               <div className="space-y-1">
-                <Label>Credor</Label>
+                <Label>Nome do inimigo (credor)</Label>
                 <Input value={debt.name} onChange={(e) => setDebt({ ...debt, name: e.target.value })} placeholder="Ex: Cartão Nubank" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <CurrencyInput label="Saldo" value={debt.balance} onChange={(v) => setDebt({ ...debt, balance: v })} />
                 <CurrencyInput label="Parcela/mês" value={debt.payment} onChange={(v) => setDebt({ ...debt, payment: v })} />
               </div>
@@ -337,7 +367,7 @@ export function Onboarding() {
                 <span className="text-lg">📤</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-primary">Tem extrato do banco?</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Importe depois e o app detecta suas dívidas automaticamente.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Importe depois e o sistema detecta os bosses automaticamente.</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -351,7 +381,7 @@ export function Onboarding() {
           {step === 3 && (
             <>
               <p className="text-sm text-muted-foreground">
-                Usamos isso para sugerir renda extra sob medida. Selecione pelo menos 1.
+                Usamos isso para gerar bounties (missões de renda extra) sob medida. Selecione pelo menos 1.
               </p>
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                 {SKILL_CATEGORIES.map((cat) => (
@@ -424,7 +454,7 @@ export function Onboarding() {
                 ))}
               </div>
               <Button className="w-full" onClick={finish} disabled={busy}>
-                {busy ? 'Salvando…' : 'Começar a usar'}
+                {busy ? 'Criando personagem…' : '⚔️ Criar Personagem e Entrar'}
               </Button>
             </>
           )}

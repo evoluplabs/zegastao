@@ -12,6 +12,8 @@ import {
   HelpCircle,
   Users,
   PiggyBank,
+  Package,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -20,6 +22,7 @@ import { useStore } from '@/store/useStore';
 import { Logo } from '@/components/ui/Logo';
 import { FEATURES } from '@/lib/features';
 import { useToast } from '@/components/ui/Toast';
+import { CharacterPanel } from '@/components/CharacterPanel';
 
 const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
@@ -39,20 +42,26 @@ export function Sidebar() {
   const isIRSeason = irMonth >= 1 && irMonth <= 4;
 
   const NAV = [
-    { to: '/dashboard', label: 'Início', sub: 'Visão geral', icon: LayoutDashboard, end: true },
-    { to: '/carteira', label: 'Carteira', sub: 'Contas, cartões, dívidas', icon: CreditCard },
-    { to: '/transactions', label: 'Transações', sub: 'Histórico e extratos', icon: Receipt },
-    { to: '/copilot', label: 'Copiloto', sub: 'Análise com IA', icon: MessageCircle },
-    { to: '/journey', label: 'Jornada', sub: 'Trilha e tarefas', icon: Trophy },
+    { to: '/dashboard', label: 'Castelo', sub: 'Visão geral do reino', icon: LayoutDashboard, end: true },
+    { to: '/carteira', label: 'Arsenal', sub: 'Contas, bosses, dívidas', icon: CreditCard },
+    { to: '/transactions', label: 'Livro de Ouro', sub: 'Histórico e extratos', icon: Receipt },
+    { to: '/copilot', label: 'Sábio', sub: 'Conselho com IA', icon: MessageCircle },
+    { to: '/journey', label: 'Quest Log', sub: 'Missões e conquistas', icon: Trophy },
+    { to: '/vila', label: 'A Vila', sub: 'Aliados, ranking e hub', icon: Home },
   ];
 
   return (
-    <aside className="hidden md:flex md:w-56 flex-col border-r bg-card">
+    <aside className="hidden md:flex md:w-64 flex-col border-r bg-card">
       <div className="px-4 py-4 border-b">
         <Logo size="sm" />
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      {/* Character panel compact */}
+      <div className="border-b">
+        <CharacterPanel compact />
+      </div>
+
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV.map(({ to, label, sub, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -88,8 +97,26 @@ export function Sidebar() {
         >
           <PiggyBank className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-sm font-medium leading-tight">Caixinha</p>
-            <p className="text-[10px] leading-tight opacity-60">Cofrinho com meta diária</p>
+            <p className="text-sm font-medium leading-tight">Cofre da Guilda</p>
+            <p className="text-[10px] leading-tight opacity-60">Baú com meta diária</p>
+          </div>
+        </NavLink>
+
+        <NavLink
+          to="/inventario"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )
+          }
+        >
+          <Package className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight">Inventário</p>
+            <p className="text-[10px] leading-tight opacity-60">Itens → Missões de venda</p>
           </div>
         </NavLink>
 
@@ -129,8 +156,8 @@ export function Sidebar() {
             }
           >
             <Dices className="h-4 w-4 shrink-0" />
-            <span>Zé Apostador</span>
-            <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary leading-none">
+            <span>Raids</span>
+            <span className="ml-auto rounded-full bg-raid/15 px-1.5 py-0.5 text-[10px] font-bold text-orange-400 leading-none">
               Beta
             </span>
           </NavLink>

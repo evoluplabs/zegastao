@@ -1,81 +1,111 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, TrendingDown, AlertTriangle, Clock, CalendarCheck2, Wallet } from 'lucide-react';
+import { ArrowRight, Sword, Shield, Coins, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-function DashboardMockup() {
+function CharacterPreviewMockup() {
   return (
-    <div className="perspective-wrap w-full max-w-lg mx-auto">
-      <div className="tilt-card animate-float rounded-2xl border bg-card shadow-2xl shadow-primary/10 overflow-hidden">
-        {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/60">
-          <div className="flex items-center gap-2">
-            <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
-            <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-            <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+    <div className="relative mx-auto max-w-sm">
+      {/* Floating XP badge */}
+      <div className="absolute -top-4 -right-2 z-10 flex items-center gap-1 rounded-full border border-amber-500/40 bg-[#211a11] px-3 py-1.5 text-xs font-bold text-amber-400 shadow-lg shadow-black/40 animate-bounce" style={{ animationDuration: '3s' }}>
+        <Zap className="h-3 w-3" /> +50 XP · Boss derrotado!
+      </div>
+
+      {/* Character Card */}
+      <div className="rounded-2xl border border-[#3a2e1d] bg-[#211a11] shadow-2xl shadow-black/50 overflow-hidden">
+        {/* Header */}
+        <div className="border-b border-[#3a2e1d] bg-[#1a130b] px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="h-9 w-9 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center text-sm font-bold text-green-400">
+                M
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[8px] font-black text-stone-950">
+                5
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-stone-100">Marcos</p>
+              <p className="text-[10px] text-green-400">Guardião Estável · Lv 5</p>
+            </div>
           </div>
-          <span className="text-[10px] text-muted-foreground font-medium">Zé Gastão · Dashboard</span>
-          <div className="w-14" />
+          <div className="flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+            🪙 R$ 4.210
+          </div>
         </div>
 
         <div className="p-4 space-y-3">
-          {/* Hero Row: Saldo Total + Receitas + Despesas */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg border bg-background p-2">
-              <div className="flex items-center gap-1 mb-0.5">
-                <Wallet className="h-2.5 w-2.5 text-muted-foreground" />
-                <p className="text-[8px] text-muted-foreground uppercase tracking-wide">Saldo total</p>
-              </div>
-              <p className="text-[11px] font-bold text-green-600">R$ 36.218</p>
+          {/* HP financeiro */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-semibold text-stone-400 flex items-center gap-1">
+                <Shield className="h-2.5 w-2.5 text-green-400" /> HP Financeiro
+              </span>
+              <span className="text-[10px] font-bold text-green-400">78%</span>
             </div>
-            <div className="rounded-lg border bg-background p-2">
-              <p className="text-[8px] text-muted-foreground uppercase tracking-wide mb-0.5">Receitas</p>
-              <p className="text-[11px] font-bold text-green-600">R$ 8.546</p>
-            </div>
-            <div className="rounded-lg border bg-background p-2">
-              <p className="text-[8px] text-muted-foreground uppercase tracking-wide mb-0.5">Despesas</p>
-              <p className="text-[11px] font-bold text-red-500">-R$ 4.898</p>
+            <div className="h-2 rounded-full bg-stone-800 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-green-600 to-green-400 transition-all" style={{ width: '78%' }} />
             </div>
           </div>
 
-          {/* Vencidos / Vencendo / Futuro */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg border border-red-200 bg-red-50/50 p-2">
-              <div className="flex items-center gap-1 mb-0.5">
-                <AlertTriangle className="h-2.5 w-2.5 text-red-500" />
-                <p className="text-[8px] font-semibold text-red-600">Vencidos</p>
-              </div>
-              <p className="text-[9px] text-muted-foreground mb-1">Passados</p>
-              <p className="text-[11px] font-bold text-red-600">R$ 650</p>
+          {/* XP bar */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-semibold text-stone-400 flex items-center gap-1">
+                <Zap className="h-2.5 w-2.5 text-amber-400" /> Experiência
+              </span>
+              <span className="text-[10px] font-bold text-amber-400">650 / 1.000 XP</span>
             </div>
-            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-2">
-              <div className="flex items-center gap-1 mb-0.5">
-                <CalendarCheck2 className="h-2.5 w-2.5 text-amber-600" />
-                <p className="text-[8px] font-semibold text-amber-700">Vencendo</p>
-              </div>
-              <p className="text-[9px] text-muted-foreground mb-1">Próx. 7 dias</p>
-              <p className="text-[11px] font-bold text-amber-700">R$ 1.200</p>
-            </div>
-            <div className="rounded-lg border bg-background p-2">
-              <div className="flex items-center gap-1 mb-0.5">
-                <Clock className="h-2.5 w-2.5 text-muted-foreground" />
-                <p className="text-[8px] font-semibold">Futuro</p>
-              </div>
-              <p className="text-[9px] text-muted-foreground mb-1">Próx. 30d</p>
-              <p className="text-[11px] font-bold text-muted-foreground">R$ 3.100</p>
+            <div className="h-2 rounded-full bg-stone-800 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400" style={{ width: '65%' }} />
             </div>
           </div>
 
-          {/* AI insight */}
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex gap-2">
-            <span className="text-sm shrink-0">🤖</span>
-            <div>
-              <p className="text-[10px] font-semibold text-primary">Copiloto diz:</p>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Pagar R$ 80 a mais no Nubank economiza R$ 1.240 em juros. Você tem margem este mês.
-              </p>
+          {/* Boss section */}
+          <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-red-400 flex items-center gap-1">
+                ☠️ Boss: Nubank Fatura
+              </span>
+              <span className="text-[10px] text-red-300">Lv 3 · 18%/mês</span>
+            </div>
+            <div className="h-2 rounded-full bg-stone-800 overflow-hidden mb-1.5">
+              <div className="h-full rounded-full bg-gradient-to-r from-red-800 to-red-500" style={{ width: '34%' }} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-stone-500">❤️ R$ 1.200 / R$ 3.500</span>
+              <span className="text-[9px] font-bold text-green-400">⚔️ -66% de HP!</span>
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: Sword, label: 'ATK', value: '⚔️ 218', color: 'text-red-400' },
+              { icon: Shield, label: 'DEF', value: '🛡️ R$400', color: 'text-sky-400' },
+              { icon: Coins, label: 'XP', value: '⭐ 650', color: 'text-amber-400' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-2 text-center">
+                <p className="text-[8px] uppercase tracking-wide text-stone-500 mb-0.5">{s.label}</p>
+                <p className={`text-[10px] font-bold ${s.color}`}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Quest em destaque */}
+          <div className="flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/5 p-2.5">
+            <span className="text-base shrink-0">🎯</span>
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-wide text-green-500 font-bold">Quest ativa</p>
+              <p className="text-[10px] text-stone-300 font-medium truncate">Atacar Boss Nubank · +30 XP</p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Floating level-up badge */}
+      <div className="absolute -bottom-3 -left-3 z-10 rounded-xl border border-amber-500/30 bg-[#211a11] px-3 py-2 shadow-lg shadow-black/40">
+        <p className="text-[10px] font-black text-amber-400">🏆 LEVEL UP!</p>
+        <p className="text-[9px] text-stone-400">Guardião Estável · Lv 5</p>
       </div>
     </div>
   );
@@ -83,66 +113,77 @@ function DashboardMockup() {
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-animated">
-      {/* Dot pattern */}
+    <section className="relative overflow-hidden bg-[#15110b]">
+      {/* Atmospheric grid */}
       <div
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-20"
         style={{
-          backgroundImage: 'radial-gradient(circle, #1d4ed820 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
+          backgroundImage: 'radial-gradient(circle, #10b98120 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
         }}
       />
+      {/* Gradient glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-sky-500/5 pointer-events-none" />
 
       <div className="relative mx-auto max-w-6xl px-4 py-16 md:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left — copy */}
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-card/70 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-primary mb-6 shadow-sm">
-              <Sparkles className="h-3 w-3" />
-              Powered by Claude AI · Feito para o Brasil
+            <div className="inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs font-semibold text-green-400 mb-6 shadow-sm">
+              <Sword className="h-3 w-3" />
+              Idle MMO de Finanças Pessoais · Feito no Brasil
             </div>
 
-            {/* Tagline */}
-            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
-              78% dos brasileiros estão endividados. Você merece uma saída.
+            <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-3">
+              ⚔️ Sua vida financeira virou um RPG
             </p>
 
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5">
-              Organize dívidas.<br />Controle contas.<br />
-              <span className="text-shimmer">Construa liberdade.</span>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5 text-stone-100">
+              Derrote suas dívidas.<br />Suba de nível.<br />
+              <span className="text-green-400">Construa liberdade.</span>
             </h1>
 
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-              Seu copiloto financeiro com IA analisa sua situação, monta seu plano e te guia todo mês —{' '}
-              <strong className="text-foreground">de graça pra começar.</strong>
+            <p className="text-lg text-stone-400 leading-relaxed mb-8 max-w-lg">
+              Crie seu personagem, cadastre suas dívidas como bosses e evolua profissões
+              enquanto organiza sua vida financeira —{' '}
+              <strong className="text-stone-200">de graça pra começar.</strong>
             </p>
 
             <div className="flex flex-col sm:flex-row items-start gap-3 mb-5">
-              <Button asChild size="lg" className="rounded-xl gap-2 px-7 shadow-lg shadow-primary/25">
+              <Button asChild size="lg" className="rounded-xl gap-2 px-7 bg-green-500 hover:bg-green-400 text-stone-950 font-bold shadow-lg shadow-green-500/20">
                 <Link to="/login">
-                  Diagnóstico gratuito em 2 min
+                  ⚔️ Criar Personagem — Grátis
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-xl bg-card/70 backdrop-blur-sm">
-                <a href="#como-funciona">Ver como funciona</a>
+              <Button asChild variant="outline" size="lg" className="rounded-xl border-stone-700 bg-stone-800/50 text-stone-300 hover:bg-stone-800 hover:text-stone-100">
+                <a href="#como-funciona">Ver o Jogo</a>
               </Button>
             </div>
 
+            {/* Raid callout */}
+            <div className="flex items-center gap-2.5 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3 mb-6">
+              <span className="text-xl shrink-0">⚔️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-green-400">Raid: Zé Apostador · Copa 2026</p>
+                <p className="text-xs text-stone-500 leading-snug">Fotografa o jogo na Betano. A IA lê as odds e monta a melhor aposta. Sem achismo.</p>
+              </div>
+            </div>
+
             {/* Trust signals */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-6">
-              <span className="flex items-center gap-1"><span className="text-green-500">✓</span> Gratuito para começar</span>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500 mb-6">
+              <span className="flex items-center gap-1"><span className="text-green-400">✓</span> Gratuito pra sempre</span>
               <span className="flex items-center gap-1"><span>🔒</span> Dados criptografados</span>
               <span className="flex items-center gap-1"><span>⭐</span> Sem cartão de crédito</span>
             </div>
 
             {/* Social proof */}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 text-sm text-stone-500">
               <div className="flex -space-x-2">
-                {['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'].map((c, i) => (
+                {['#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6'].map((c, i) => (
                   <div
                     key={i}
-                    className="h-7 w-7 rounded-full border-2 border-card flex items-center justify-center text-white text-[9px] font-bold"
+                    className="h-7 w-7 rounded-full border-2 border-[#15110b] flex items-center justify-center text-white text-[9px] font-bold"
                     style={{ backgroundColor: c }}
                   >
                     {['A', 'M', 'J', 'C', 'R'][i]}
@@ -150,26 +191,18 @@ export function HeroSection() {
                 ))}
               </div>
               <div>
-                <span><strong className="text-foreground">+2.000 usuários ativos</strong></span>
+                <span><strong className="text-stone-200">+2.000 aventureiros ativos</strong></span>
                 <div className="flex items-center gap-0.5 text-amber-400">
                   {'★★★★★'.split('').map((s, i) => <span key={i} className="text-xs">{s}</span>)}
-                  <span className="text-xs text-muted-foreground ml-1">4.9</span>
+                  <span className="text-xs text-stone-500 ml-1">4.9</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right — 3D mockup */}
+          {/* Right — character preview */}
           <div className="relative">
-            <div className="absolute -top-6 -right-4 flex items-center gap-1.5 rounded-xl bg-card shadow-md border px-3 py-2 text-xs font-medium z-10 animate-bounce" style={{ animationDuration: '3s' }}>
-              <TrendingDown className="h-3.5 w-3.5 text-green-500" />
-              <span>Economizou R$ 1.240 em juros</span>
-            </div>
-            <DashboardMockup />
-            <div className="absolute -bottom-4 -left-4 rounded-xl bg-card shadow-md border px-3 py-2 text-xs z-10" style={{ animation: 'bounce 4s ease-in-out infinite', animationDelay: '1.5s' }}>
-              <div className="font-bold text-green-600">✓ Saldo Total: R$ 36.218</div>
-              <div className="text-muted-foreground">3 contas vinculadas</div>
-            </div>
+            <CharacterPreviewMockup />
           </div>
         </div>
       </div>

@@ -4,8 +4,11 @@ import {
   Crown, LogOut, HelpCircle, Shield,
   ChevronRight, Brain, Zap, Trophy,
   MessageSquarePlus, FileText, Pencil, Sun, Moon, Monitor,
-  Users, LinkIcon, Unlink,
+  Users, LinkIcon, Unlink, TrendingUp, Package,
 } from 'lucide-react';
+import { CharacterPanel } from '@/components/CharacterPanel';
+import { ProfessionPanel } from '@/components/ProfessionPanel';
+import { FEATURES } from '@/lib/features';
 import { useTheme } from '@/hooks/useTheme';
 import { useSharedFinances } from '@/hooks/useSharedFinances';
 import type { AppTheme } from '@/types';
@@ -22,6 +25,7 @@ import { PHASE_LABELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { PersonalContext } from './PersonalContext';
 import { FinancialSetupWizard } from '@/components/flows/FinancialSetupWizard';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 function Avatar({ name }: { name?: string }) {
   const initials = name
@@ -139,35 +143,37 @@ export function Profile() {
   return (
     <div className="space-y-5 max-w-lg mx-auto">
 
-      {/* Header do perfil */}
-      <div className="rounded-2xl border bg-card p-5">
-        <div className="flex items-center gap-4">
-          <Avatar name={profile?.name} />
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold truncate">{profile?.name || 'Usuário'}</h2>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {isPaid ? (
-                <Badge className="gap-1 bg-primary/10 text-primary border-primary/20">
-                  <Crown className="h-3 w-3" /> {planLabel[plan] || plan}
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">Plano gratuito</Badge>
-              )}
-              {profile?.financialPhase && (
-                <Badge variant="outline" className="text-xs">
-                  {PHASE_LABELS[profile.financialPhase]}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Ficha do Personagem — CharacterPanel */}
+      <CharacterPanel />
+
+      {/* Profissões */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">⚔️ Profissões</p>
+        <ProfessionPanel professionXP={profile?.professionXP} />
       </div>
+
+      {/* Inventário link */}
+      <Link
+        to="/inventario"
+        className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-950/10 px-4 py-3.5 hover:bg-amber-950/20 transition-colors"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
+          <Package className="h-4 w-4 text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-amber-300">📦 Inventário</p>
+          <p className="text-xs text-muted-foreground">Seus itens → Missões de venda</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-amber-500/60 shrink-0" />
+      </Link>
+
+      {/* WhatsApp */}
+      <WhatsAppLink />
 
       {/* Resumo financeiro */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Situação financeira</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status do reino</p>
           <button
             onClick={() => setShowWizard(true)}
             className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
@@ -176,14 +182,14 @@ export function Profile() {
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <StatPill label="Renda" value={income > 0 ? formatBRL(income) : '—'} color="text-success" />
+          <StatPill label="Ouro/mês" value={income > 0 ? formatBRL(income) : '—'} color="text-success" />
           <StatPill
-            label="Dívidas"
-            value={activeDebts.length === 0 ? 'Nenhuma 🎉' : formatBRL(totalDebt)}
+            label="Bosses"
+            value={activeDebts.length === 0 ? '🎉 Nenhum' : `${activeDebts.length} ativo${activeDebts.length > 1 ? 's' : ''}`}
             color={activeDebts.length === 0 ? 'text-success' : 'text-destructive'}
           />
           <StatPill
-            label="Metas"
+            label="Missões"
             value={activeGoals.length === 0 ? '—' : `${activeGoals.length} ativa${activeGoals.length > 1 ? 's' : ''}`}
             color="text-primary"
           />
@@ -212,25 +218,25 @@ export function Profile() {
       {/* Persona & Contexto */}
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Meu perfil pessoal</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🧙 Habilidades do Aventureiro</p>
         </div>
         <div className="divide-y">
           <MenuRow
             icon={Brain}
-            label="Persona & Contexto"
-            sub="Habilidades, sentimentos, impulsos e análises do Copiloto"
+            label="Persona & Habilidades"
+            sub="Seus poderes, sentimentos e análises do Sábio"
             onClick={() => setShowContext(true)}
           />
           <MenuRow
             icon={Zap}
-            label="Sugestões de renda extra"
-            sub="Tarefas personalizadas para suas habilidades"
+            label="Missões de Renda Extra"
+            sub="Bounties personalizadas para suas habilidades"
             onClick={() => setShowContext(true)}
           />
           <MenuRow
             icon={Trophy}
-            label="Minha trilha"
-            sub="Marcos da jornada financeira"
+            label="Quest Log"
+            sub="Conquistas e missões principais"
             to="/journey"
           />
         </div>
@@ -346,6 +352,23 @@ export function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Zé Apostador */}
+      {FEATURES.ZE_APOSTADOR && (
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Apostas</p>
+          </div>
+          <div className="divide-y">
+            <MenuRow
+              icon={TrendingUp}
+              label="Zé Apostador"
+              sub="Apostas na Betano com IA · Copa 2026"
+              to="/apostas"
+            />
+          </div>
+        </div>
+      )}
 
       {/* App */}
       <div className="rounded-2xl border bg-card overflow-hidden">

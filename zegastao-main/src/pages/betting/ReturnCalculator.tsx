@@ -99,7 +99,7 @@ export function ReturnCalculator() {
       </div>
 
       {/* Result */}
-      <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 p-3 space-y-1">
+      <div className="rounded-xl bg-gradient-to-br from-green-50 to-green-50 border border-green-100 p-3 space-y-1">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Odd total</span>
           <span className="font-bold text-foreground">{totalOdd.toFixed(2)}x</span>

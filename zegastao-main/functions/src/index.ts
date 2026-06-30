@@ -1,8 +1,16 @@
 // Ponto de entrada das Cloud Functions. Inicializa o Admin SDK e exporta tudo.
 import { initializeApp } from 'firebase-admin/app';
+import { setGlobalOptions } from 'firebase-functions/v2';
 import * as Sentry from '@sentry/node';
 
 initializeApp();
+
+// Teto global de instâncias por função (2ª geração = serviço Cloud Run, cada um
+// reserva CPU). Mantém a soma de CPU dentro da cota regional de southamerica-east1.
+// Funções que precisarem de mais podem sobrescrever maxInstances individualmente.
+// IMPORTANTE: deve rodar ANTES dos `export { ... } from './functions/...'` abaixo
+// (no output CommonJS as re-exports carregam os módulos na ordem do arquivo).
+setGlobalOptions({ maxInstances: 3 });
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -29,8 +37,14 @@ export { categorizeManual } from './functions/categorizeManual';
 export { createMPCheckout, handleMPWebhook } from './functions/mercadopago';
 export { betAnalysis } from './functions/betAnalysis';
 export { bettingProfile } from './functions/bettingProfile';
+// Zé Apostador 2.0
+export { zeMandate, zeCycle, zeRecalcCard, zeFeedback, zeScan, zeLearnNightly } from './functions/zeApostador';
+// Zé Apostador 2.1 — Vision-first (extração de print, desmascarador de guru,
+// trava de dopamina e liquidação expressa por print)
+export { zeExtractOdds, zeGuruAudit, zeWithdrawalProof, zeSettleByPrint } from './functions/zeVision';
 export { whatsappWebhook } from './functions/whatsappWebhook';
 export { generateInsightsNow } from './functions/generateInsightsNow';
+export { onBossDefeated } from './functions/proactiveSage';
 export { weeklyDigest } from './functions/weeklyDigest';
 export { linkPartner } from './functions/linkPartner';
 export { extractTaxData } from './functions/extractTaxData';

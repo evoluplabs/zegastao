@@ -70,6 +70,7 @@ export function CreditCardDetail() {
   const closeDate = `${String(card.closingDay).padStart(2, '0')}/${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
 
   async function saveNextInvoice() {
+    if (!card) return;
     if (nextInvoiceValue <= 0) return;
     setSavingNext(true);
     await updateUserDoc('creditCards', card.id, { lastKnownInvoice: nextInvoiceValue });

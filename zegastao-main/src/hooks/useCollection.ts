@@ -45,3 +45,29 @@ export function useUserCollection<T>(
 
   return { data, loading };
 }
+
+export function usePublicCollection<T>(
+  name: string,
+  constraints: QueryConstraint[] = []
+): { data: T[]; loading: boolean } {
+  const [data, setData] = useState<T[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const ref = collection(db, name);
+    const q = query(ref, ...constraints);
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setData(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T));
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+    return unsub;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+
+  return { data, loading };
+}

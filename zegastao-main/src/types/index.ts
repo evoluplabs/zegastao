@@ -104,6 +104,7 @@ export interface BettingHistory {
 
 // Ligas populares para o MVP
 export const BETTING_LEAGUES = [
+  { key: 'soccer_fifa_world_cup', label: 'Copa do Mundo 🏆' },
   { key: 'soccer_brazil_serie_a', label: 'Brasileirão Série A' },
   { key: 'soccer_brazil_serie_b', label: 'Brasileirão Série B' },
   { key: 'soccer_epl', label: 'Premier League' },
@@ -124,6 +125,91 @@ export const BETTING_MARKET_LABELS: Record<string, string> = {
 export const BETTING_DISCLAIMER =
   'Esta análise é educacional e não garante resultados. Apostas esportivas envolvem risco de perda total do valor apostado. Aposte com responsabilidade e dentro do seu limite semanal configurado com o Copiloto.';
 
+// ===== Zé Apostador 2.0 (mandato / ciclos / card guiado) =====
+
+export type ZeRiskLevel = 0 | 1 | 2 | 3;
+
+export interface ZeMandate {
+  cycleBudget: number;
+  growthTargetPct: number;
+  stopLossPct: number;
+  preferredLeagues: string[];
+  preferredTeams: string[];
+  blockedTeams: string[];
+  maxAutoRiskLevel: ZeRiskLevel;
+  preauthorizedScope: { maxStakePerCycle: number; allowMultiples: boolean };
+  acceptedRiskDisclaimer: boolean;
+  selfExclusionUntil?: { toDate: () => Date };
+  activeCycleId?: string | null;
+}
+
+export interface ZeCycle {
+  id: string;
+  status: 'planning' | 'awaiting_games' | 'placed' | 'settling' | 'won' | 'lost' | 'aborted';
+  budget: number;
+  growthTargetPct: number;
+  stopLossPct: number;
+  currentBankroll: number;
+  riskLevel: ZeRiskLevel;
+}
+
+export interface ZeCardLeg {
+  fixtureId: number;
+  homeTeam: string;
+  awayTeam: string;
+  league: string;
+  kickoff: string;
+  market: string;
+  marketLabel: string;
+  selection: string;
+  modelProbPct: number;
+  recommendedOdd: number;
+  minOdd: number;
+  fairOdd: number;
+  steps: string[];
+}
+
+export interface ZeGuidedCard {
+  type: 'single' | 'multiple';
+  legs: ZeCardLeg[];
+  combinedOdd: number;
+  combinedProbPct: number;
+  evPct: number;
+  authLevel: ZeRiskLevel;
+  needsSeal: boolean;
+  seal?: string;
+  reasoning: string;
+  steps: string[];
+  suggestedStake: number;
+  potentialReturn: number;
+  skip: boolean;
+}
+
+export interface ZeRound {
+  id: string;
+  type: 'single' | 'multiple';
+  legs: ZeCardLeg[];
+  combinedOdd: number;
+  combinedProb: number;
+  ev: number;
+  card: ZeGuidedCard;
+  authLevel: ZeRiskLevel;
+  suggestedStake: number;
+  placed: boolean;
+  outcome: 'pending' | 'won' | 'lost';
+  skip: boolean;
+  reasonCode: string;
+  stake?: number;
+  payout?: number;
+}
+
+export const ZE_RISK_LEVELS: Array<{ level: ZeRiskLevel; label: string; emoji: string; desc: string }> = [
+  { level: 0, label: 'Conservador', emoji: '🟢', desc: 'Só apostas com valor real. O jeito mais seguro de jogar.' },
+  { level: 1, label: 'Moderado', emoji: '🟡', desc: 'Múltiplas curtas, só com pernas de valor. Equilíbrio.' },
+  { level: 2, label: 'Agressivo', emoji: '🟠', desc: 'Fézinha de sorte: paga alto, mas a chance é baixa. Pede confirmação.' },
+  { level: 3, label: 'Pré-autorizado', emoji: '🔵', desc: 'O Zé monta e avisa sozinho. Você só dá o toque final.' },
+];
+
 export interface CategoryBudget {
   id: string;
   category: string;
@@ -137,7 +223,8 @@ export interface Account {
   name: string;
   type: AccountType;
   institution?: string;
-  balance: number;
+  balance: number;       // saldo reconciliado manualmente (âncora)
+  balancedAt?: string;   // YYYY-MM-DD da última reconciliação manual
   emoji?: string;
   color?: string;
 }
@@ -160,6 +247,7 @@ export interface Transaction {
   statementType?: 'checking' | 'credit_card' | null;
   isRecurring?: boolean;
   normalizedDesc?: string | null;
+  accountId?: string;    // link para a conta (opcional, retrocompatível)
   // Parcelamento detectado automaticamente no upload
   isInstallment?: boolean;
   installmentCurrent?: number;
@@ -222,6 +310,7 @@ export interface Caixinha {
   deposits: CaixinhaDeposit[];
   status: 'active' | 'completed' | 'paused';
   color?: string;
+  frequency?: 'daily' | 'weekly'; // padrão: 'daily'
   shared?: boolean;   // caixinha compartilhada do casal (plano Casal/Família)
   ownerUid?: string;  // dono da caixinha compartilhada
 }
@@ -314,10 +403,87 @@ export interface Profile {
   extraIncomeSources?: ExtraIncomeSource[];
   riskProfile?: RiskProfile;
   alreadyInvests?: 'yes' | 'no' | 'no_idea';
-  organizationId?: string;  // ID da empresa (B2B)
-  isEmployee?: boolean;     // vinculado via convite corporativo
+  organizationId?: string;
+  isEmployee?: boolean;
   theme?: AppTheme;
   sharedWithUid?: string | null;
+  // RPG fields
+  xp?: number;
+  professionXP?: {
+    poupador?: number;
+    quitador?: number;
+    freelancer?: number;
+    investidor?: number;
+  };
+  // Personagem & companion (MMORPG)
+  characterClass?: 'guardiao' | 'cacador' | 'mercador' | 'arcano';
+  avatarId?: string;
+  companionSpeciesId?: string;
+  companionName?: string;
+  tourDone?: boolean;
+  // Daily check-in / streak
+  lastCheckIn?: string;   // YYYY-MM-DD
+  dailyStreak?: number;
+  // WhatsApp
+  whatsappPhone?: string;
+  whatsappVerified?: boolean;
+}
+
+export type Rarity = 'comum' | 'refinado' | 'premium' | 'epico' | 'lendario';
+export type ItemCondition = 'novo' | 'otimo' | 'bom' | 'aceitavel' | 'desgastado';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: 'electronics' | 'appliances' | 'furniture' | 'clothing' | 'vehicle' | 'other';
+  estimatedValue: number;
+  customValue?: number;
+  status: 'available' | 'listed' | 'sold';
+  linkedDebtId?: string;
+  addedAt: string;
+  soldAt?: string;
+  soldFor?: number;
+  marketplaceId?: string;
+  condition?: ItemCondition;
+  description?: string;
+}
+
+export interface MarketplaceListing {
+  id: string;
+  itemId: string;
+  userId: string;
+  userAlias: string;
+  itemName: string;
+  category: string;
+  categoryIcon: string;
+  price: number;
+  whatsappLink?: string;
+  listedAt: string;
+  status: 'active' | 'sold';
+  rarity?: Rarity;
+  condition?: ItemCondition;
+  description?: string;
+  /** 'fixed' = preço fixo; 'negotiable' = aceita propostas. */
+  listingType?: 'fixed' | 'negotiable';
+}
+
+// Caçada — bounty de renda extra que o aventureiro aceita e acompanha.
+export interface Hunt {
+  id: string;
+  title: string;
+  detail?: string;
+  tier: 'T1' | 'T2' | 'T3';
+  xpReward: number;
+  estimatedReturnValue: number;
+  estimatedReturn?: string;
+  estimatedTime?: string;
+  platform?: string;
+  drop?: string;
+  status: 'accepted' | 'in_progress' | 'completed' | 'abandoned';
+  source: 'catalog' | 'custom';
+  acceptedAt: string;
+  completedAt?: string;
+  earnedValue?: number;
 }
 
 export interface Milestone {
@@ -622,3 +788,27 @@ export const CREDIT_CARD_BANKS: Record<CreditCardBank, { label: string; emoji: s
   btg:       { label: 'BTG',       emoji: '🔷', color: '#1D4ED8' },
   outro:     { label: 'Outro',     emoji: '💳', color: '#6B7280' },
 };
+
+// Imposto de Renda — espelha o retorno de extractTaxData (Cloud Function).
+// Mantido em sincronia com functions/src/functions/extractTaxData.ts.
+export interface TaxSummary {
+  year: number;
+  deductions: {
+    medical: number;
+    education: number;
+    donations: number;
+  };
+  income: {
+    salary: number;
+    investments: number;
+    rental: number;
+    other: number;
+  };
+  highlights: string[];
+  obligations: {
+    type: 'irpf' | 'dasn_mei' | 'carne_leao' | 'darf_ganho_capital';
+    label: string;
+    deadline: string;
+    description: string;
+  }[];
+}

@@ -121,7 +121,7 @@ export function CategorySpendingPanel({ byCategory, income, monthLabel, partnerB
         {hasPartnerSplit && partnerAmount > 0 && (
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
               Você: <span className="font-medium text-foreground">{formatBRL(myAmount)}</span>
             </span>
             <span className="flex items-center gap-1">

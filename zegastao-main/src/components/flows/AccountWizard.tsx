@@ -48,11 +48,12 @@ export function AccountWizard({ onClose, existing }: Props) {
   async function save() {
     if (!name || balance < 0) return;
     setBusy(true);
+    const balancedAt = new Date().toISOString().slice(0, 10);
     try {
       if (existing) {
-        await updateUserDoc('accounts', existing.id, { name, type, balance, emoji });
+        await updateUserDoc('accounts', existing.id, { name, type, balance, emoji, balancedAt });
       } else {
-        await addUserDoc('accounts', { name, type, balance, emoji });
+        await addUserDoc('accounts', { name, type, balance, emoji, balancedAt });
       }
       onClose();
     } finally {

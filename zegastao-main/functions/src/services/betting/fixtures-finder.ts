@@ -3,6 +3,7 @@
 import { fetchFootballJSON } from './sports-api';
 
 const LEAGUE_ID_MAP: Record<string, number> = {
+  soccer_fifa_world_cup:      1,   // Copa do Mundo (FIFA) — foco da temporada
   soccer_brazil_serie_a:      71,
   soccer_brazil_serie_b:      72,
   soccer_epl:                 39,
@@ -12,6 +13,23 @@ const LEAGUE_ID_MAP: Record<string, number> = {
   soccer_france_ligue_one:    61,
   soccer_uefa_champs_league:  2,
 };
+
+// Gols médios por time por jogo, por liga — base para o modelo de Poisson quando
+// não há dados recentes suficientes. A Copa tende a ser mais truncada que ligas.
+export const LEAGUE_AVG_GOALS: Record<string, number> = {
+  soccer_fifa_world_cup:      1.25,
+  soccer_brazil_serie_a:      1.20,
+  soccer_epl:                 1.45,
+  soccer_spain_la_liga:       1.30,
+  soccer_germany_bundesliga:  1.55,
+  soccer_italy_serie_a:       1.35,
+  soccer_france_ligue_one:    1.40,
+  soccer_uefa_champs_league:  1.45,
+};
+
+export function leagueAvgGoals(sportKey: string): number {
+  return LEAGUE_AVG_GOALS[sportKey] ?? 1.35;
+}
 
 export function getLeagueId(sportKey: string): number | null {
   return LEAGUE_ID_MAP[sportKey] ?? null;

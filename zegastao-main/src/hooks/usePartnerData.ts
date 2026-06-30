@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { collection, doc, getDoc, onSnapshot, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useSharedFinances } from '@/hooks/useSharedFinances';
 import { currentMonthStart } from '@/lib/utils';
+import { isNeutral } from '@/lib/finance';
 import type { Profile, Transaction } from '@/types';
 
 export interface PartnerData {
@@ -43,10 +44,11 @@ export function usePartnerData(): { data: PartnerData | null; loading: boolean }
 
     const txUnsub = onSnapshot(txQuery, (snap) => {
       const txs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Transaction));
-      const income = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-      const expenses = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-      const effectiveIncome = income > 0 ? income : (profileData?.monthlyIncome || 0);
-      setData({ profile: profileData, income: effectiveIncome, expenses, transactions: txs });
+      // Exclui categorias neutras (transferências internas, fatura cartão)
+      const realTxs = txs.filter((t) => !isNeutral(t.category));
+      const income = realTxs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+      const expenses = realTxs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+      setData({ profile: profileData, income, expenses, transactions: txs });
       setLoading(false);
     }, () => setLoading(false));
 

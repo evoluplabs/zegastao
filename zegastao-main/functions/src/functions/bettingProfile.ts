@@ -31,7 +31,7 @@ const BettingProfileSchema = z.discriminatedUnion('action', [
 const client = new Anthropic();
 
 // Sugere budget de apostas com base no contexto financeiro do usuário
-async function suggestBettingBudget(contextSnapshot: string): Promise<{ budget: number; reasoning: string }> {
+export async function suggestBettingBudget(contextSnapshot: string): Promise<{ budget: number; reasoning: string }> {
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,
@@ -59,7 +59,7 @@ Responda com JSON:
 }
 
 export const bettingProfile = onCall(
-  { region: 'southamerica-east1', enforceAppCheck: false },
+  { region: 'us-east1', enforceAppCheck: false },
   async (request) => {
     if (!ZE_APOSTADOR_ENABLED) {
       throw new HttpsError('not-found', 'Zé Apostador ainda não está disponível.');

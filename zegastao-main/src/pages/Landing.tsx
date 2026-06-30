@@ -6,6 +6,7 @@ import { ProblemSection } from './landing/ProblemSection';
 import { DemoSection } from './landing/DemoSection';
 import { CaixinhaSection } from './landing/CaixinhaSection';
 import { FeaturesSection } from './landing/FeaturesSection';
+import { WhatsAppSection } from './landing/WhatsAppSection';
 import { JourneySection } from './landing/JourneySection';
 import { CasesSection } from './landing/CasesSection';
 import { FaqSection } from './landing/FaqSection';
@@ -24,6 +25,7 @@ export function Landing() {
       <DemoSection />
       <CaixinhaSection />
       <FeaturesSection />
+      <WhatsAppSection />
       <JourneySection />
       <CasesSection />
       <FaqSection />

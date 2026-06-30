@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingDown, Handshake, Pencil, Zap, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Handshake, Pencil, Zap } from 'lucide-react';
 import { doc, writeBatch, collection } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import { useDebts } from '@/hooks/useDebts';
@@ -8,14 +8,14 @@ import { deleteUserDoc } from '@/lib/firestore';
 import { calcAmortization } from '@/lib/amortization';
 import { useToast } from '@/components/ui/Toast';
 import { NEGOTIATION_SCRIPTS } from '@/lib/negotiation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { formatBRL, formatPct } from '@/lib/utils';
+import { formatBRL } from '@/lib/utils';
 import { DebtWizard } from '@/components/flows/DebtWizard';
 import { DebtEditModal } from '@/components/flows/DebtEditModal';
 import { DebtSimulator } from '@/components/DebtSimulator';
 import { TransactionInstallmentGroups } from '@/components/TransactionInstallmentGroups';
+import { BossCard } from '@/components/BossCard';
 import type { Debt } from '@/types';
 
 export function Debts() {
@@ -30,8 +30,7 @@ export function Debts() {
 
   function currentMonth() { return new Date().toISOString().slice(0, 7); }
 
-  async function quickPayInstallment(e: React.MouseEvent, d: Debt) {
-    e.stopPropagation();
+  async function quickPayInstallment(d: Debt) {
     const uid = auth.currentUser?.uid;
     if (!uid || payingId || !d.remainingInstallments || !d.interestRateMonthly) return;
 
@@ -64,7 +63,11 @@ export function Debts() {
       if (newRem === 0) patch.status = 'paid';
       batch.update(doc(db, 'users', uid, 'debts', d.id), patch);
       await batch.commit();
-      toast('Parcela registrada!');
+      if (newRem === 0) {
+        toast('🏆 Boss derrotado! Dívida quitada!');
+      } else {
+        toast('⚔️ Ataque registrado! +30 XP');
+      }
     } catch {
       toast('Erro ao registrar', 'error');
     } finally {
@@ -81,18 +84,18 @@ export function Debts() {
 
   async function remove(id: string) {
     await deleteUserDoc('debts', id);
-    toast('Dívida removida', 'info');
+    toast('Boss removido', 'info');
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Dívidas</h2>
-          <p className="text-sm text-muted-foreground">Total ativo: {formatBRL(totalBalance)}</p>
+          <h2 className="text-lg font-semibold">⚔️ Bosses Ativos</h2>
+          <p className="text-sm text-muted-foreground">HP total: {formatBRL(totalBalance)}</p>
         </div>
         <Button size="sm" onClick={() => setOpenWizard(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Nova dívida
+          <Plus className="h-4 w-4 mr-1" /> Novo Boss
         </Button>
       </div>
 
@@ -127,110 +130,58 @@ export function Debts() {
       {ranked.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Nenhuma dívida ativa. Se tiver alguma, cadastre para o copiloto montar o plano de quitação. 🎯
+            Nenhum boss ativo. Cadastre suas dívidas e o Sábio monta o plano de quitação. 🎯
           </CardContent>
         </Card>
       )}
 
-      {ranked.map((d, i) => (
-        <Card
-          key={d.id}
-          className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
-          onClick={() => setEditDebt(d)}
-        >
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-              {d.creditor}
-              {i === 0 && (
-                <Badge variant="destructive">
-                  <TrendingDown className="mr-1 h-3 w-3" /> Pague primeiro
-                </Badge>
-              )}
-              {d.source === 'auto-upload' && (
-                <Badge variant="outline" className="border-primary/30 text-primary">
-                  ✨ Do seu extrato
-                </Badge>
-              )}
-            </CardTitle>
-            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" onClick={() => setEditDebt(d)}>
-                <Pencil className="h-4 w-4 text-muted-foreground" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Saldo</span>
-              <span className="font-semibold">{formatBRL(d.totalBalance)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Parcela/mês</span>
-              <span>{formatBRL(d.monthlyPayment)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Juros</span>
-              <span>{formatPct(d.interestRateMonthly * 100, 1)} a.m.</span>
-            </div>
-            {d.statementMonth && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Fatura ref.</span>
-                <span>{d.statementMonth}</span>
+      {ranked.map((d, i) => {
+        const paidThisMonth = d.lastPaymentMonth === currentMonth();
+        const canAttack = d.status === 'active' && d.remainingInstallments > 0 && d.interestRateMonthly > 0 && !paidThisMonth && payingId !== d.id;
+        return (
+          <div key={d.id} className="space-y-2">
+            {i === 0 && (
+              <p className="text-[10px] font-bold uppercase tracking-wider text-red-500 flex items-center gap-1 px-1">
+                ☠️ Ataque este boss primeiro — juros mais altos
+              </p>
+            )}
+            <BossCard
+              debt={d}
+              onAttack={canAttack ? () => quickPayInstallment(d) : undefined}
+            />
+            {paidThisMonth && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-green-500/5 border border-green-500/20 px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400">
+                ✅ Ataque deste mês registrado — próximo round no mês que vem
               </div>
             )}
-            {d.notes && (
-              <p className="mt-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-muted-foreground">{d.notes}</p>
-            )}
-
-            {/* Barra de progresso de parcelas */}
-            {(d.remainingInstallments > 0 || (d.paidInstallments ?? 0) > 0) && (() => {
-              const paid = d.paidInstallments || 0;
-              const total = d.totalInstallments || (paid + d.remainingInstallments) || d.remainingInstallments;
-              const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-              return (
-                <div className="mt-2 space-y-1">
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>Parcela {paid + 1} de {total}</span>
-                    <span>{pct}% pago</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Botão "Paguei" */}
-            {d.status === 'active' && d.remainingInstallments > 0 && d.interestRateMonthly > 0 && (
-              <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
-                {d.lastPaymentMonth === currentMonth() ? (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-success/5 border border-success/20 px-3 py-1.5 text-xs font-medium text-success">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Parcela deste mês registrada
-                  </div>
-                ) : (
-                  <button
-                    disabled={payingId === d.id}
-                    onClick={(e) => quickPayInstallment(e, d)}
-                    className="flex items-center gap-1.5 w-full justify-center rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    {payingId === d.id ? 'Registrando…' : 'Paguei a parcela deste mês'}
-                  </button>
-                )}
+            {payingId === d.id && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/20 px-3 py-1.5 text-xs text-muted-foreground">
+                ⚔️ Registrando ataque…
               </div>
             )}
-
-            <button
-              onClick={(e) => { e.stopPropagation(); setSimulateDebt(d); }}
-              className="mt-2 flex items-center gap-1.5 w-full justify-center rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors"
-            >
-              <Zap className="h-3.5 w-3.5" /> E se eu pagar a mais?
-            </button>
-          </CardContent>
-        </Card>
-      ))}
+            <div className="flex items-center gap-3 px-1">
+              <button
+                onClick={() => setEditDebt(d)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Editar
+              </button>
+              <button
+                onClick={() => setSimulateDebt(d)}
+                className="flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 transition-colors"
+              >
+                <Zap className="h-3.5 w-3.5" /> Simular ataque extra
+              </button>
+              <button
+                onClick={() => remove(d.id)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ml-auto"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Remover
+              </button>
+            </div>
+          </div>
+        );
+      })}
 
       {/* Parcelas detectadas automaticamente no extrato */}
       <TransactionInstallmentGroups />
