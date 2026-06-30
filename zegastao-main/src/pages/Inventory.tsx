@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus, Package, Trash2, CheckCircle2, ArrowRight,
-  Share2, Store, X, Copy, Check, Phone, Zap, ShoppingBag,
-  MessageCircle,
+  Store, X, Copy, Check, Phone, Zap, ShoppingBag,
+  MessageCircle, Search, SlidersHorizontal, Tag,
 } from 'lucide-react';
 import { orderBy } from 'firebase/firestore';
 import { useStore } from '@/store/useStore';
@@ -19,9 +19,30 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ICONS,
   estimatedValue,
+  rarityForValue,
+  RARITY_META,
+  RARITY_ORDER,
+  CONDITION_LABELS,
+  CONDITION_ORDER,
   type InventoryCategory,
+  type Rarity,
+  type ItemCondition,
 } from '@/lib/inventorySuggestions';
 import type { InventoryItem, Debt, MarketplaceListing } from '@/types';
+
+// Raridade de um anúncio (compat: deriva do preço se o doc antigo não tiver rarity).
+function listingRarity(l: MarketplaceListing): Rarity {
+  return l.rarity ?? rarityForValue(l.price);
+}
+
+function RarityBadge({ rarity }: { rarity: Rarity }) {
+  const m = RARITY_META[rarity];
+  return (
+    <span className={cn('text-[10px] font-bold rounded-full px-2 py-0.5 border', m.text, m.border, m.bg)}>
+      {m.emoji} {m.label}
+    </span>
+  );
+}
 
 // ─────────────────────────────────────────────
 //  Helpers
@@ -109,7 +130,7 @@ interface SellModalProps {
   bestDebt: Debt | null;
   currentUser: { uid: string; displayName?: string | null } | null;
   onClose: () => void;
-  onListPublic: (price: number, phone: string) => Promise<void>;
+  onListPublic: (price: number, phone: string, negotiable: boolean) => Promise<void>;
   onMarkSold: (soldFor: number) => void;
 }
 
@@ -118,6 +139,7 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
   const [mode, setMode] = useState<'choose' | 'quick' | 'market'>('choose');
   const [price, setPrice] = useState(String(value));
   const [phone, setPhone] = useState('');
+  const [negotiable, setNegotiable] = useState(true);
   const [copied, setCopied] = useState(false);
   const [listing, setListing] = useState(false);
   const [listed, setListed] = useState(item.status === 'listed');
@@ -136,7 +158,7 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
 
   async function handleListPublic() {
     setListing(true);
-    await onListPublic(finalPrice, phone);
+    await onListPublic(finalPrice, phone, negotiable);
     setListed(true);
     setListing(false);
   }
@@ -364,6 +386,15 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                         type="tel"
                       />
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={negotiable}
+                        onChange={(e) => setNegotiable(e.target.checked)}
+                        className="h-4 w-4 rounded border-[#3a2e1d] bg-[#15110b] accent-amber-500"
+                      />
+                      <span className="text-xs text-stone-400">Aceito propostas (preço negociável)</span>
+                    </label>
                     <button
                       onClick={handleListPublic}
                       disabled={listing}
@@ -399,6 +430,8 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
   const [category, setCategory] = useState<InventoryCategory>('electronics');
   const [name, setName] = useState('');
   const [customValue, setCustomValue] = useState('');
+  const [condition, setCondition] = useState<ItemCondition>('bom');
+  const [description, setDescription] = useState('');
 
   const suggestion = useMemo(
     () => INVENTORY_SUGGESTIONS.find(
@@ -409,6 +442,8 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
 
   const estimV = suggestion ? estimatedValue(suggestion) : 0;
   const finalValue = customValue ? parseFloat(customValue.replace(',', '.')) : estimV;
+  const rarity = rarityForValue(finalValue || 0);
+  const rarityMeta = RARITY_META[rarity];
 
   function submit() {
     if (!name.trim()) return;
@@ -419,6 +454,8 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
       customValue: customValue ? finalValue : undefined,
       status: 'available',
       addedAt: new Date().toISOString(),
+      condition,
+      ...(description.trim() ? { description: description.trim() } : {}),
     });
   }
 
@@ -487,10 +524,47 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
           />
         </div>
         {finalValue > 0 && (
-          <p className="text-xs text-green-400 mt-1 font-medium">
+          <p className="text-xs text-green-400 mt-1 font-medium flex items-center gap-2">
             💰 Valor final: {formatBRL(finalValue)}
+            <span className={cn('text-[10px] font-bold rounded-full px-2 py-0.5 border', rarityMeta.text, rarityMeta.border, rarityMeta.bg)}>
+              {rarityMeta.emoji} {rarityMeta.label}
+            </span>
           </p>
         )}
+      </div>
+
+      {/* Condição */}
+      <div>
+        <p className="text-xs text-stone-500 mb-2">Condição</p>
+        <div className="flex flex-wrap gap-2">
+          {CONDITION_ORDER.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCondition(c)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                condition === c
+                  ? 'bg-green-500 text-stone-950 border-green-500'
+                  : 'border-[#3a2e1d] text-stone-400 hover:border-green-500/40'
+              )}
+            >
+              {CONDITION_LABELS[c]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Descrição (opcional) */}
+      <div>
+        <p className="text-xs text-stone-500 mb-1">Descrição (opcional)</p>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Detalhes: marca, tempo de uso, acessórios inclusos..."
+          rows={2}
+          maxLength={280}
+          className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-green-500/50 resize-none"
+        />
       </div>
 
       <div className="flex gap-2">
@@ -522,7 +596,7 @@ interface ItemCardProps {
   currentUser: { uid: string; displayName?: string | null } | null;
   onSell: (id: string, soldFor: number) => void;
   onDelete: (id: string) => void;
-  onListPublic: (item: InventoryItem, price: number, phone: string) => Promise<void>;
+  onListPublic: (item: InventoryItem, price: number, phone: string, negotiable: boolean) => Promise<void>;
 }
 
 function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic }: ItemCardProps) {
@@ -556,13 +630,17 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-sm text-stone-100">{item.name}</h3>
+              <RarityBadge rarity={rarityForValue(value)} />
               {item.status === 'listed' && (
                 <span className="text-[10px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full px-2 py-0.5">
                   🏪 Na Loja
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500">{CATEGORY_LABELS[item.category as InventoryCategory]}</p>
+            <p className="text-xs text-stone-500">
+              {CATEGORY_LABELS[item.category as InventoryCategory]}
+              {item.condition ? ` · ${CONDITION_LABELS[item.condition]}` : ''}
+            </p>
             <p className="text-sm font-bold text-amber-400 mt-0.5">{formatBRL(value)}</p>
           </div>
           <button
@@ -609,8 +687,8 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
           bestDebt={bestDebt}
           currentUser={currentUser}
           onClose={() => setShowSellModal(false)}
-          onListPublic={async (price, phone) => {
-            await onListPublic(item, price, phone);
+          onListPublic={async (price, phone, negotiable) => {
+            await onListPublic(item, price, phone, negotiable);
           }}
           onMarkSold={(soldFor) => onSell(item.id, soldFor)}
         />
@@ -623,37 +701,116 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
 //  MarketplaceCard — community listing
 // ─────────────────────────────────────────────
 
-function MarketplaceCard({ listing }: { listing: MarketplaceListing }) {
-  const waUrl = listing.whatsappLink
-    ? `https://wa.me/${listing.whatsappLink.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Vi seu anúncio de *${listing.itemName}* por ${formatBRL(listing.price)} na Loja da Guilda do Zé Gastão. Ainda está disponível?`)}`
-    : null;
+function listingWaUrl(listing: MarketplaceListing): string | null {
+  if (!listing.whatsappLink) return null;
+  const negotiable = listing.listingType === 'negotiable';
+  const msg = negotiable
+    ? `Olá! Vi seu anúncio de *${listing.itemName}* (${formatBRL(listing.price)}) na Loja da Guilda do Zé Gastão. Gostaria de fazer uma proposta — ainda está disponível?`
+    : `Olá! Vi seu anúncio de *${listing.itemName}* por ${formatBRL(listing.price)} na Loja da Guilda do Zé Gastão. Ainda está disponível?`;
+  return `https://wa.me/${listing.whatsappLink.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+}
+
+function MarketplaceCard({ listing, onInspect }: { listing: MarketplaceListing; onInspect: (l: MarketplaceListing) => void }) {
+  const rarity = listingRarity(listing);
+  const meta = RARITY_META[rarity];
+  const negotiable = listing.listingType === 'negotiable';
 
   return (
-    <div className="rounded-xl border border-[#3a2e1d] bg-[#211a11] p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{listing.categoryIcon}</span>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-stone-100">{listing.itemName}</p>
-          <p className="text-xs text-stone-500">{listing.category} · {listing.userAlias}</p>
-        </div>
-        <p className="text-sm font-extrabold text-amber-400 shrink-0">{formatBRL(listing.price)}</p>
-      </div>
-
-      {waUrl ? (
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20c05c] transition-colors"
-        >
-          <MessageCircle className="h-4 w-4" />
-          Contatar via WhatsApp
-        </a>
-      ) : (
-        <div className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[#3a2e1d] text-stone-500 text-xs">
-          Sem contato direto · Busque no OLX
-        </div>
+    <button
+      type="button"
+      onClick={() => onInspect(listing)}
+      className={cn(
+        'w-full text-left rounded-xl border bg-[#211a11] p-4 space-y-2 transition-all hover:ring-2 active:scale-[0.99]',
+        meta.border, meta.ring
       )}
+    >
+      <div className="flex items-center gap-3">
+        <span className={cn('text-2xl h-11 w-11 rounded-lg flex items-center justify-center shrink-0', meta.bg)}>
+          {listing.categoryIcon}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm text-stone-100 truncate">{listing.itemName}</p>
+          <p className="text-xs text-stone-500 truncate">
+            {listing.category} · {listing.userAlias}
+            {listing.condition ? ` · ${CONDITION_LABELS[listing.condition]}` : ''}
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-sm font-extrabold text-amber-400">{formatBRL(listing.price)}</p>
+          {negotiable && <p className="text-[9px] text-stone-500">negociável</p>}
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <RarityBadge rarity={rarity} />
+        <span className="text-[11px] text-green-400 font-semibold flex items-center gap-1">
+          Inspecionar <ArrowRight className="h-3 w-3" />
+        </span>
+      </div>
+    </button>
+  );
+}
+
+// Modal de inspeção do item do mercado.
+function InspectModal({ listing, onClose }: { listing: MarketplaceListing; onClose: () => void }) {
+  const rarity = listingRarity(listing);
+  const meta = RARITY_META[rarity];
+  const waUrl = listingWaUrl(listing);
+  const negotiable = listing.listingType === 'negotiable';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl border border-[#3a2e1d] bg-[#211a11] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className={cn('px-5 py-4 border-b border-[#3a2e1d] flex items-center gap-3', meta.bg)}>
+          <span className="text-3xl">{listing.categoryIcon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-stone-100">{listing.itemName}</p>
+            <div className="mt-1"><RarityBadge rarity={rarity} /></div>
+          </div>
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 p-1"><X className="h-5 w-5" /></button>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-stone-500">Preço</span>
+            <span className="text-lg font-extrabold text-amber-400">
+              {formatBRL(listing.price)} {negotiable && <span className="text-[11px] text-stone-500 font-normal">(negociável)</span>}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-2.5">
+              <p className="text-stone-500">Categoria</p>
+              <p className="text-stone-200 font-semibold">{listing.category}</p>
+            </div>
+            <div className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-2.5">
+              <p className="text-stone-500">Condição</p>
+              <p className="text-stone-200 font-semibold">{listing.condition ? CONDITION_LABELS[listing.condition] : '—'}</p>
+            </div>
+          </div>
+          {listing.description && (
+            <div className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-3">
+              <p className="text-[10px] text-stone-500 uppercase tracking-wide font-bold mb-1">Descrição</p>
+              <p className="text-xs text-stone-300 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
+            </div>
+          )}
+          <p className="text-xs text-stone-500">Vendedor: <span className="text-stone-300 font-semibold">{listing.userAlias}</span></p>
+
+          {waUrl ? (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20c05c] transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" />
+              {negotiable ? 'Fazer oferta no WhatsApp' : 'Contatar via WhatsApp'}
+            </a>
+          ) : (
+            <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[#3a2e1d] text-stone-500 text-xs">
+              Vendedor não deixou contato direto
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -673,11 +830,48 @@ export function Inventory() {
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<'inventory' | 'store'>('inventory');
 
+  // Filtros da Loja da Guilda (client-side, sem custo extra de Firestore).
+  const [q, setQ] = useState('');
+  const [catFilter, setCatFilter] = useState<Set<string>>(new Set());
+  const [rarFilter, setRarFilter] = useState<Set<Rarity>>(new Set());
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [sort, setSort] = useState<'recent' | 'price_asc' | 'price_desc' | 'rarity'>('recent');
+  const [showFilters, setShowFilters] = useState(false);
+  const [inspecting, setInspecting] = useState<MarketplaceListing | null>(null);
+
   const bestDebt = useMemo(() => getHighestInterestDebt(debts), [debts]);
   const availableItems = items.filter((i) => i.status !== 'sold');
   const soldItems = items.filter((i) => i.status === 'sold');
   const totalPotential = availableItems.reduce((s, i) => s + (i.customValue ?? i.estimatedValue), 0);
-  const activeListings = listings.filter((l) => l.status === 'active');
+  const activeListings = useMemo(() => listings.filter((l) => l.status === 'active'), [listings]);
+
+  function toggleSet<T>(set: Set<T>, value: T, setter: (s: Set<T>) => void) {
+    const next = new Set(set);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    setter(next);
+  }
+  const filtersActive = q.trim() !== '' || catFilter.size > 0 || rarFilter.size > 0 || priceMin !== '' || priceMax !== '';
+
+  const filteredListings = useMemo(() => {
+    const min = priceMin ? parseFloat(priceMin.replace(',', '.')) : -Infinity;
+    const max = priceMax ? parseFloat(priceMax.replace(',', '.')) : Infinity;
+    const ql = q.trim().toLowerCase();
+    let out = activeListings.filter((l) => {
+      if (ql && !l.itemName.toLowerCase().includes(ql)) return false;
+      if (catFilter.size && !catFilter.has(l.category)) return false;
+      if (rarFilter.size && !rarFilter.has(listingRarity(l))) return false;
+      if (l.price < min || l.price > max) return false;
+      return true;
+    });
+    out = [...out];
+    if (sort === 'price_asc') out.sort((a, b) => a.price - b.price);
+    else if (sort === 'price_desc') out.sort((a, b) => b.price - a.price);
+    else if (sort === 'rarity') out.sort((a, b) => RARITY_ORDER.indexOf(listingRarity(b)) - RARITY_ORDER.indexOf(listingRarity(a)));
+    // 'recent' mantém a ordem do query (listedAt desc).
+    return out;
+  }, [activeListings, q, catFilter, rarFilter, priceMin, priceMax, sort]);
 
   async function handleAdd(item: Omit<InventoryItem, 'id'>) {
     if (!user) return;
@@ -706,7 +900,7 @@ export function Inventory() {
     }
   }
 
-  async function handleListPublic(item: InventoryItem, price: number, phone: string) {
+  async function handleListPublic(item: InventoryItem, price: number, phone: string, negotiable: boolean) {
     if (!user) return;
     const alias = user.displayName?.split(' ')[0] || 'Aventureiro';
     const catKey = item.category as InventoryCategory;
@@ -721,6 +915,10 @@ export function Inventory() {
       whatsappLink: phone.trim() || null,
       listedAt: new Date().toISOString(),
       status: 'active',
+      rarity: rarityForValue(price),
+      condition: item.condition ?? null,
+      description: item.description ?? null,
+      listingType: negotiable ? 'negotiable' : 'fixed',
     });
     await updateUserDoc('inventory', item.id, {
       status: 'listed',
@@ -905,15 +1103,145 @@ export function Inventory() {
       {/* ── Guild Store tab ── */}
       {tab === 'store' && (
         <>
-          <div className="rounded-xl border border-[#3a2e1d] bg-[#211a11] p-4 space-y-1">
+          <div className="rounded-xl border border-[#3a2e1d] bg-gradient-to-br from-amber-950/20 via-[#211a11] to-[#211a11] p-4 space-y-1">
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-amber-400" />
-              <p className="font-bold text-sm text-stone-100">Loja da Guilda</p>
+              <p className="font-bold text-sm text-stone-100">Mercado da Guilda</p>
             </div>
             <p className="text-xs text-stone-500">
-              Compre e venda itens com outros aventureiros. Contato direto via WhatsApp — sem taxas.
+              Itens reais de outros aventureiros — por raridade, condição e preço. Contato via WhatsApp, sem taxas.
             </p>
           </div>
+
+          {/* Barra de busca + sort + toggle de filtros */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2 rounded-xl border border-[#3a2e1d] bg-[#15110b] px-3 py-2">
+              <Search className="h-4 w-4 text-stone-500 shrink-0" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar item..."
+                className="flex-1 min-w-0 bg-transparent text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none"
+              />
+              {q && <button onClick={() => setQ('')} className="text-stone-500 hover:text-stone-300"><X className="h-3.5 w-3.5" /></button>}
+            </div>
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
+                filtersActive || showFilters ? 'border-amber-500/40 text-amber-400 bg-amber-500/10' : 'border-[#3a2e1d] text-stone-400'
+              )}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filtros
+            </button>
+          </div>
+
+          {/* Painel de filtros */}
+          {showFilters && (
+            <div className="rounded-xl border border-[#3a2e1d] bg-[#1a130b] p-4 space-y-4">
+              {/* Categoria */}
+              <div>
+                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2 flex items-center gap-1.5"><Tag className="h-3 w-3" /> Categoria</p>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(CATEGORY_LABELS) as InventoryCategory[]).map((cat) => {
+                    const label = CATEGORY_LABELS[cat];
+                    const active = catFilter.has(label);
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => toggleSet(catFilter, label, setCatFilter)}
+                        className={cn(
+                          'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border transition-colors',
+                          active ? 'bg-green-500 text-stone-950 border-green-500' : 'border-[#3a2e1d] text-stone-400 hover:border-green-500/40'
+                        )}
+                      >
+                        {CATEGORY_ICONS[cat]} {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Qualidade */}
+              <div>
+                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2">Qualidade</p>
+                <div className="flex flex-wrap gap-2">
+                  {RARITY_ORDER.map((r) => {
+                    const m = RARITY_META[r];
+                    const active = rarFilter.has(r);
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => toggleSet(rarFilter, r, setRarFilter)}
+                        className={cn(
+                          'px-2.5 py-1 rounded-lg text-xs border transition-colors',
+                          active ? cn(m.text, m.border, m.bg, 'font-bold') : 'border-[#3a2e1d] text-stone-400 hover:border-stone-500'
+                        )}
+                      >
+                        {m.emoji} {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Preço */}
+              <div>
+                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2">Preço (R$)</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="mín"
+                    inputMode="decimal"
+                    className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
+                  />
+                  <span className="text-stone-600">—</span>
+                  <input
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="máx"
+                    inputMode="decimal"
+                    className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+              </div>
+
+              {/* Ordenação */}
+              <div>
+                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2">Ordenar por</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ['recent', 'Mais recente'],
+                    ['price_asc', 'Menor preço'],
+                    ['price_desc', 'Maior preço'],
+                    ['rarity', 'Raridade'],
+                  ] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSort(key)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-xs border transition-colors',
+                        sort === key ? 'bg-amber-500 text-stone-950 border-amber-500 font-bold' : 'border-[#3a2e1d] text-stone-400 hover:border-amber-500/40'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filtersActive && (
+                <button
+                  onClick={() => { setQ(''); setCatFilter(new Set()); setRarFilter(new Set()); setPriceMin(''); setPriceMax(''); }}
+                  className="text-xs text-stone-500 hover:text-stone-300 underline"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+          )}
 
           {listingsLoading && (
             <div className="space-y-3">
@@ -941,14 +1269,29 @@ export function Inventory() {
           )}
 
           {!listingsLoading && activeListings.length > 0 && (
-            <div className="space-y-3">
-              {activeListings.map((listing) => (
-                <MarketplaceCard key={listing.id} listing={listing} />
-              ))}
-            </div>
+            <>
+              <p className="text-xs text-stone-500">
+                {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'itens'}
+                {filtersActive ? ' (filtrado)' : ''}
+              </p>
+              {filteredListings.length === 0 ? (
+                <div className="text-center py-10 space-y-2">
+                  <span className="text-4xl">🔍</span>
+                  <p className="text-sm text-stone-400">Nenhum item bate com os filtros.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredListings.map((listing) => (
+                    <MarketplaceCard key={listing.id} listing={listing} onInspect={setInspecting} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
+
+      {inspecting && <InspectModal listing={inspecting} onClose={() => setInspecting(null)} />}
     </div>
   );
 }

@@ -72,6 +72,57 @@ export function estimatedValue(suggestion: InventorySuggestion): number {
   return Math.round((suggestion.minValue + suggestion.maxValue) / 2);
 }
 
+// ─────────────────────────────────────────────
+//  Raridade (MMORPG) — derivada do valor, 100% determinística (zero IA).
+// ─────────────────────────────────────────────
+
+export type Rarity = 'comum' | 'refinado' | 'premium' | 'epico' | 'lendario';
+
+export const RARITY_ORDER: Rarity[] = ['comum', 'refinado', 'premium', 'epico', 'lendario'];
+
+export interface RarityMeta {
+  label: string;
+  emoji: string;
+  /** Classes Tailwind para o tema escuro do Inventário. */
+  text: string;
+  border: string;
+  bg: string;
+  ring: string;
+}
+
+export const RARITY_META: Record<Rarity, RarityMeta> = {
+  comum:    { label: 'Comum',    emoji: '⚪', text: 'text-stone-300',  border: 'border-stone-600',     bg: 'bg-stone-500/10',  ring: 'ring-stone-500/20' },
+  refinado: { label: 'Refinado', emoji: '🟢', text: 'text-green-400',  border: 'border-green-500/40',  bg: 'bg-green-500/10',  ring: 'ring-green-500/20' },
+  premium:  { label: 'Premium',  emoji: '🔵', text: 'text-sky-400',    border: 'border-sky-500/40',    bg: 'bg-sky-500/10',    ring: 'ring-sky-500/20' },
+  epico:    { label: 'Épico',    emoji: '🟣', text: 'text-purple-400', border: 'border-purple-500/40', bg: 'bg-purple-500/10', ring: 'ring-purple-500/20' },
+  lendario: { label: 'Lendário', emoji: '🟡', text: 'text-amber-400',  border: 'border-amber-500/50',  bg: 'bg-amber-500/10',  ring: 'ring-amber-500/30' },
+};
+
+/** Faixas de valor (R$) → raridade. Itens mais valiosos viram itens mais raros. */
+export function rarityForValue(value: number): Rarity {
+  if (value >= 3000) return 'lendario';
+  if (value >= 1000) return 'epico';
+  if (value >= 500)  return 'premium';
+  if (value >= 200)  return 'refinado';
+  return 'comum';
+}
+
+// ─────────────────────────────────────────────
+//  Condição do item
+// ─────────────────────────────────────────────
+
+export type ItemCondition = 'novo' | 'otimo' | 'bom' | 'aceitavel' | 'desgastado';
+
+export const CONDITION_ORDER: ItemCondition[] = ['novo', 'otimo', 'bom', 'aceitavel', 'desgastado'];
+
+export const CONDITION_LABELS: Record<ItemCondition, string> = {
+  novo:       'Novo / lacrado',
+  otimo:      'Ótimo estado',
+  bom:        'Bom estado',
+  aceitavel:  'Aceitável',
+  desgastado: 'Desgastado',
+};
+
 export function getSuggestionsByCategory(category: InventoryCategory): InventorySuggestion[] {
   return INVENTORY_SUGGESTIONS.filter((s) => s.category === category);
 }

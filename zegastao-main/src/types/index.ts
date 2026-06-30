@@ -429,6 +429,9 @@ export interface Profile {
   whatsappVerified?: boolean;
 }
 
+export type Rarity = 'comum' | 'refinado' | 'premium' | 'epico' | 'lendario';
+export type ItemCondition = 'novo' | 'otimo' | 'bom' | 'aceitavel' | 'desgastado';
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -441,6 +444,8 @@ export interface InventoryItem {
   soldAt?: string;
   soldFor?: number;
   marketplaceId?: string;
+  condition?: ItemCondition;
+  description?: string;
 }
 
 export interface MarketplaceListing {
@@ -455,6 +460,11 @@ export interface MarketplaceListing {
   whatsappLink?: string;
   listedAt: string;
   status: 'active' | 'sold';
+  rarity?: Rarity;
+  condition?: ItemCondition;
+  description?: string;
+  /** 'fixed' = preço fixo; 'negotiable' = aceita propostas. */
+  listingType?: 'fixed' | 'negotiable';
 }
 
 export interface Milestone {
