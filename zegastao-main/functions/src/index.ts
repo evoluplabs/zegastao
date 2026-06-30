@@ -36,6 +36,7 @@ export { zeMandate, zeCycle, zeRecalcCard, zeFeedback, zeScan, zeLearnNightly } 
 export { zeExtractOdds, zeGuruAudit, zeWithdrawalProof, zeSettleByPrint } from './functions/zeVision';
 export { whatsappWebhook } from './functions/whatsappWebhook';
 export { generateInsightsNow } from './functions/generateInsightsNow';
+export { onBossDefeated } from './functions/proactiveSage';
 export { weeklyDigest } from './functions/weeklyDigest';
 export { linkPartner } from './functions/linkPartner';
 export { extractTaxData } from './functions/extractTaxData';

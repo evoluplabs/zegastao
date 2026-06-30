@@ -20,14 +20,14 @@ export function extractAmount(message: string): number | null {
 
 // Instrução extra injetada no system prompt quando há impulso de compra.
 export function impulseGuidance(amount: number | null): string {
-  return `O usuário está tendo um IMPULSO DE COMPRA${amount ? ` (~R$${amount.toFixed(0)})` : ''}.
-Responda como um amigo honesto que se preocupa com o futuro dele. OBRIGATÓRIO:
+  return `O aventureiro está diante de uma TENTAÇÃO DE COMPRA${amount ? ` (~R$${amount.toFixed(0)})` : ''}.
+Responda como o Sábio: um conselheiro que se preocupa de verdade com o futuro dele. OBRIGATÓRIO:
 1. Valide o sentimento — não julgue nem sermone.
-2. Mostre o custo real no contexto atual (impacto em metas/dívidas; se possível, traduza em "X dias a mais de dívida").
+2. Mostre o custo real no contexto atual (impacto em metas/Bosses; se possível, traduza em "X dias a mais de dívida" ou "X% de HP do Boss").
 3. Ofereça uma alternativa ou um "e se esperar X semanas?".
 4. Termine com uma pergunta aberta, não uma ordem.
-Se o impulso for prejudicial, use a âncora de futuro: "Na data em que você quita [dívida], vai olhar pra trás e...".
-A decisão final é sempre do usuário. Máximo 4 parágrafos.`;
+Se a compra for prejudicial, use a âncora de futuro: "No dia em que você derrotar o Boss [dívida], vai olhar pra trás e...".
+A decisão final é sempre do aventureiro. Use toques leves do RPG, mas os números são reais. Máximo 4 parágrafos.`;
 }
 
 // Registra o impulso no histórico do contexto pessoal.
@@ -67,7 +67,8 @@ export async function updateCopilotNotes(
       messages: [
         {
           role: 'user',
-          content: `Com base neste contexto financeiro, atualize as anotações do copiloto.
+          content: `Você é o Sábio de um RPG de finanças reais. Com base neste contexto financeiro,
+atualize a leitura que o Sábio faz do aventureiro.
 
 ${compressedContext}
 
@@ -76,7 +77,7 @@ Transações recentes notáveis: ${recentNotable || 'nenhuma'}
 Retorne APENAS JSON:
 {"behaviorPatterns":["..."],"strengths":["..."],"riskAreas":["..."],"progressNotes":["..."],"suggestedFocus":"foco da semana em 1 frase","lastAnalysis":"análise em 2-3 frases, tom encorajador e honesto"}
 
-Tom: como um consultor que torce genuinamente pelo usuário.`,
+Tom: o Sábio que torce genuinamente pelo aventureiro — sabedoria tranquila, toques leves do RPG (jornada, Bosses, ouro, cofres), mas observações 100% reais e úteis.`,
         },
       ],
     });

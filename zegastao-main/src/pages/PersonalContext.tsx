@@ -1,9 +1,8 @@
 import { useEffect, useState, type TextareaHTMLAttributes } from 'react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
-import { useGenerateInsights } from '@/hooks/useGenerateInsights';
 import {
   Brain, Save, Bot, PenLine, Zap, TrendingUp, AlertCircle,
-  CheckCircle2, ChevronDown, ChevronUp, DollarSign, Target, RefreshCw,
+  CheckCircle2, ChevronDown, ChevronUp, DollarSign, Target, Sparkles,
 } from 'lucide-react';
 import { db } from '@/firebase';
 import { useStore } from '@/store/useStore';
@@ -97,7 +96,6 @@ function PersonaCard() {
   const notes = useCopilotNotes();
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
-  const { generating, error: genError, generate: generateNow } = useGenerateInsights();
 
   const phase = profile?.financialPhase;
   const activeDebts = debts.filter((d) => d.status === 'active');
@@ -124,8 +122,8 @@ function PersonaCard() {
           <Brain className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h3 className="font-bold text-base">{profile?.name ? `Persona de ${profile.name}` : 'Sua Persona Financeira'}</h3>
-          <p className="text-xs text-muted-foreground">Como o copiloto te enxerga — atualizado em tempo real</p>
+          <h3 className="font-bold text-base">{profile?.name ? `O Sábio vê ${profile.name}` : 'A leitura do Sábio'}</h3>
+          <p className="text-xs text-muted-foreground">Como o Sábio te enxerga na sua jornada</p>
         </div>
       </div>
 
@@ -160,40 +158,25 @@ function PersonaCard() {
           )}
           {!notes.suggestedFocus && !notes.behaviorPatterns?.length && (
             <p className="text-xs text-muted-foreground text-center py-2">
-              As anotações personalizadas aparecem após o primeiro processamento noturno.
+              O Sábio registra a leitura na próxima observação noturna.
             </p>
           )}
         </div>
       )}
 
       {!notes && (
-        <div className="space-y-2">
-          <div className="rounded-xl bg-secondary/50 border px-4 py-3 text-xs text-muted-foreground">
-            <Bot className="h-4 w-4 inline-block mr-1.5" />
-            As análises de comportamento ainda não foram geradas.
-          </div>
-          <Button
-            className="w-full gap-2"
-            variant="outline"
-            loading={generating}
-            onClick={generateNow}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Gerar minha análise agora
-          </Button>
-          {genError && <p className="text-xs text-destructive text-center">{genError}</p>}
+        <div className="rounded-xl bg-secondary/50 border px-4 py-3 text-xs text-muted-foreground flex items-start gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+          <span>
+            O Sábio ainda está observando sua jornada. A leitura aparece sozinha após a primeira
+            análise noturna — ou logo depois de você derrotar um Boss ou fechar o mês no azul.
+          </span>
         </div>
       )}
 
-      {notes && (
-        <div className="flex justify-end">
-          <Button size="sm" variant="ghost" loading={generating} onClick={generateNow} className="gap-1.5 text-xs text-muted-foreground">
-            <RefreshCw className="h-3.5 w-3.5" />
-            {generating ? 'Gerando…' : 'Atualizar análise'}
-          </Button>
-        </div>
-      )}
-      {genError && notes && <p className="text-xs text-destructive text-center">{genError}</p>}
+      <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5 border-t pt-3">
+        🧙 O Sábio observa sua jornada sozinho — sem você precisar pedir.
+      </p>
     </div>
   );
 }
@@ -335,7 +318,7 @@ function ImpulseHistory({ impulses }: { impulses: ImpulseItem[] }) {
   if (impulses.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-4 text-center">
-        Quando você conversar sobre uma vontade de compra no Copiloto, ela aparece aqui com o impacto financeiro estimado.
+        Quando você conversar sobre uma vontade de compra com o Sábio, ela aparece aqui com o impacto financeiro estimado.
       </p>
     );
   }
@@ -515,20 +498,20 @@ export function PersonalContext() {
   }
 
   const TABS = [
-    { id: 'persona' as const, label: 'Minha Persona', icon: Brain },
+    { id: 'persona' as const, label: 'Leitura do Sábio', icon: Brain },
     { id: 'renda_extra' as const, label: 'Renda Extra', icon: Zap },
-    { id: 'contexto' as const, label: 'Meu Contexto', icon: PenLine },
-    { id: 'impulsos' as const, label: 'Impulsos', icon: AlertCircle, badge: impulses.length > 0 ? impulses.length : undefined },
+    { id: 'contexto' as const, label: 'Pergaminho', icon: PenLine },
+    { id: 'impulsos' as const, label: 'Tentações', icon: AlertCircle, badge: impulses.length > 0 ? impulses.length : undefined },
   ];
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Brain className="h-5 w-5 text-primary" /> Contexto Pessoal
+          🧙 A Tenda do Sábio
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Seu diário financeiro vivo — o copiloto usa isso para personalizar seu plano.
+          Seu pergaminho vivo — o Sábio usa isto para guiar sua jornada com conselhos reais.
         </p>
       </div>
 
@@ -658,9 +641,9 @@ export function PersonalContext() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" /> Histórico de impulsos de compra
+              <AlertCircle className="h-4 w-4 text-amber-500" /> Diário de tentações
             </CardTitle>
-            <p className="text-xs text-muted-foreground">Registrado automaticamente pelo copiloto nas conversas</p>
+            <p className="text-xs text-muted-foreground">Registrado automaticamente pelo Sábio nas conversas</p>
           </CardHeader>
           <CardContent>
             <ImpulseHistory impulses={impulses} />
