@@ -11,6 +11,9 @@ import { z } from 'zod';
 import { findFixturesForObjective, getSportKey, FixtureSummary } from '../services/betting/fixtures-finder';
 import { analyzeFixture, getCachedOdds } from '../services/betting/pipeline';
 import { runStatsAgent } from '../services/betting/stats-agent';
+import { runFormAgent } from '../services/betting/form-agent';
+import { runH2HAgent } from '../services/betting/h2h-agent';
+import { resolveMatchContext, MatchContext } from '../services/betting/context-agent';
 import { OddsEvent } from '../services/betting/sports-api';
 import { buildRound, Candidate, RiskLevel } from '../services/betting/engine/multiples';
 import { composeCard, recalcOnRealOdd } from '../services/betting/card';
@@ -192,6 +195,7 @@ async function buildRoundForCycle(
   let fixtures: FixtureSummary[];
   const oddsBySport: Record<string, Awaited<ReturnType<typeof getCachedOdds>>> = {};
   let teamStats: Awaited<ReturnType<typeof runStatsAgent>> | null = null;
+  let printMatchCtx: MatchContext | null = null;
 
   if (opts.printFixture) {
     // Valida que o jogo ainda não foi realizado (se a data foi extraída do print).
@@ -205,8 +209,11 @@ async function buildRoundForCycle(
       }
     }
     // Print-first: usa o jogo extraído do print, sem chamar API-Football nem Odds API.
-    // Busca médias de gols via Claude (priors históricos) para substituir os defaults 1.2/1.2
-    // que tornariam a análise Poisson inútil para jogos com favoritos claros (Copa, etc.).
+    // Dispara 4 agentes em paralelo para enriquecer a análise Poisson e o contexto:
+    // StatsAgent: priors de gols (Claude histórico p/ teamId=0, substitui 1.2/1.2).
+    // FormAgent: forma recente via Claude (sem API-Football p/ seleções da Copa).
+    // H2HAgent: confrontos diretos via Claude (idem).
+    // MatchContext: multiplicadores de mercado (lesões, árbitro, peso do jogo via web search).
     const kickoff = opts.printFixture.matchDate
       ? new Date(`${opts.printFixture.matchDate}T15:00:00Z`).toISOString()
       : new Date().toISOString();
@@ -222,11 +229,14 @@ async function buildRoundForCycle(
       leagueName: league,
     }];
     oddsBySport['soccer_fifa_world_cup'] = [slipToOddsEvent(opts.printFixture)];
-    // Agente de estatísticas: busca dados reais (API-Football quando teamId!=0;
-    // inferência via Claude quando teamId=0/Copa). Alimenta o Poisson com priors
-    // realistas em vez de 1.2/1.2 para todos os times.
-    teamStats = await runStatsAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league)
-      .catch(() => null);
+    const [statsResult, , , ctxResult] = await Promise.allSettled([
+      runStatsAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league),
+      runFormAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league),
+      runH2HAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league),
+      resolveMatchContext({ db, fixtureId: 0, homeTeam: opts.printFixture.homeTeam, homeTeamId: 0, awayTeam: opts.printFixture.awayTeam, awayTeamId: 0, leagueId: 1, date }),
+    ]);
+    teamStats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    printMatchCtx = ctxResult.status === 'fulfilled' ? ctxResult.value : null;
   } else {
     fixtures = await findFixturesForObjective(sportKeys, date, mandate.preferredTeams);
     const blocked = (mandate.blockedTeams || []).map((t) => t.toLowerCase());
@@ -258,7 +268,11 @@ async function buildRoundForCycle(
             away: { scored: teamStats.awayAvgScored, conceded: teamStats.awayAvgConceded },
           }
         : undefined;
-      const cands = await analyzeFixture({ db, fixture: fx as FixtureSummary, sportKey: sk, oddsEvents: oddsBySport[sk] || [], model, individual, overrideAverages: override });
+      // context: multiplicadores de mercado do MatchContextAgent (lesões, árbitro,
+      // peso do jogo). Enriquece o pipeline print-first com os mesmos ajustes
+      // qualitativos que o pipeline completo (betAnalysis) já usava.
+      const context = opts.printFixture && printMatchCtx ? printMatchCtx.multipliers : undefined;
+      const cands = await analyzeFixture({ db, fixture: fx as FixtureSummary, sportKey: sk, oddsEvents: oddsBySport[sk] || [], model, individual, overrideAverages: override, context });
       allCands.push(...cands);
     } catch {
       // pula partida que falhar
