@@ -467,6 +467,25 @@ export interface MarketplaceListing {
   listingType?: 'fixed' | 'negotiable';
 }
 
+// Caçada — bounty de renda extra que o aventureiro aceita e acompanha.
+export interface Hunt {
+  id: string;
+  title: string;
+  detail?: string;
+  tier: 'T1' | 'T2' | 'T3';
+  xpReward: number;
+  estimatedReturnValue: number;
+  estimatedReturn?: string;
+  estimatedTime?: string;
+  platform?: string;
+  drop?: string;
+  status: 'accepted' | 'in_progress' | 'completed' | 'abandoned';
+  source: 'catalog' | 'custom';
+  acceptedAt: string;
+  completedAt?: string;
+  earnedValue?: number;
+}
+
 export interface Milestone {
   id: string;
   name: string;

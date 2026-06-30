@@ -4,6 +4,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  increment,
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -37,6 +38,16 @@ export function setUserDoc(name: string, id: string, data: Record<string, unknow
 
 export function setProfile(data: Record<string, unknown>) {
   return setDoc(doc(db, 'users', uid(), 'profile', 'main'), data, { merge: true });
+}
+
+// Credita XP total + XP de uma profissão de forma atômica (increment).
+// Campos ausentes são tratados como 0 pelo increment().
+export function awardProfessionXp(profession: string, amount: number) {
+  return setDoc(
+    doc(db, 'users', uid(), 'profile', 'main'),
+    { xp: increment(amount), professionXP: { [profession]: increment(amount) } },
+    { merge: true },
+  );
 }
 
 export function addPublicDoc(name: string, data: Record<string, unknown>) {
