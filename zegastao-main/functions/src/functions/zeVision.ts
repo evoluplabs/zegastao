@@ -11,7 +11,8 @@ import { parseBetanoText, ExtractedSlip, MIN_CONFIDENCE } from '../services/bett
 const ZE_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
 // Karma (anti-carona) entregue, mas desligado por padrão — liga com volume.
 const ZE_KARMA_ENABLED = process.env.ZE_KARMA_ENABLED === 'true';
-const REGION = 'southamerica-east1';
+// us-east1: cluster do Zé Apostador (ver zeApostador.ts) — fora da cota de CPU de south.
+const REGION = 'us-east1';
 
 function ensureEnabled() {
   if (!ZE_ENABLED) throw new HttpsError('not-found', 'Zé Apostador ainda não está disponível.');

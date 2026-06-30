@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '@/firebase';
+import { db, functionsUsEast } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import { cn, formatBRL } from '@/lib/utils';
 import { BettingHistory as BettingHistoryType, BETTING_MARKET_LABELS } from '@/types';
 import { CheckCircle2, XCircle, Clock, TrendingUp, Loader2 } from 'lucide-react';
 
-const bettingProfileFn = httpsCallable<unknown, { success: boolean }>(functions, 'bettingProfile');
+const bettingProfileFn = httpsCallable<unknown, { success: boolean }>(functionsUsEast, 'bettingProfile');
 
 interface MarketStat {
   market: string;

@@ -22,7 +22,9 @@ import { crossOverNote, dopamineLockMessage, ouvidoriaDoFumo } from '../services
 import { suggestBettingBudget } from './bettingProfile';
 
 const ZE_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
-const REGION = 'southamerica-east1';
+// us-east1: o cluster do Zé Apostador roda nesta região para não competir pela
+// cota de CPU (20 vCPU) de southamerica-east1, onde fica o resto do app.
+const REGION = 'us-east1';
 const BLOCKED_PHASES = ['survival', 'reorganizing'];
 
 // Cross-over com o Zé Gastão: teto do stake (fração do orçamento) por fase financeira.

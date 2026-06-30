@@ -10,7 +10,7 @@ initializeApp();
 // Funções que precisarem de mais podem sobrescrever maxInstances individualmente.
 // IMPORTANTE: deve rodar ANTES dos `export { ... } from './functions/...'` abaixo
 // (no output CommonJS as re-exports carregam os módulos na ordem do arquivo).
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({ maxInstances: 3 });
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({

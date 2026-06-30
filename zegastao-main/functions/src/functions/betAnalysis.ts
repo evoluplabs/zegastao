@@ -141,7 +141,7 @@ function allocateBudget(
 }
 
 export const betAnalysis = onCall(
-  { region: 'southamerica-east1', enforceAppCheck: false },
+  { region: 'us-east1', enforceAppCheck: false },
   async (request) => {
     if (!ZE_APOSTADOR_ENABLED) {
       throw new HttpsError('not-found', 'Zé Apostador ainda não está disponível.');

@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase';
+import { functionsUsEast } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { cn, formatBRL } from '@/lib/utils';
 import { ZeRound } from '@/types';
 import { ShareableBetCard } from './ShareableBetCard';
 import { AlertTriangle, Info, TrendingUp, TrendingDown, CheckCircle2, XCircle, Trophy, Frown } from 'lucide-react';
 
-const zeRecalcCard = httpsCallable<unknown, RecalcResponse>(functions, 'zeRecalcCard');
-const zeFeedback = httpsCallable<unknown, { success: boolean; bankroll: number; cycleStatus?: string }>(functions, 'zeFeedback');
+const zeRecalcCard = httpsCallable<unknown, RecalcResponse>(functionsUsEast, 'zeRecalcCard');
+const zeFeedback = httpsCallable<unknown, { success: boolean; bankroll: number; cycleStatus?: string }>(functionsUsEast, 'zeFeedback');
 
 interface LegResult {
   fixtureId: number;

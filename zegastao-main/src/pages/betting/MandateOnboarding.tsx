@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase';
+import { functionsUsEast } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { cn, formatBRL } from '@/lib/utils';
 import { BETTING_LEAGUES, ZE_RISK_LEVELS, ZeRiskLevel } from '@/types';
@@ -9,7 +9,7 @@ import { ShieldCheck, AlertTriangle, Sparkles, Target, Wallet, Trophy, ChevronLe
 const zeMandate = httpsCallable<
   { action: string; [k: string]: unknown },
   { success?: boolean; budget?: number; reasoning?: string }
->(functions, 'zeMandate');
+>(functionsUsEast, 'zeMandate');
 
 interface Props {
   onComplete: () => void;

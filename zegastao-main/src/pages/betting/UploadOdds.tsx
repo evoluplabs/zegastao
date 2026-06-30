@@ -3,7 +3,7 @@
 // Reforça o "usuário é sensor" + alimenta o Waze das Odds (cache da comunidade).
 import { useRef, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase';
+import { functionsUsEast } from '@/firebase';
 import { prepareImage, tryOcr } from '@/lib/imagePrep';
 import { Camera, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ type ExtractResult = { slip: ExtractedSlip; source: 'ocr' | 'vision' };
 const zeExtractOdds = httpsCallable<
   { ocrText?: string; imageBase64?: string; mediaType?: string },
   ExtractResult
->(functions, 'zeExtractOdds');
+>(functionsUsEast, 'zeExtractOdds');
 
 const MARKET_PT: Record<string, string> = {
   h2h: 'Resultado', totals: 'Total de Gols', btts: 'Ambas Marcam',

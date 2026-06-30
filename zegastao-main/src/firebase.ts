@@ -33,6 +33,10 @@ export const db = initializeFirestore(app, {
 
 export const storage = getStorage(app);
 export const functions = getFunctions(app, 'southamerica-east1');
+// Cluster do Zé Apostador roda em us-east1 (fora da cota de CPU de south).
+// Callables de aposta (zeMandate/zeCycle/zeRecalcCard/zeFeedback/zeGuruAudit/
+// zeExtractOdds/bettingProfile/...) usam esta instância.
+export const functionsUsEast = getFunctions(app, 'us-east1');
 
 // FCM: solicitar permissão e salvar token — chamado após onboarding concluído.
 export async function registerForPushNotifications(userId: string): Promise<void> {

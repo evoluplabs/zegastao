@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase';
+import { functionsUsEast } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ShieldCheck, AlertTriangle, Sparkles } from 'lucide-react';
 import { formatBRL } from '@/lib/utils';
 
-const saveBettingProfile = httpsCallable<unknown, { success: boolean }>(functions, 'bettingProfile');
-const suggestBudgetFn = httpsCallable<unknown, { budget: number; reasoning: string }>(functions, 'bettingProfile');
+const saveBettingProfile = httpsCallable<unknown, { success: boolean }>(functionsUsEast, 'bettingProfile');
+const suggestBudgetFn = httpsCallable<unknown, { budget: number; reasoning: string }>(functionsUsEast, 'bettingProfile');
 
 interface Props {
   onComplete: () => void;

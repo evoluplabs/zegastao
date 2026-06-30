@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { doc, getDoc } from 'firebase/firestore';
-import { functions, db } from '@/firebase';
+import { functionsUsEast, db } from '@/firebase';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { MandateOnboarding } from './betting/MandateOnboarding';
@@ -13,8 +13,8 @@ import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel, ZeGuidedCard 
 import { cn, formatBRL } from '@/lib/utils';
 import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, CheckCircle2, Search } from 'lucide-react';
 
-const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: boolean }>(functions, 'zeMandate');
-const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functions, 'zeCycle');
+const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: boolean }>(functionsUsEast, 'zeMandate');
+const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functionsUsEast, 'zeCycle');
 
 interface CycleGetResponse { cycle: ZeCycle | null; rounds: ZeRound[] }
 interface BuildResponse { roundId?: string | null; empty?: boolean; card?: ZeGuidedCard }

@@ -2,7 +2,7 @@
 // calcula a chance real e quanto a casa lucra com aquela múltipla. Honesto e viral.
 import { useRef, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase';
+import { functionsUsEast } from '@/firebase';
 import { prepareImage, tryOcr } from '@/lib/imagePrep';
 import { Search, Loader2, AlertTriangle } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface GuruResult { legs: number; combinedOdd: number; realChancePct: number;
 const zeGuruAudit = httpsCallable<
   { ocrText?: string; imageBase64?: string; mediaType?: string },
   GuruResult
->(functions, 'zeGuruAudit');
+>(functionsUsEast, 'zeGuruAudit');
 
 export function GuruAudit() {
   const inputRef = useRef<HTMLInputElement>(null);
