@@ -132,6 +132,11 @@ export function parseBetanoText(text: string): ExtractedSlip {
   if (totalOddTokens > 0 && plausibleOdds / totalOddTokens > 0.8) confidence += 0.15;
   confidence = Math.min(1, Math.round(confidence * 100) / 100);
 
+  // Detecção de lista de jogos: >3 entradas h2h significa múltiplos jogos na mesma
+  // tela — o OCR não consegue separar os times corretamente. Força o Tier 2 (Vision).
+  const h2hCount = markets.filter((m) => m.market === 'h2h').length;
+  if (h2hCount > 3) confidence = Math.min(confidence, 0.3);
+
   const matchDate = findMatchDate(text);
   return { homeTeam: home, awayTeam: away, league: undefined, matchDate, markets, confidence, superOdds };
 }

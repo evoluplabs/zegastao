@@ -11,7 +11,7 @@ import { GuruAudit } from './betting/GuruAudit';
 import { BettingTour } from './betting/BettingTour';
 import { ZeMandate, ZeCycle, ZeRound, ZE_RISK_LEVELS, ZeRiskLevel, ZeGuidedCard } from '@/types';
 import { cn, formatBRL } from '@/lib/utils';
-import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, CheckCircle2, Search, X, ShieldAlert } from 'lucide-react';
+import { Sparkles, PauseCircle, Loader2, Target, RefreshCw, Flag, Trophy, CheckCircle2, Search, TrendingUp, History, X, ShieldAlert } from 'lucide-react';
 
 const zeMandate = httpsCallable<unknown, { mandate: ZeMandate | null; success?: boolean }>(functionsUsEast, 'zeMandate');
 const zeCycle = httpsCallable<unknown, CycleGetResponse & BuildResponse & { cycleId?: string }>(functionsUsEast, 'zeCycle');
@@ -36,6 +36,7 @@ export function Betting() {
   const [riskLevel, setRiskLevel] = useState<ZeRiskLevel>(1);
   const [targetMultiplier, setTargetMultiplier] = useState(25);
   const [tool, setTool] = useState<'none' | 'guru'>('none');
+  const [tab, setTab] = useState<'raid' | 'history'>('raid');
   const [extractedSlip, setExtractedSlip] = useState<ExtractedSlip | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -188,7 +189,30 @@ export function Betting() {
 
         {error && <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>}
 
-        {/* Sem ciclo ativo → começar */}
+        {/* Tabs — só visíveis quando há ciclo ativo ou encerrado */}
+        {cycle && (
+          <div className="flex rounded-xl border border-stone-800 bg-stone-900/40 p-1">
+            <button
+              onClick={() => setTab('raid')}
+              className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors', tab === 'raid' ? 'bg-stone-800 text-stone-100' : 'text-stone-500 hover:text-stone-300')}
+            >
+              <TrendingUp className="h-3.5 w-3.5" /> ⚔️ Raid
+            </button>
+            <button
+              onClick={() => setTab('history')}
+              className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors', tab === 'history' ? 'bg-stone-800 text-stone-100' : 'text-stone-500 hover:text-stone-300')}
+            >
+              <History className="h-3.5 w-3.5" /> Histórico
+              {rounds.filter(r => r.outcome !== 'pending').length > 0 && (
+                <span className="rounded-full bg-stone-700 px-1.5 text-[10px] text-stone-300">
+                  {rounds.filter(r => r.outcome !== 'pending').length}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Sem ciclo ativo → começar (sempre visível) */}
         {(!cycle || closed) && (
           <div className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
             {closed && (
@@ -204,9 +228,10 @@ export function Betting() {
           </div>
         )}
 
-        {/* Ciclo ativo */}
-        {cycle && !closed && (
+        {/* ===== TAB: RAID ===== */}
+        {cycle && !closed && tab === 'raid' && (
           <>
+            {/* Banca + progresso */}
             <div data-tour="banca" className="space-y-2 rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-stone-400">Banca do Raid</span>
@@ -223,7 +248,6 @@ export function Betting() {
 
             {latestPending ? (
               <div data-tour="card" ref={cardRef}>
-                {/* Jogo analisado (contexto acima do card) */}
                 {extractedSlip?.homeTeam && (
                   <div className="mb-2 flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2">
                     <Sparkles className="h-3.5 w-3.5 shrink-0 text-green-400" />
@@ -244,16 +268,12 @@ export function Betting() {
                 <div>
                   <h2 className="text-lg font-bold text-stone-100">⚔️ Próximo Encontro</h2>
                   <p className="mt-1 text-sm text-stone-400">
-                    Abre a Betano, escolha um jogo e tira um print. O Zé lê as odds e monta a melhor estratégia pra você.
+                    Abre a Betano, escolha um jogo e tira um print da página do jogo. O Zé lê as odds e monta a estratégia.
                   </p>
                 </div>
 
-                {/* Modal "sem aposta" — exibido como bottom-sheet após análise */}
-
-                {/* Passo 1: upload do print da Betano (fonte principal para Copa) */}
                 <UploadOdds onExtracted={(slip) => setExtractedSlip(slip)} />
 
-                {/* Jogo lido → mostra confirmação + botão de análise */}
                 {extractedSlip?.homeTeam && (
                   <div className="flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />
@@ -281,35 +301,24 @@ export function Betting() {
               </div>
             )}
 
-            {/* Histórico de rodadas */}
-            {rounds.filter((r) => r.outcome !== 'pending' || r.skip).length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-stone-400">Encontros Anteriores</h3>
-                {rounds.filter((r) => r.outcome !== 'pending').map((r) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-xl border border-stone-800 bg-stone-900/40 px-3 py-2 text-sm">
-                    <span className="text-stone-300">{r.type === 'multiple' ? `Múltipla ${r.legs.length}j` : r.legs[0]?.selection} @{r.combinedOdd}</span>
-                    <span className={cn('font-semibold', r.outcome === 'won' ? 'text-green-400' : 'text-red-400')}>{r.outcome === 'won' ? `+${formatBRL(r.payout || 0)}` : 'Perdeu'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Ferramentas da Guilda */}
+            <div data-tour="tools" className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/40 p-4">
+              <h3 className="text-xs font-semibold text-stone-500">Ferramentas da Guilda</h3>
+              <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
+                className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-stone-700 text-stone-300')}>
+                <Search className="h-4 w-4" /> Desmascarar guru
+              </button>
+              {tool === 'guru' && <GuruAudit />}
+            </div>
 
             <button onClick={abortCycle} className="w-full rounded-xl border border-stone-800 py-2 text-xs text-stone-500 hover:text-stone-300">Abandonar Raid</button>
           </>
         )}
 
-        {/* Ferramentas extras: desmascarador de guru */}
-        <div data-tour="tools" className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/40 p-4">
-          <div>
-            <h3 className="text-sm font-semibold text-stone-400">Ferramentas da Guilda <span className="font-normal text-stone-600">· opcional</span></h3>
-            <p className="text-xs text-stone-600">Tem um palpite de guru? Manda o print e o Zé calcula a chance real.</p>
-          </div>
-          <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
-            className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-stone-700 text-stone-300')}>
-            <Search className="h-4 w-4" /> Desmascarar guru
-          </button>
-          {tool === 'guru' && <GuruAudit />}
-        </div>
+        {/* ===== TAB: HISTÓRICO ===== */}
+        {cycle && tab === 'history' && (
+          <RoundHistory rounds={rounds} cycle={cycle} />
+        )}
 
         <p className="px-2 text-center text-[11px] leading-relaxed text-stone-600">
           Análise educacional, sem garantia de resultado. Apostas têm risco de perda total. +18. Jogue com responsabilidade.
@@ -327,6 +336,77 @@ export function Betting() {
       onTryAnother={() => { setNoBetMsg(''); setExtractedSlip(null); }}
     />
     </>
+  );
+}
+
+function RoundHistory({ rounds, cycle }: { rounds: ZeRound[]; cycle: ZeCycle }) {
+  const settled = rounds.filter((r) => r.outcome !== 'pending');
+  const won = settled.filter((r) => r.outcome === 'won').length;
+  const lost = settled.filter((r) => r.outcome === 'lost').length;
+  const totalPayout = settled.reduce((sum, r) => r.outcome === 'won' ? sum + (r.payout || 0) : sum, 0);
+  const totalStaked = settled.reduce((sum, r) => sum + (r.stake || r.suggestedStake || 0), 0);
+  const netResult = totalPayout - totalStaked;
+
+  if (settled.length === 0) {
+    return (
+      <div className="rounded-2xl border border-stone-800 bg-stone-900/40 p-8 text-center">
+        <p className="text-stone-500">Nenhum encontro registrado ainda.</p>
+        <p className="mt-1 text-xs text-stone-600">Os resultados aparecem aqui depois da primeira aposta.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Resumo do ciclo */}
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard label="Vitórias" value={String(won)} color="green" />
+        <StatCard label="Derrotas" value={String(lost)} color="red" />
+        <StatCard label="Resultado" value={(netResult >= 0 ? '+' : '') + formatBRL(netResult)} color={netResult >= 0 ? 'green' : 'red'} />
+      </div>
+
+      {/* Lista de encontros */}
+      <div className="space-y-2">
+        {settled.slice().reverse().map((r) => {
+          const firstLeg = r.legs?.[0];
+          const stake = r.stake || r.suggestedStake || 0;
+          const profit = r.outcome === 'won' ? (r.payout || 0) - stake : -stake;
+          return (
+            <div key={r.id} className={cn(
+              'rounded-xl border px-3 py-2.5',
+              r.outcome === 'won' ? 'border-green-500/20 bg-green-500/5' : 'border-stone-800 bg-stone-900/40',
+            )}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-stone-200">
+                    {firstLeg ? `${firstLeg.homeTeam} x ${firstLeg.awayTeam}` : r.type === 'multiple' ? `Múltipla ${r.legs?.length}j` : firstLeg}
+                  </p>
+                  <p className="text-[11px] text-stone-500">
+                    @{r.combinedOdd} · {r.type === 'multiple' ? `${r.legs?.length} pernas` : firstLeg?.selection}
+                  </p>
+                </div>
+                <span className={cn('shrink-0 font-semibold text-sm', r.outcome === 'won' ? 'text-green-400' : 'text-red-400')}>
+                  {profit >= 0 ? '+' : ''}{formatBRL(profit)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-center text-xs text-stone-600">
+        Banca atual: <span className="text-stone-400 font-semibold">{formatBRL(cycle.currentBankroll)}</span>
+      </p>
+    </div>
+  );
+}
+
+function StatCard({ label, value, color }: { label: string; value: string; color: 'green' | 'red' | 'neutral' }) {
+  return (
+    <div className="rounded-xl border border-stone-800 bg-stone-900/60 p-3 text-center">
+      <p className={cn('text-base font-bold', color === 'green' ? 'text-green-400' : color === 'red' ? 'text-red-400' : 'text-stone-200')}>{value}</p>
+      <p className="text-[11px] text-stone-500">{label}</p>
+    </div>
   );
 }
 

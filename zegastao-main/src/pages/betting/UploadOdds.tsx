@@ -3,7 +3,7 @@ import { httpsCallable } from 'firebase/functions';
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { functionsUsEast, db } from '@/firebase';
 import { prepareImage, tryOcr } from '@/lib/imagePrep';
-import { Camera, FolderOpen, PlusCircle, Loader2, Sparkles, CheckCircle2, Users, RefreshCw, ChevronRight } from 'lucide-react';
+import { Camera, FolderOpen, PlusCircle, Loader2, Sparkles, CheckCircle2, Users, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ExtractedMarket { market: string; selection: string; odd: number; }
@@ -28,12 +28,15 @@ const MARKET_PT: Record<string, string> = {
   corners: 'Escanteios', cards: 'Cartões', shots: 'Finalizações', fouls: 'Faltas',
 };
 
-// Agrupa mercados 1/X/2 consecutivos num bloco compacto
+// Agrupa mercados 1/X/2 consecutivos num bloco compacto.
+// Limita a UM bloco h2h (um jogo tem exatamente um conjunto 1X2 — múltiplos indicam
+// print de lista que passou pelo OCR incorretamente; Vision corrige isso na raiz).
 type H2HGroup = { type: 'h2h'; home: ExtractedMarket; draw: ExtractedMarket; away: ExtractedMarket };
 type MarketGroup = H2HGroup | { type: 'single'; m: ExtractedMarket };
 
 function groupMarkets(markets: ExtractedMarket[]): MarketGroup[] {
   const result: MarketGroup[] = [];
+  let h2hBlocks = 0;
   let i = 0;
   while (i < markets.length) {
     const sel = markets[i].selection.toLowerCase().trim();
@@ -41,12 +44,19 @@ function groupMarkets(markets: ExtractedMarket[]): MarketGroup[] {
       const s1 = markets[i + 1].selection.toLowerCase().trim();
       const s2 = markets[i + 2].selection.toLowerCase().trim();
       if ((s1 === 'x' || s1 === 'empate') && s2 === '2') {
-        result.push({ type: 'h2h', home: markets[i], draw: markets[i + 1], away: markets[i + 2] });
+        if (h2hBlocks === 0) {
+          // Só mostra o primeiro bloco h2h (o do jogo selecionado)
+          result.push({ type: 'h2h', home: markets[i], draw: markets[i + 1], away: markets[i + 2] });
+          h2hBlocks += 1;
+        }
         i += 3;
         continue;
       }
     }
-    result.push({ type: 'single', m: markets[i] });
+    // Mercados não-h2h: mostra normalmente
+    if (markets[i].market !== 'h2h') {
+      result.push({ type: 'single', m: markets[i] });
+    }
     i++;
   }
   return result;
@@ -82,6 +92,7 @@ export function UploadOdds({ onExtracted }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   // Seletor de jogo: quando Vision encontra múltiplos jogos num print de lista
   const [pendingGames, setPendingGames] = useState<GamePreview[]>([]);
+  const [wazeExpanded, setWazeExpanded] = useState(false);
 
   const fetchCommunity = useCallback(async () => {
     setLoadingComm(true);
@@ -284,79 +295,73 @@ export function UploadOdds({ onExtracted }: Props) {
         </>
       )}
 
-      {/* Waze das Odds — feed da comunidade */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
+      {/* Waze das Odds — feed compacto da comunidade */}
+      <div className="rounded-xl border border-stone-800 bg-stone-900/40">
+        <button
+          onClick={() => setWazeExpanded((v) => !v)}
+          className="flex w-full items-center justify-between px-3 py-2.5"
+        >
           <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-400">
-            <Users className="h-3.5 w-3.5" /> Waze das Odds — jogos recentes da comunidade
+            <Users className="h-3.5 w-3.5" />
+            Waze das Odds
+            {community.length > 0 && (
+              <span className="rounded-full bg-stone-700 px-1.5 py-0.5 text-[10px] text-stone-300">{community.length}</span>
+            )}
           </div>
-          <button onClick={fetchCommunity} className="text-stone-500 hover:text-stone-300">
-            <RefreshCw className={cn('h-3.5 w-3.5', loadingComm && 'animate-spin')} />
-          </button>
-        </div>
+          <div className="flex items-center gap-2">
+            <button onClick={(e) => { e.stopPropagation(); fetchCommunity(); }} className="text-stone-600 hover:text-stone-400">
+              <RefreshCw className={cn('h-3 w-3', loadingComm && 'animate-spin')} />
+            </button>
+            {wazeExpanded ? <ChevronUp className="h-3.5 w-3.5 text-stone-500" /> : <ChevronDown className="h-3.5 w-3.5 text-stone-500" />}
+          </div>
+        </button>
 
-        {loadingComm ? (
-          <div className="flex h-24 items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-stone-600" />
-          </div>
-        ) : community.length === 0 ? (
-          <p className="rounded-xl border border-stone-800 bg-stone-900/40 px-3 py-4 text-center text-xs text-stone-500">
-            Nenhum jogo ainda. Seja o primeiro a printar da Betano!
-          </p>
-        ) : (
-          <div className="grid gap-2">
-            {community.map((g) => {
-              const h2h = g.payload.markets.filter(m => typeof m.odd === 'number' && m.odd > 0).slice(0, 3);
-              const isSelected = selected === g.id;
-              return (
-                <button
-                  key={g.id}
-                  onClick={() => useCached(g)}
-                  className={cn(
-                    'w-full rounded-xl border p-3 text-left transition-colors',
-                    isSelected
-                      ? 'border-green-500/50 bg-green-500/10'
-                      : 'border-stone-800 bg-stone-900/50 hover:border-stone-700'
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-stone-100">
-                        {g.payload.homeTeam} <span className="text-stone-500">x</span> {g.payload.awayTeam}
-                      </p>
-                      {g.payload.league && (
-                        <p className="truncate text-[11px] text-stone-500">{g.payload.league}</p>
+        {wazeExpanded && (
+          <div className="border-t border-stone-800 px-3 pb-3 pt-2">
+            {loadingComm ? (
+              <div className="flex h-16 items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-stone-600" />
+              </div>
+            ) : community.length === 0 ? (
+              <p className="py-3 text-center text-xs text-stone-600">Nenhum jogo ainda. Seja o primeiro!</p>
+            ) : (
+              <div className="space-y-1">
+                {community.slice(0, 6).map((g) => {
+                  const h2h = g.payload.markets
+                    .filter(m => (m.market === 'h2h' || m.market === 'other') && typeof m.odd === 'number' && m.odd > 0)
+                    .slice(0, 3);
+                  const isSelected = selected === g.id;
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => useCached(g)}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors',
+                        isSelected ? 'bg-green-500/10' : 'hover:bg-stone-800/60'
                       )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <span className="text-[10px] text-stone-600">{daysSince(g.fetchedAt)}</span>
-                      {isSelected
-                        ? <CheckCircle2 className="h-4 w-4 text-green-400" />
-                        : <ChevronRight className="h-4 w-4 text-stone-600" />
-                      }
-                    </div>
-                  </div>
-
-                  {/* Preview das primeiras odds */}
-                  {h2h.length >= 3 && (
-                    <div className="mt-2 flex gap-2">
-                      {h2h.map((m, i) => (
-                        <div key={i} className="flex-1 rounded-lg bg-stone-800/60 py-1 text-center">
-                          <div className="text-[9px] text-stone-500 uppercase">{['1', 'X', '2'][i]}</div>
-                          <div className="text-xs font-bold text-green-400">{m.odd.toFixed(2)}</div>
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-semibold text-stone-200">
+                          {g.payload.homeTeam} <span className="text-stone-500">x</span> {g.payload.awayTeam}
+                          {g.payload.superOdds && <Sparkles className="ml-1 inline h-2.5 w-2.5 text-amber-400" />}
+                        </p>
+                        <p className="text-[10px] text-stone-600">{daysSince(g.fetchedAt)}</p>
+                      </div>
+                      {h2h.length >= 3 && (
+                        <div className="flex shrink-0 gap-1.5 text-[11px]">
+                          {h2h.map((m, i) => (
+                            <span key={i} className={cn('font-bold', isSelected ? 'text-green-400' : 'text-stone-400')}>
+                              {m.odd.toFixed(2)}
+                            </span>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {g.payload.superOdds && (
-                    <p className="mt-1.5 flex items-center gap-1 text-[10px] text-amber-400">
-                      <Sparkles className="h-2.5 w-2.5" /> SuperOdds
-                    </p>
-                  )}
-                </button>
-              );
-            })}
+                      )}
+                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

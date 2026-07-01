@@ -40,12 +40,13 @@ Extraia TODOS os jogos visíveis e seus mercados/odds.
 Responda APENAS com JSON válido (sem markdown, sem texto extra):
 {"games":[{"homeTeam":"Nome Completo","awayTeam":"Nome Completo","league":"","matchDate":"YYYY-MM-DD","markets":[{"market":"h2h|totals|btts|corners|cards|shots|fouls","selection":"texto","odd":1.85}]}]}
 
-Regras:
-- Nomes dos times: COMPLETOS, com todos os acentos e caracteres especiais (ex: Bósnia-Herzegovina, não Bosnia ou ósnia).
-- "market": h2h = resultado/1X2, totals = total de gols, btts = ambas marcam, corners = escanteios, cards = cartões, shots = chutes, fouls = faltas.
-- "odd": número decimal (ex: 1.45). Se não visível, omita o objeto de mercado.
-- "matchDate": YYYY-MM-DD se visível, caso contrário omita o campo.
-- Não invente mercados nem odds que não estão na imagem.`;
+Regras CRÍTICAS — leia com atenção:
+1. NOMES DOS TIMES: preserve o nome EXATO e COMPLETO como aparece na tela — incluindo a PRIMEIRA LETRA e todos os acentos/diacríticos. NUNCA corte letras do início nem do fim. Exemplos corretos: "Bósnia-Herzegovina" (não "ósnia"), "Côte d'Ivoire" (não "te d'Ivoire"), "Estados Unidos" (não "stados Unidos"). Se a imagem mostrar um nome parcial, use o nome completo oficial do país/clube.
+2. SEPARAÇÃO DE JOGOS: cada par de times é um jogo separado no array "games". Nunca misture odds de jogos diferentes.
+3. "market": h2h = resultado/1X2, totals = total de gols, btts = ambas marcam, corners = escanteios, cards = cartões, shots = chutes, fouls = faltas.
+4. "odd": número decimal (ex: 1.45). Se não visível na imagem, omita o objeto de mercado.
+5. "matchDate": YYYY-MM-DD se visível, caso contrário omita o campo.
+6. Não invente mercados nem odds que não estão na imagem.`;
 
 export interface GamePreview {
   homeTeam: string;
