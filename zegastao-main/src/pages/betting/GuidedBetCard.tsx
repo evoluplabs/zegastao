@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn, formatBRL } from '@/lib/utils';
 import { ZeRound } from '@/types';
 import { ShareableBetCard } from './ShareableBetCard';
-import { AlertTriangle, Info, TrendingUp, TrendingDown, CheckCircle2, XCircle, Trophy, Frown } from 'lucide-react';
+import { AlertTriangle, Info, TrendingUp, TrendingDown, CheckCircle2, XCircle, Trophy, Frown, ShieldAlert } from 'lucide-react';
 
 const zeRecalcCard = httpsCallable<unknown, RecalcResponse>(functionsUsEast, 'zeRecalcCard');
 const zeFeedback = httpsCallable<unknown, { success: boolean; bankroll: number; cycleStatus?: string }>(functionsUsEast, 'zeFeedback');
@@ -111,21 +111,36 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
     );
   }
 
+  const isMarginal = card.evPct < 0;
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-stone-800 bg-stone-900/70">
+    <div className={cn('overflow-hidden rounded-2xl border bg-stone-900/70',
+      isMarginal ? 'border-amber-500/40' : 'border-stone-800')}>
       {/* Cabeçalho */}
-      <div className="border-b border-stone-800 bg-gradient-to-r from-green-500/10 to-sky-500/5 px-4 py-3">
+      <div className={cn('border-b border-stone-800 px-4 py-3',
+        isMarginal ? 'bg-gradient-to-r from-amber-500/10 to-stone-900' : 'bg-gradient-to-r from-green-500/10 to-sky-500/5')}>
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold text-stone-100">{card.type === 'multiple' ? `⚔️ Raid: ${card.legs.length} Encontros` : '⚔️ Encontro Único'}</span>
-          <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-sm font-extrabold text-green-400">@{card.combinedOdd}</span>
+          <span className={cn('rounded-full px-2 py-0.5 text-sm font-extrabold',
+            isMarginal ? 'bg-amber-500/15 text-amber-400' : 'bg-green-500/15 text-green-400')}>
+            @{card.combinedOdd}
+          </span>
         </div>
         <p className="text-xs text-stone-400">Chance estimada {card.combinedProbPct}% · EV {card.evPct > 0 ? '+' : ''}{card.evPct}%</p>
       </div>
 
       <div className="space-y-4 p-4">
+        {/* Aviso de aposta marginal — EV negativo, usuário decide */}
+        {isMarginal && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            <span><strong>Aposta marginal</strong> — O Zé não encontrou valor claro aqui (EV {card.evPct}%). A casa tem vantagem matemática. Você decide se quer seguir.</span>
+          </div>
+        )}
+
         {/* Por que essa aposta */}
         <div className="flex items-start gap-2 rounded-xl bg-stone-800/40 p-3 text-sm text-stone-300">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-green-400" /> {card.reasoning}
+          <Info className={cn('mt-0.5 h-4 w-4 shrink-0', isMarginal ? 'text-amber-400' : 'text-green-400')} /> {card.reasoning}
         </div>
 
         {/* Selo de entendimento (nível agressivo) */}

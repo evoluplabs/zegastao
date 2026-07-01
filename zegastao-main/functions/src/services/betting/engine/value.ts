@@ -16,7 +16,7 @@ export interface ValueAssessment {
  * modelWeight=0.5 → média; <0.5 confia mais no mercado; >0.5 no modelo próprio.
  * O mercado costuma ser eficiente, então o default pesa levemente para ele.
  */
-export function blendProb(modelProb: number, marketProb: number, modelWeight = 0.45): number {
+export function blendProb(modelProb: number, marketProb: number, modelWeight = 0.5): number {
   const w = clamp(modelWeight, 0, 1);
   const blended = modelProb * w + marketProb * (1 - w);
   return round4(clamp(blended, 0.0001, 0.9999));

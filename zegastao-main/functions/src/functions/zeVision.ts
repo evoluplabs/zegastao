@@ -31,12 +31,31 @@ const ExtractSchema = z.object({
   mediaType: z.enum(['image/jpeg', 'image/png', 'image/webp']).optional(),
 });
 
-const VISION_PROMPT = `Você está lendo um print da casa de apostas Betano. Extraia TODOS os mercados visíveis e suas odds.
-Responda APENAS com JSON válido:
-{"homeTeam":"","awayTeam":"","league":"","matchDate":"YYYY-MM-DD","markets":[{"market":"h2h|totals|btts|corners|cards|shots|fouls|other","selection":"texto curto da seleção","odd":1.85}]}
-Regras: "market" usa exatamente uma das chaves listadas (escanteios=corners, cartões=cards, chutes=shots, faltas=fouls, ambas marcam=btts, resultado/1x2=h2h, total de gols=totals). odd como número decimal. matchDate no formato YYYY-MM-DD se visível no print, caso contrário omita. Não invente mercados que não estão na imagem.`;
+// IMPORTANTE: extrai TODOS os jogos visíveis. Preserva nomes COMPLETOS com
+// acentos e diacríticos (ex: Bósnia-Herzegovina, Côte d'Ivoire, São Paulo).
+const VISION_PROMPT = `Você está lendo um print da casa de apostas Betano.
+O print pode mostrar UM jogo aberto (com muitos mercados) ou uma LISTA de jogos (só 1X2).
+Extraia TODOS os jogos visíveis e seus mercados/odds.
 
-async function visionExtract(imageBase64: string, mediaType: MediaType): Promise<ExtractedSlip> {
+Responda APENAS com JSON válido (sem markdown, sem texto extra):
+{"games":[{"homeTeam":"Nome Completo","awayTeam":"Nome Completo","league":"","matchDate":"YYYY-MM-DD","markets":[{"market":"h2h|totals|btts|corners|cards|shots|fouls","selection":"texto","odd":1.85}]}]}
+
+Regras:
+- Nomes dos times: COMPLETOS, com todos os acentos e caracteres especiais (ex: Bósnia-Herzegovina, não Bosnia ou ósnia).
+- "market": h2h = resultado/1X2, totals = total de gols, btts = ambas marcam, corners = escanteios, cards = cartões, shots = chutes, fouls = faltas.
+- "odd": número decimal (ex: 1.45). Se não visível, omita o objeto de mercado.
+- "matchDate": YYYY-MM-DD se visível, caso contrário omita o campo.
+- Não invente mercados nem odds que não estão na imagem.`;
+
+export interface GamePreview {
+  homeTeam: string;
+  awayTeam: string;
+  league?: string;
+  matchDate?: string;
+  markets: Array<{ market: string; selection: string; odd: number }>;
+}
+
+async function visionExtract(imageBase64: string, mediaType: MediaType): Promise<{ slip: ExtractedSlip; allGames: GamePreview[] }> {
   const client = new Anthropic();
   const content: Anthropic.MessageParam['content'] = [
     {
@@ -47,32 +66,53 @@ async function visionExtract(imageBase64: string, mediaType: MediaType): Promise
   ];
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1500,
+    max_tokens: 2000,
     messages: [{ role: 'user', content }],
   });
   const raw = response.content[0]?.type === 'text' ? response.content[0].text : '{}';
   const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-  const markets = Array.isArray(parsed.markets)
-    ? parsed.markets
-        .filter((m: unknown): m is { market: string; selection: string; odd: number } =>
-          !!m && typeof (m as { odd?: unknown }).odd === 'number')
-        .map((m: { market?: string; selection?: string; odd: number }) => ({
-          market: m.market || 'other',
-          selection: m.selection || 'Seleção',
-          odd: m.odd,
-        }))
-    : [];
-  // matchDate: só aceita formato YYYY-MM-DD; descarta qualquer outra coisa.
-  const rawDate = typeof parsed.matchDate === 'string' ? parsed.matchDate : undefined;
-  const matchDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : undefined;
-  return {
-    homeTeam: parsed.homeTeam || undefined,
-    awayTeam: parsed.awayTeam || undefined,
-    league: parsed.league || undefined,
-    matchDate,
+
+  // Suporte a formato legado (campo único) e novo (games[])
+  const rawGames: Array<{ homeTeam?: string; awayTeam?: string; league?: string; matchDate?: string; markets?: unknown[] }> =
+    Array.isArray(parsed.games) ? parsed.games : (parsed.homeTeam ? [parsed] : []);
+
+  function parseMarkets(markets: unknown[]) {
+    return markets
+      .filter((m): m is { market?: string; selection?: string; odd: number } =>
+        !!m && typeof (m as { odd?: unknown }).odd === 'number')
+      .map((m) => ({ market: m.market || 'h2h', selection: m.selection || 'Seleção', odd: m.odd }));
+  }
+
+  const allGames: GamePreview[] = rawGames
+    .filter((g) => g.homeTeam && g.awayTeam)
+    .map((g) => {
+      const rawDate = typeof g.matchDate === 'string' ? g.matchDate : undefined;
+      return {
+        homeTeam: g.homeTeam!,
+        awayTeam: g.awayTeam!,
+        league: g.league || undefined,
+        matchDate: rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : undefined,
+        markets: Array.isArray(g.markets) ? parseMarkets(g.markets) : [],
+      };
+    });
+
+  // Primeiro jogo como slip principal (o que tem mais mercados ou o primeiro)
+  const primary = rawGames.reduce((best, g) =>
+    (Array.isArray(g.markets) ? g.markets.length : 0) > (Array.isArray(best.markets) ? best.markets.length : 0) ? g : best,
+    rawGames[0] || {},
+  );
+  const markets = Array.isArray(primary.markets) ? parseMarkets(primary.markets) : [];
+  const rawDate = typeof primary.matchDate === 'string' ? primary.matchDate : undefined;
+
+  const slip: ExtractedSlip = {
+    homeTeam: primary.homeTeam || undefined,
+    awayTeam: primary.awayTeam || undefined,
+    league: primary.league || undefined,
+    matchDate: rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : undefined,
     markets,
-    confidence: markets.length > 0 ? 0.9 : 0.2,
+    confidence: markets.length > 0 ? 0.9 : allGames.length > 0 ? 0.7 : 0.2,
   };
+  return { slip, allGames };
 }
 
 // ===== zeExtractOdds: cascata OCR → Vision =====
@@ -95,9 +135,10 @@ export const zeExtractOdds = onCall({ region: REGION, timeoutSeconds: 60 }, asyn
   // Tier 2 — Claude Vision (só quando o OCR reprova)
   if (imageBase64) {
     try {
-      const slip = await visionExtract(imageBase64, mediaType || 'image/jpeg');
+      const { slip, allGames } = await visionExtract(imageBase64, mediaType || 'image/jpeg');
       await cacheSlip(userId, slip, 'vision');
-      return { slip, source: 'vision' as const };
+      // allGames: lista de todos os jogos encontrados no print (para seletor no front)
+      return { slip, source: 'vision' as const, allGames };
     } catch (e) {
       throw new HttpsError('internal', `Não consegui ler o print. Tente um print mais nítido. (${e instanceof Error ? e.message : 'erro'})`);
     }

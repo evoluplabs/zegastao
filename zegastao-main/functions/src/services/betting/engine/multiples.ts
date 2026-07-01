@@ -102,6 +102,7 @@ export interface RoundPlan {
     | 'moonshot'
     | 'moonshot_capped'
     | 'sgm'
+    | 'best_available'  // melhor candidato disponível, EV negativo — user decide
     | 'no_candidates';
   sameGame?: boolean;     // múltipla no mesmo jogo (correlação aplicada)
   usedBetanoOdd?: boolean; // odd final veio do print da Betano
@@ -135,15 +136,19 @@ export function buildRound(
 
   // ----- Nível 0: conservador — aposta simples de maior valor -----
   if (level === 0) {
-    if (valueCands.length === 0) return emptyPlan('no_candidates');
-    return finalize([valueCands[0]], 'value_single');
+    if (valueCands.length > 0) return finalize([valueCands[0]], 'value_single');
+    // Sem EV positivo: mostra o melhor candidato disponível; usuário decide.
+    const best = [...pool].sort((a, b) => b.ev - a.ev)[0];
+    return best ? finalize([best], 'best_available') : emptyPlan('no_candidates');
   }
 
   // ----- Nível 1: moderado — múltipla curta só com valor -----
   if (level === 1) {
     const legs = valueCands.slice(0, maxLegs);
-    if (legs.length === 0) return emptyPlan('no_candidates');
-    return finalize(legs, legs.length > 1 ? 'value_multiple' : 'value_single');
+    if (legs.length > 0) return finalize(legs, legs.length > 1 ? 'value_multiple' : 'value_single');
+    // Sem EV positivo: mostra o melhor candidato disponível; usuário decide.
+    const best = [...pool].sort((a, b) => b.ev - a.ev)[0];
+    return best ? finalize([best], 'best_available') : emptyPlan('no_candidates');
   }
 
   // ----- Nível 2: moonshot — alcança o alvo, aceitando EV negativo -----

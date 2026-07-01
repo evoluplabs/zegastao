@@ -63,6 +63,8 @@ export function roundReasoning(plan: RoundPlan): string {
       return plan.usedBetanoOdd
         ? `Múltipla no mesmo jogo (${plan.legs.length} seleções). Usei a odd final que a própria Betano te deu no print — essa é a verdade do mercado. Lembra: quanto mais coisa no mesmo jogo, mais a casa embute margem.`
         : `Múltipla no mesmo jogo (${plan.legs.length} seleções). Como as seleções são do mesmo jogo, elas "andam juntas" — ajustei a conta pra baixo (correlação) pra não te enganar com chance inflada. Quanto mais coisa no mesmo jogo, mais a casa lucra.`;
+    case 'best_available':
+      return `Não encontrei valor claro aqui — o EV está negativo, ou seja, a casa tem vantagem matemática nessa seleção. Mas aqui está a melhor opção disponível para você decidir com os números na mesa.`;
     case 'no_candidates':
     default:
       return `Hoje não achei nada que valha a pena de verdade. Melhor guardar a grana — não existe aposta boa todo dia, e isso é parte de jogar com cabeça.`;

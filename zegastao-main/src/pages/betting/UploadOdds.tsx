@@ -11,7 +11,11 @@ interface ExtractedSlip {
   homeTeam?: string; awayTeam?: string; league?: string; matchDate?: string;
   markets: ExtractedMarket[]; confidence: number; superOdds?: boolean;
 }
-type ExtractResult = { slip: ExtractedSlip; source: 'ocr' | 'vision' };
+interface GamePreview {
+  homeTeam: string; awayTeam: string; league?: string; matchDate?: string;
+  markets: ExtractedMarket[];
+}
+type ExtractResult = { slip: ExtractedSlip; source: 'ocr' | 'vision'; allGames?: GamePreview[] };
 interface CachedGame { id: string; payload: ExtractedSlip; source: string; fetchedAt: Timestamp; }
 
 const zeExtractOdds = httpsCallable<
@@ -68,6 +72,8 @@ export function UploadOdds({ onExtracted }: Props) {
   const [community, setCommunity] = useState<CachedGame[]>([]);
   const [loadingComm, setLoadingComm] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  // Seletor de jogo: quando Vision encontra múltiplos jogos num print de lista
+  const [pendingGames, setPendingGames] = useState<GamePreview[]>([]);
 
   const fetchCommunity = useCallback(async () => {
     setLoadingComm(true);
@@ -88,7 +94,7 @@ export function UploadOdds({ onExtracted }: Props) {
   useEffect(() => { fetchCommunity(); }, [fetchCommunity]);
 
   async function handleFile(file: File) {
-    setBusy(true); setError(''); setResult(null); setSelected(null);
+    setBusy(true); setError(''); setResult(null); setSelected(null); setPendingGames([]);
     try {
       setPhase('Comprimindo imagem…');
       const { base64, mediaType } = await prepareImage(file);
@@ -98,12 +104,33 @@ export function UploadOdds({ onExtracted }: Props) {
       const res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
       setResult(res.data);
       setSelected('upload');
-      onExtracted?.(res.data.slip);
+      // Se Vision encontrou múltiplos jogos (print de lista), mostra seletor
+      const games = res.data.allGames ?? [];
+      if (games.length > 1) {
+        setPendingGames(games);
+        // Não chama onExtracted ainda — espera o usuário escolher
+      } else {
+        onExtracted?.(res.data.slip);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não consegui ler esse print. Tenta um mais nítido.');
     } finally {
       setBusy(false); setPhase('');
     }
+  }
+
+  function pickGame(game: GamePreview) {
+    setPendingGames([]);
+    const slip: ExtractedSlip = {
+      homeTeam: game.homeTeam,
+      awayTeam: game.awayTeam,
+      league: game.league,
+      matchDate: game.matchDate,
+      markets: game.markets,
+      confidence: 0.9,
+    };
+    setResult((prev) => prev ? { ...prev, slip } : null);
+    onExtracted?.(slip);
   }
 
   function useCached(game: CachedGame) {
@@ -143,8 +170,45 @@ export function UploadOdds({ onExtracted }: Props) {
         {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       </div>
 
+      {/* Seletor de jogo — quando Vision encontra múltiplos jogos num print de lista */}
+      {pendingGames.length > 1 && (
+        <div className="space-y-2 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <p className="text-sm font-semibold text-amber-300">
+            📋 {pendingGames.length} jogos encontrados — qual você quer analisar?
+          </p>
+          <p className="text-xs text-stone-500">
+            Dica: para mais mercados (escanteios, cartões, gols), abra o jogo na Betano e tire um print da página do jogo.
+          </p>
+          <div className="grid gap-2">
+            {pendingGames.map((g, i) => {
+              const h2h = g.markets.filter(m => typeof m.odd === 'number' && m.odd > 0).slice(0, 3);
+              return (
+                <button
+                  key={i}
+                  onClick={() => pickGame(g)}
+                  className="w-full rounded-xl border border-stone-700 bg-stone-900/60 p-3 text-left hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors"
+                >
+                  <p className="text-sm font-semibold text-stone-100">{g.homeTeam} <span className="text-stone-500">x</span> {g.awayTeam}</p>
+                  {g.league && <p className="text-[11px] text-stone-500">{g.league}</p>}
+                  {h2h.length >= 3 && (
+                    <div className="mt-2 flex gap-2">
+                      {h2h.map((m, j) => (
+                        <div key={j} className="flex-1 rounded-lg bg-stone-800/60 py-1 text-center">
+                          <div className="text-[9px] text-stone-500">{['1', 'X', '2'][j]}</div>
+                          <div className="text-xs font-bold text-green-400">{m.odd.toFixed(2)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Resultado do upload */}
-      {result && selected === 'upload' && (
+      {result && selected === 'upload' && pendingGames.length === 0 && (
         <OddsCard slip={result.slip} groups={groups} source={result.source} />
       )}
 
