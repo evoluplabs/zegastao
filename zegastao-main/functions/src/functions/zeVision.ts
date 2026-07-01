@@ -192,7 +192,8 @@ export const zeGuruAudit = onCall({ region: REGION, timeoutSeconds: 60 }, async 
     if (t.confidence >= MIN_CONFIDENCE) slip = t;
   }
   if (!slip && imageBase64) {
-    slip = await visionExtract(imageBase64, mediaType || 'image/jpeg').catch(() => null);
+    const result = await visionExtract(imageBase64, mediaType || 'image/jpeg').catch(() => null);
+    slip = result?.slip ?? null;
   }
   if (!slip || slip.markets.length === 0) {
     throw new HttpsError('failed-precondition', 'Não consegui ler o bilhete. Manda um print mais nítido.');
