@@ -100,10 +100,17 @@ export function UploadOdds({ onExtracted }: Props) {
       const snap = await getDocs(
         query(collection(db, 'betting_cache'), orderBy('fetchedAt', 'desc'), limit(10))
       );
+      const cutoff = Date.now() - 4 * 60 * 60 * 1000; // 4h — descarta extrações velhas/incorretas
       setCommunity(
         snap.docs
           .map((d) => ({ id: d.id, ...d.data() } as CachedGame))
-          .filter((g) => g.payload?.homeTeam && g.payload?.awayTeam)
+          .filter((g) => {
+            if (!g.payload?.homeTeam || !g.payload?.awayTeam) return false;
+            if (g.fetchedAt?.toMillis() < cutoff) return false;
+            // Nomes truncados pelo OCR começam com minúscula (ex: "ósnia" em vez de "Bósnia")
+            const startsUpper = (s: string) => s.length > 0 && s[0] === s[0].toUpperCase() && s[0] !== s[0].toLowerCase();
+            return startsUpper(g.payload.homeTeam) && startsUpper(g.payload.awayTeam);
+          })
       );
     } catch { /* best-effort */ } finally {
       setLoadingComm(false);
@@ -111,6 +118,13 @@ export function UploadOdds({ onExtracted }: Props) {
   }, []);
 
   useEffect(() => { fetchCommunity(); }, [fetchCommunity]);
+
+  // Retorna true se o nome do time parece correto (começa com maiúscula).
+  // OCR de lista da Betano às vezes dropa a primeira letra (ex: "ósnia" em vez de "Bósnia").
+  function nameOk(s?: string): boolean {
+    if (!s || s.length === 0) return true; // ausente é ok, string vazia não bloqueia
+    return s[0] === s[0].toUpperCase() && s[0] !== s[0].toLowerCase();
+  }
 
   async function handleFile(file: File) {
     setBusy(true); setError(''); setResult(null); setSelected(null); setPendingGames([]);
@@ -120,14 +134,21 @@ export function UploadOdds({ onExtracted }: Props) {
       setPhase('Lendo as odds (OCR)…');
       const ocrText = await tryOcr(base64);
       setPhase(ocrText ? 'Conferindo as odds…' : 'Lendo com o Zé (Vision)…');
-      const res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
+      let res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
+
+      // Auto-correção: se OCR retornou nome de time truncado (inicia em minúscula),
+      // chama Vision diretamente (sem ocrText → backend pula Tier 1 e vai ao Vision).
+      const slip = res.data.slip;
+      if (!nameOk(slip.homeTeam) || !nameOk(slip.awayTeam)) {
+        setPhase('OCR impreciso — refinando com Vision…');
+        res = await zeExtractOdds({ imageBase64: base64, mediaType });
+      }
+
       setResult(res.data);
       setSelected('upload');
-      // Se Vision encontrou múltiplos jogos (print de lista), mostra seletor
       const games = res.data.allGames ?? [];
       if (games.length > 1) {
         setPendingGames(games);
-        // Não chama onExtracted ainda — espera o usuário escolher
       } else {
         onExtracted?.(res.data.slip);
       }
