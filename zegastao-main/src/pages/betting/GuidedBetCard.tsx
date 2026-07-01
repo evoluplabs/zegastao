@@ -126,7 +126,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
             @{card.combinedOdd}
           </span>
         </div>
-        <p className="text-xs text-stone-400">Chance estimada {card.combinedProbPct}% · EV {card.evPct > 0 ? '+' : ''}{card.evPct}%</p>
+        <p className="text-xs text-stone-400">Chance de acertar: {card.combinedProbPct}% · {card.evPct > 0 ? `Vantagem: +${card.evPct}%` : `A casa leva: ${Math.abs(card.evPct)}%`}</p>
       </div>
 
       <div className="space-y-4 p-4">
@@ -134,7 +134,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
         {isMarginal && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-            <span><strong>Aposta marginal</strong> — O Zé não encontrou valor claro aqui (EV {card.evPct}%). A casa tem vantagem matemática. Você decide se quer seguir.</span>
+            <span><strong>Atenção</strong> — A Betano tem vantagem de {Math.abs(card.evPct)}% nessa aposta. Não encontrei odds com vantagem clara, mas aqui está a melhor opção do dia. Você decide.</span>
           </div>
         )}
 
@@ -167,7 +167,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
                   <div key={key} className="rounded-xl border border-stone-800 bg-stone-800/30 p-3">
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-xs text-stone-500">{leg.league} · {leg.marketLabel}</span>
-                      <span className="text-xs text-stone-500">prob {leg.modelProbPct}%</span>
+                      <span className="text-xs text-stone-500">previsão: {leg.modelProbPct}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>

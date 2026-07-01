@@ -115,6 +115,9 @@ export async function analyzeFixture(params: {
   const base = { fixtureId: fixture.fixtureId, homeTeam, awayTeam, league: leagueName, kickoff };
 
   // ---- h2h (1X2) ----
+  // Quando os times não têm ID na API (teamId=0), o Elo usa rating padrão (1500)
+  // e infla a probabilidade de times azarões. Confiamos 80% no mercado nesses casos.
+  const h2hModelWeight = (homeTeamId === 0 || awayTeamId === 0) ? 0.2 : 0.5;
   const h2h = bestOddsByMarket(event, 'h2h');
   if (h2h.size >= 2) {
     const odds = [...h2h.values()];
@@ -123,10 +126,10 @@ export async function analyzeFixture(params: {
     const clean = devig(odds);
     names.forEach((n, i) => cleanByName.set(n, clean[i]));
 
-    pushCandidate(candidates, base, 'h2h', event.home_team, h2h.get(event.home_team), p1x2.home, cleanByName.get(event.home_team), model, individual);
-    pushCandidate(candidates, base, 'h2h', event.away_team, h2h.get(event.away_team), p1x2.away, cleanByName.get(event.away_team), model, individual);
+    pushCandidate(candidates, base, 'h2h', event.home_team, h2h.get(event.home_team), p1x2.home, cleanByName.get(event.home_team), model, individual, h2hModelWeight);
+    pushCandidate(candidates, base, 'h2h', event.away_team, h2h.get(event.away_team), p1x2.away, cleanByName.get(event.away_team), model, individual, h2hModelWeight);
     const drawOdd = h2h.get('Draw');
-    if (drawOdd) pushCandidate(candidates, base, 'h2h', 'Empate', drawOdd, p1x2.draw, cleanByName.get('Draw'), model, individual);
+    if (drawOdd) pushCandidate(candidates, base, 'h2h', 'Empate', drawOdd, p1x2.draw, cleanByName.get('Draw'), model, individual, h2hModelWeight);
   }
 
   // ---- btts ----
@@ -164,12 +167,13 @@ function pushCandidate(
   marketCleanProb: number | undefined,
   model: GlobalModel,
   individual: IndividualModel,
+  modelWeight = 0.5,
 ): void {
   if (!marketOdd || marketOdd <= 1) return;
   const marketProb = marketCleanProb ?? impliedProb(marketOdd);
   // calibração coletiva + blend com o mercado
   const calibrated = calibratedProb(model, market, modelRawProb);
-  const blended = blendProb(calibrated, marketProb);
+  const blended = blendProb(calibrated, marketProb, modelWeight);
   // nudge individual no ranking (não muda a prob, mas o EV efetivo de ordenação)
   const mult = individualMultiplier(individual, market);
   const a = assess(blended, marketOdd);

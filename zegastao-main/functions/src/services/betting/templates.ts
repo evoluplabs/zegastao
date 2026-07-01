@@ -50,24 +50,63 @@ export function multipleSteps(legCount: number): string[] {
 // ---- "Por que essa aposta?" (sublegenda transparente) ----
 
 export function roundReasoning(plan: RoundPlan): string {
+  const leg = plan.legs[0];
+  const legCount = plan.legs.length;
+  const perna = legCount === 1 ? 'perna' : 'pernas';
+
+  function legLine(l: RoundPlan['legs'][number]): string {
+    const modelPct = Math.round(l.modelProb * 100);
+    const impliedPct = Math.round((1 / l.marketOdd) * 100);
+    const evPct = Math.round(l.ev * 100);
+    const sign = evPct > 0 ? '+' : '';
+    return `${l.selection} em ${l.homeTeam} x ${l.awayTeam} — previsão: ${modelPct}% de chance (Betano age como se fosse ${impliedPct}%), margem: ${sign}${evPct}%`;
+  }
+
   switch (plan.reasonCode) {
-    case 'value_single':
-      return `Achei valor nessa: nossa conta dá mais chance do que a odd está pagando. Aposta simples, do jeito mais seguro de jogar.`;
-    case 'value_multiple':
-      return `Juntei ${plan.legs.length} seleções que, cada uma, tem valor de verdade. Múltipla de pernas boas — a chance combinada ainda joga a seu favor.`;
-    case 'moonshot':
-      return `Essa é a fézinha de sorte 🎲. Pra chegar no alvo que você pediu, juntei ${plan.legs.length} jogos. Paga alto, mas a chance é baixa — joga só com o que não vai fazer falta.`;
-    case 'moonshot_capped':
-      return `Montei a maior múltipla que deu com os jogos do dia (${plan.legs.length} pernas). Não cheguei no alvo cheio, mas é o teto seguro de pernas. Quanto mais jogo, mais difícil.`;
-    case 'sgm':
+    case 'value_single': {
+      if (!leg) return 'Aposta simples com vantagem identificada.';
+      const modelPct = Math.round(leg.modelProb * 100);
+      const impliedPct = Math.round((1 / leg.marketOdd) * 100);
+      const evPct = Math.round(leg.ev * 100);
+      return `Escolhi ${leg.selection} em ${leg.homeTeam} x ${leg.awayTeam}. Nossa análise estima ${modelPct}% de chance, enquanto a Betano age como se fosse ${impliedPct}% (por isso a odd é ${leg.marketOdd.toFixed(2)}). Essa diferença de +${evPct}% é a nossa vantagem matemática. Aposta simples, a mais segura.`;
+    }
+    case 'value_multiple': {
+      if (!leg) return 'Múltipla com vantagem em cada perna.';
+      const lines = plan.legs.map(legLine).join('; ');
+      return `Juntei ${legCount} ${perna} com vantagem real em cada uma: ${lines}. A chance combinada ainda está a seu favor.`;
+    }
+    case 'moonshot': {
+      if (!leg) return `Fézinha de ${legCount} ${perna} para chegar no alvo.`;
+      const combPct = Math.round(plan.combinedProb * 100);
+      return `Fézinha de sorte 🎲 — ${legCount} ${perna} para chegar no alvo. Principal: ${leg.selection} em ${leg.homeTeam} x ${leg.awayTeam} (${Math.round(leg.modelProb * 100)}% de chance). A odd combinada é @${plan.combinedOdd}, mas a chance real da múltipla toda é só ${combPct < 1 ? 'menos de 1' : combPct}%. Joga com o que não vai fazer falta.`;
+    }
+    case 'moonshot_capped': {
+      if (!leg) return `Maior múltipla disponível (${legCount} ${perna}) — não chegou no alvo.`;
+      if (legCount === 1) {
+        const modelPct = Math.round(leg.modelProb * 100);
+        const impliedPct = Math.round((1 / leg.marketOdd) * 100);
+        const evPct = Math.round(leg.ev * 100);
+        const sign = evPct > 0 ? '+' : '';
+        return `Só havia um jogo disponível para análise. Escolhi ${leg.selection} em ${leg.homeTeam} x ${leg.awayTeam}: nossa análise estima ${modelPct}% de chance (a Betano cobra como se fosse ${impliedPct}%), margem de ${sign}${evPct}%. A odd é ${leg.marketOdd.toFixed(2)}.`;
+      }
+      return `Montei a maior múltipla que deu com os jogos do dia (${legCount} ${perna}) — não chegou no alvo cheio. Principal: ${legLine(leg)}. Quanto mais jogos numa múltipla, mais difícil acertar tudo.`;
+    }
+    case 'sgm': {
+      const match = leg ? `${leg.homeTeam} x ${leg.awayTeam}` : 'o jogo';
       return plan.usedBetanoOdd
-        ? `Múltipla no mesmo jogo (${plan.legs.length} seleções). Usei a odd final que a própria Betano te deu no print — essa é a verdade do mercado. Lembra: quanto mais coisa no mesmo jogo, mais a casa embute margem.`
-        : `Múltipla no mesmo jogo (${plan.legs.length} seleções). Como as seleções são do mesmo jogo, elas "andam juntas" — ajustei a conta pra baixo (correlação) pra não te enganar com chance inflada. Quanto mais coisa no mesmo jogo, mais a casa lucra.`;
-    case 'best_available':
-      return `Não encontrei valor claro aqui — o EV está negativo, ou seja, a casa tem vantagem matemática nessa seleção. Mas aqui está a melhor opção disponível para você decidir com os números na mesa.`;
+        ? `Múltipla no mesmo jogo (${legCount} ${perna} em ${match}). Usei a odd final que a própria Betano te deu no print — essa é a verdade do mercado. Lembra: quanto mais mercados no mesmo jogo, mais a casa embute margem.`
+        : `Múltipla no mesmo jogo (${legCount} ${perna} em ${match}). Como as apostas são no mesmo jogo, elas "andam juntas" — ajustei a conta pra baixo pra não te enganar com chance inflada. Quanto mais mercados no mesmo jogo, mais a casa lucra.`;
+    }
+    case 'best_available': {
+      if (!leg) return 'Melhor opção disponível, mas a casa tem vantagem matemática.';
+      const modelPct = Math.round(leg.modelProb * 100);
+      const impliedPct = Math.round((1 / leg.marketOdd) * 100);
+      const absEvPct = Math.abs(Math.round(leg.ev * 100));
+      return `Não achei vantagem real hoje — a casa leva ${absEvPct}% nessa aposta. Mas aqui está a melhor opção disponível: ${leg.selection} em ${leg.homeTeam} x ${leg.awayTeam} — nossa análise dá ${modelPct}% de chance (Betano age como se fosse ${impliedPct}%). Você decide se vale.`;
+    }
     case 'no_candidates':
     default:
-      return `Hoje não achei nada que valha a pena de verdade. Melhor guardar a grana — não existe aposta boa todo dia, e isso é parte de jogar com cabeça.`;
+      return `Hoje não achei nada que valha a pena. Melhor guardar a grana — não existe aposta boa todo dia, e isso faz parte de jogar com cabeça.`;
   }
 }
 
