@@ -143,6 +143,14 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
           <Info className={cn('mt-0.5 h-4 w-4 shrink-0', isMarginal ? 'text-amber-400' : 'text-green-400')} /> {card.reasoning}
         </div>
 
+        {/* Análise detalhada dos sub-agentes (form, h2h, stats) */}
+        {card.finalAnalysis && (
+          <div className="rounded-xl border border-stone-700/50 bg-stone-800/20 p-3">
+            <p className="mb-1.5 text-xs font-semibold text-stone-400">📊 Por que o Zé escolheu essa aposta</p>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-stone-300">{card.finalAnalysis}</p>
+          </div>
+        )}
+
         {/* Selo de entendimento (nível agressivo) */}
         {card.needsSeal && !sealAccepted && (
           <div className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">

@@ -24,6 +24,7 @@ import {
 } from '../services/betting/learning';
 import { crossOverNote, dopamineLockMessage, ouvidoriaDoFumo } from '../services/betting/templates';
 import { suggestBettingBudget } from './bettingProfile';
+import Anthropic from '@anthropic-ai/sdk';
 
 const ZE_ENABLED = process.env.ZE_APOSTADOR_ENABLED === 'true';
 // us-east1: o cluster do Zé Apostador roda nesta região para não competir pela
@@ -182,6 +183,45 @@ function slipToOddsEvent(fix: PrintFixtureInput): OddsEvent {
   };
 }
 
+// ---------- Análise qualitativa dos sub-agentes (Form + H2H + Stats) ----------
+
+async function generateCardAnalysis(
+  leg: { homeTeam: string; awayTeam: string; selection: string; marketOdd: number; modelProb: number; ev: number; league: string },
+  ctx: { formSummary: string; h2hSummary: string; statsSummary: string },
+): Promise<string> {
+  const hasCtx = ctx.formSummary || ctx.h2hSummary || ctx.statsSummary;
+  if (!hasCtx) return '';
+  const modelPct = Math.round(leg.modelProb * 100);
+  const evPct = Math.round(leg.ev * 100);
+  const sign = evPct >= 0 ? '+' : '';
+  const sections = [
+    ctx.formSummary ? `FORMA RECENTE:\n${ctx.formSummary}` : '',
+    ctx.h2hSummary ? `HISTÓRICO H2H:\n${ctx.h2hSummary}` : '',
+    ctx.statsSummary ? `ESTATÍSTICAS:\n${ctx.statsSummary}` : '',
+  ].filter(Boolean).join('\n\n');
+
+  const prompt = `Jogo: ${leg.homeTeam} x ${leg.awayTeam} (${leg.league})
+Aposta escolhida: ${leg.selection} | Odd: ${leg.marketOdd.toFixed(2)} | Nossa previsão: ${modelPct}% de chance | Margem: ${sign}${evPct}%
+
+${sections}
+
+Explique em 2-3 parágrafos curtos (máx 180 palavras, português simples) POR QUE escolhemos essa aposta:
+1. O que a forma recente e o H2H dizem sobre esse confronto
+2. O principal risco que poderia invalidar a escolha
+3. Uma frase final honesta
+
+Sem jargão técnico. Fala direta com o apostador comum.`;
+
+  const client = new Anthropic();
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 400,
+    messages: [{ role: 'user', content: prompt }],
+    system: 'Você é o Zé Apostador: analista honesto e direto que fala com apostadores comuns em português brasileiro.',
+  });
+  return response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+}
+
 // ---------- Helper compartilhado: monta uma rodada para o ciclo ----------
 
 async function buildRoundForCycle(
@@ -196,6 +236,9 @@ async function buildRoundForCycle(
   const oddsBySport: Record<string, Awaited<ReturnType<typeof getCachedOdds>>> = {};
   let teamStats: Awaited<ReturnType<typeof runStatsAgent>> | null = null;
   let printMatchCtx: MatchContext | null = null;
+  let agentFormSummary = '';
+  let agentH2HSummary = '';
+  let agentStatsSummary = '';
 
   if (opts.printFixture) {
     // Valida que o jogo ainda não foi realizado (se a data foi extraída do print).
@@ -229,7 +272,7 @@ async function buildRoundForCycle(
       leagueName: league,
     }];
     oddsBySport['soccer_fifa_world_cup'] = [slipToOddsEvent(opts.printFixture)];
-    const [statsResult, , , ctxResult] = await Promise.allSettled([
+    const [statsResult, formResult, h2hResult, ctxResult] = await Promise.allSettled([
       runStatsAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league),
       runFormAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league),
       runH2HAgent(0, opts.printFixture.homeTeam, 0, opts.printFixture.awayTeam, league),
@@ -237,6 +280,9 @@ async function buildRoundForCycle(
     ]);
     teamStats = statsResult.status === 'fulfilled' ? statsResult.value : null;
     printMatchCtx = ctxResult.status === 'fulfilled' ? ctxResult.value : null;
+    agentFormSummary = formResult.status === 'fulfilled' ? formResult.value : '';
+    agentH2HSummary = h2hResult.status === 'fulfilled' ? h2hResult.value : '';
+    agentStatsSummary = teamStats?.summary || '';
   } else {
     fixtures = await findFixturesForObjective(sportKeys, date, mandate.preferredTeams);
     const blocked = (mandate.blockedTeams || []).map((t) => t.toLowerCase());
@@ -286,6 +332,18 @@ async function buildRoundForCycle(
   const targetMultiplier = clampTarget(opts.targetMultiplier ?? derivedTarget ?? 10);
   const plan = buildRound(allCands, { riskLevel, targetMultiplier });
   const card = composeCard(plan, { authLevel: riskLevel, bankroll: cycle.currentBankroll });
+
+  // Análise qualitativa: enriquece o card com a síntese dos sub-agentes (form, h2h, stats).
+  // Só disponível no fluxo print-first (Copa/internacionais) onde os agentes são chamados.
+  if (!card.skip && plan.legs.length > 0 && (agentFormSummary || agentH2HSummary || agentStatsSummary)) {
+    const leg = plan.legs[0];
+    try {
+      card.finalAnalysis = await generateCardAnalysis(
+        { homeTeam: leg.homeTeam, awayTeam: leg.awayTeam, selection: leg.selection, marketOdd: leg.marketOdd, modelProb: leg.modelProb, ev: leg.ev, league: leg.league },
+        { formSummary: agentFormSummary, h2hSummary: agentH2HSummary, statsSummary: agentStatsSummary },
+      );
+    } catch { /* não interrompe o fluxo */ }
+  }
 
   // Cross-over com o Zé Gastão: trava o stake pela fase financeira.
   const phase = await getPhase(db, userId);

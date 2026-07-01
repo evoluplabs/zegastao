@@ -179,6 +179,7 @@ export interface ZeGuidedCard {
   needsSeal: boolean;
   seal?: string;
   reasoning: string;
+  finalAnalysis?: string;
   steps: string[];
   suggestedStake: number;
   potentialReturn: number;

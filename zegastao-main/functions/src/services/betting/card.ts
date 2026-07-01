@@ -34,6 +34,7 @@ export interface GuidedCard {
   needsSeal: boolean;
   seal?: string;
   reasoning: string;
+  finalAnalysis?: string; // análise qualitativa gerada pelos sub-agentes (form, h2h, stats)
   steps: string[];
   suggestedStake: number;
   potentialReturn: number; // lucro líquido potencial
