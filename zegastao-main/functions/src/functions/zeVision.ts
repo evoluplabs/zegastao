@@ -33,7 +33,9 @@ const ExtractSchema = z.object({
 
 // IMPORTANTE: extrai TODOS os jogos visíveis. Preserva nomes COMPLETOS com
 // acentos e diacríticos (ex: Bósnia-Herzegovina, Côte d'Ivoire, São Paulo).
-const VISION_PROMPT = `Você está lendo um print da casa de apostas Betano.
+function buildVisionPrompt(): string {
+  const year = new Date().getFullYear();
+  return `Você está lendo um print da casa de apostas Betano.
 O print pode mostrar UM jogo aberto (com muitos mercados) ou uma LISTA de jogos (só 1X2).
 Extraia TODOS os jogos visíveis e seus mercados/odds.
 
@@ -45,8 +47,9 @@ Regras CRÍTICAS — leia com atenção:
 2. SEPARAÇÃO DE JOGOS: cada par de times é um jogo separado no array "games". Nunca misture odds de jogos diferentes.
 3. "market": h2h = resultado/1X2, totals = total de gols, btts = ambas marcam, corners = escanteios, cards = cartões, shots = chutes, fouls = faltas.
 4. "odd": número decimal (ex: 1.45). Se não visível na imagem, omita o objeto de mercado.
-5. "matchDate": YYYY-MM-DD se visível, caso contrário omita o campo.
+5. "matchDate": YYYY-MM-DD. Se o print mostrar apenas dia/mês sem ano, use o ano ${year}. Se não houver data visível, omita o campo.
 6. Não invente mercados nem odds que não estão na imagem.`;
+}
 
 export interface GamePreview {
   homeTeam: string;
@@ -56,6 +59,26 @@ export interface GamePreview {
   markets: Array<{ market: string; selection: string; odd: number }>;
 }
 
+// Corrige o ano quando a Vision extrai data sem ano explícito (ex: "01/07" em print
+// do Copa do Mundo 2026 → 2025-07-01 pelo modelo, mas deve ser 2026-07-01).
+function fixYear(dateStr: string): string {
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  const curYear = new Date().getFullYear();
+  if (y < curYear && !isNaN(m) && !isNaN(d)) {
+    const candidate = new Date(curYear, m - 1, d);
+    // Aceita se o dia cai a partir de ontem (margem para jogo de hoje/amanhã)
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    if (candidate >= yesterday) {
+      return `${curYear}-${parts[1]}-${parts[2]}`;
+    }
+  }
+  return dateStr;
+}
+
 async function visionExtract(imageBase64: string, mediaType: MediaType): Promise<{ slip: ExtractedSlip; allGames: GamePreview[] }> {
   const client = new Anthropic();
   const content: Anthropic.MessageParam['content'] = [
@@ -63,7 +86,7 @@ async function visionExtract(imageBase64: string, mediaType: MediaType): Promise
       type: 'image',
       source: { type: 'base64', media_type: mediaType, data: imageBase64 },
     } as Anthropic.ImageBlockParam,
-    { type: 'text', text: VISION_PROMPT },
+    { type: 'text', text: buildVisionPrompt() },
   ];
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
@@ -84,18 +107,20 @@ async function visionExtract(imageBase64: string, mediaType: MediaType): Promise
       .map((m) => ({ market: m.market || 'h2h', selection: m.selection || 'Seleção', odd: m.odd }));
   }
 
+  function parseDate(raw: unknown): string | undefined {
+    if (typeof raw !== 'string') return undefined;
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? fixYear(raw) : undefined;
+  }
+
   const allGames: GamePreview[] = rawGames
     .filter((g) => g.homeTeam && g.awayTeam)
-    .map((g) => {
-      const rawDate = typeof g.matchDate === 'string' ? g.matchDate : undefined;
-      return {
-        homeTeam: g.homeTeam!,
-        awayTeam: g.awayTeam!,
-        league: g.league || undefined,
-        matchDate: rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : undefined,
-        markets: Array.isArray(g.markets) ? parseMarkets(g.markets) : [],
-      };
-    });
+    .map((g) => ({
+      homeTeam: g.homeTeam!,
+      awayTeam: g.awayTeam!,
+      league: g.league || undefined,
+      matchDate: parseDate(g.matchDate),
+      markets: Array.isArray(g.markets) ? parseMarkets(g.markets) : [],
+    }));
 
   // Primeiro jogo como slip principal (o que tem mais mercados ou o primeiro)
   const primary = rawGames.reduce((best, g) =>
@@ -103,13 +128,12 @@ async function visionExtract(imageBase64: string, mediaType: MediaType): Promise
     rawGames[0] || {},
   );
   const markets = Array.isArray(primary.markets) ? parseMarkets(primary.markets) : [];
-  const rawDate = typeof primary.matchDate === 'string' ? primary.matchDate : undefined;
 
   const slip: ExtractedSlip = {
     homeTeam: primary.homeTeam || undefined,
     awayTeam: primary.awayTeam || undefined,
     league: primary.league || undefined,
-    matchDate: rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : undefined,
+    matchDate: parseDate(primary.matchDate),
     markets,
     confidence: markets.length > 0 ? 0.9 : allGames.length > 0 ? 0.7 : 0.2,
   };

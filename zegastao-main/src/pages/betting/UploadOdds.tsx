@@ -83,6 +83,8 @@ export function UploadOdds({ onExtracted }: Props) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const additionalInputRef = useRef<HTMLInputElement>(null);
+  // Guardado para eventual retry com Vision sem pedir o arquivo de novo
+  const pendingImageRef = useRef<{ base64: string; mediaType: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('');
   const [result, setResult] = useState<ExtractResult | null>(null);
@@ -93,6 +95,8 @@ export function UploadOdds({ onExtracted }: Props) {
   // Seletor de jogo: quando Vision encontra múltiplos jogos num print de lista
   const [pendingGames, setPendingGames] = useState<GamePreview[]>([]);
   const [wazeExpanded, setWazeExpanded] = useState(false);
+  // Confirmação de nomes: quando OCR retorna nome truncado, usuário confirma/corrige antes de prosseguir
+  const [confirmNames, setConfirmNames] = useState<{ home: string; away: string; slip: ExtractedSlip } | null>(null);
 
   const fetchCommunity = useCallback(async () => {
     setLoadingComm(true);
@@ -127,23 +131,59 @@ export function UploadOdds({ onExtracted }: Props) {
   }
 
   async function handleFile(file: File) {
-    setBusy(true); setError(''); setResult(null); setSelected(null); setPendingGames([]);
+    setBusy(true); setError(''); setResult(null); setSelected(null); setPendingGames([]); setConfirmNames(null);
     try {
       setPhase('Comprimindo imagem…');
       const { base64, mediaType } = await prepareImage(file);
+      pendingImageRef.current = { base64, mediaType };
       setPhase('Lendo as odds (OCR)…');
       const ocrText = await tryOcr(base64);
       setPhase(ocrText ? 'Conferindo as odds…' : 'Lendo com o Zé (Vision)…');
-      let res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
-
-      // Auto-correção: se OCR retornou nome de time truncado (inicia em minúscula),
-      // chama Vision diretamente (sem ocrText → backend pula Tier 1 e vai ao Vision).
+      const res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
       const slip = res.data.slip;
+
+      // Se OCR retornou nome truncado (inicia em minúscula, ex: "ósnia"),
+      // para e pede confirmação ao usuário em vez de reprocessar silenciosamente.
       if (!nameOk(slip.homeTeam) || !nameOk(slip.awayTeam)) {
-        setPhase('OCR impreciso — refinando com Vision…');
-        res = await zeExtractOdds({ imageBase64: base64, mediaType });
+        setConfirmNames({ home: slip.homeTeam || '', away: slip.awayTeam || '', slip });
+        setBusy(false); setPhase('');
+        return;
       }
 
+      setResult(res.data);
+      setSelected('upload');
+      const games = res.data.allGames ?? [];
+      if (games.length > 1) {
+        setPendingGames(games);
+      } else {
+        onExtracted?.(slip);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não consegui ler esse print. Tenta um mais nítido.');
+    } finally {
+      setBusy(false); setPhase('');
+    }
+  }
+
+  // Usuário confirmou (ou corrigiu) os nomes → usa os mercados do OCR com nomes corrigidos
+  function handleConfirmNames(home: string, away: string) {
+    if (!confirmNames) return;
+    const correctedSlip: ExtractedSlip = { ...confirmNames.slip, homeTeam: home.trim(), awayTeam: away.trim() };
+    setResult({ slip: correctedSlip, source: 'ocr' });
+    setSelected('upload');
+    setConfirmNames(null);
+    onExtracted?.(correctedSlip);
+  }
+
+  // Usuário pediu releitura com Vision — usa a imagem salva, sem pedir de novo
+  async function handleVisionRetry() {
+    if (!pendingImageRef.current) return;
+    setConfirmNames(null);
+    setBusy(true); setError('');
+    try {
+      setPhase('Lendo com Vision…');
+      const { base64, mediaType } = pendingImageRef.current;
+      const res = await zeExtractOdds({ imageBase64: base64, mediaType });
       setResult(res.data);
       setSelected('upload');
       const games = res.data.allGames ?? [];
@@ -153,7 +193,7 @@ export function UploadOdds({ onExtracted }: Props) {
         onExtracted?.(res.data.slip);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Não consegui ler esse print. Tenta um mais nítido.');
+      setError(e instanceof Error ? e.message : 'Erro no Vision. Tenta um print mais nítido.');
     } finally {
       setBusy(false); setPhase('');
     }
@@ -263,6 +303,48 @@ export function UploadOdds({ onExtracted }: Props) {
 
         {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       </div>
+
+      {/* Confirmação de nomes — OCR pode ter cortado a primeira letra */}
+      {confirmNames && (
+        <div className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <p className="text-sm font-semibold text-amber-300">
+            ⚠️ OCR pode ter cortado os nomes — confira e corrija se necessário:
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] text-stone-400">Time da casa</label>
+              <input
+                value={confirmNames.home}
+                onChange={(e) => setConfirmNames((p) => p ? { ...p, home: e.target.value } : null)}
+                className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-500/50"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-stone-400">Time de fora</label>
+              <input
+                value={confirmNames.away}
+                onChange={(e) => setConfirmNames((p) => p ? { ...p, away: e.target.value } : null)}
+                className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-500/50"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleConfirmNames(confirmNames.home, confirmNames.away)}
+              disabled={!confirmNames.home.trim() || !confirmNames.away.trim()}
+              className="flex-1 rounded-xl bg-green-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-600 disabled:opacity-40"
+            >
+              Confirmar e analisar
+            </button>
+            <button
+              onClick={handleVisionRetry}
+              className="rounded-xl border border-stone-700 px-3 py-2 text-sm text-stone-400 transition-colors hover:border-stone-500 hover:text-stone-200"
+            >
+              Ler com Vision
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Seletor de jogo — quando Vision encontra múltiplos jogos num print de lista */}
       {pendingGames.length > 1 && (
@@ -390,13 +472,29 @@ export function UploadOdds({ onExtracted }: Props) {
   );
 }
 
+// Corrige o ano quando Vision extrai data sem ano explícito do print (ex: 2025-07-01 → 2026-07-01).
+// Segurança adicional no frontend; a correção principal está no backend (fixYear em zeVision.ts).
+function fixDateYear(dateStr: string): string {
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const [y, m, d] = parts.map(Number);
+  const curYear = new Date().getFullYear();
+  if (y < curYear && !isNaN(m) && !isNaN(d)) {
+    const candidate = new Date(curYear, m - 1, d);
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    if (candidate >= yesterday) return `${curYear}-${parts[1]}-${parts[2]}`;
+  }
+  return dateStr;
+}
+
 function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: MarketGroup[]; source: 'ocr' | 'vision' }) {
-  const isPastGame = slip.matchDate ? new Date(`${slip.matchDate}T23:59:59Z`) < new Date() : false;
+  const displayDate = slip.matchDate ? fixDateYear(slip.matchDate) : undefined;
+  const isPastGame = displayDate ? new Date(`${displayDate}T23:59:59Z`) < new Date(Date.now() - 24 * 60 * 60 * 1000) : false;
   return (
     <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
       {isPastGame && (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300">
-          ⚠️ Jogo já realizado ({slip.matchDate}) — você pode ver as odds mas não é possível analisar.
+          ⚠️ Jogo já realizado ({displayDate}) — você pode ver as odds mas não é possível analisar.
         </p>
       )}
       {/* Header do jogo */}
@@ -406,7 +504,7 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
             {slip.homeTeam || 'Jogo'} {slip.awayTeam ? `x ${slip.awayTeam}` : ''}
           </p>
           {slip.league && <p className="text-[11px] text-stone-500">{slip.league}</p>}
-          {slip.matchDate && <p className="text-[11px] text-stone-500">{new Date(slip.matchDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</p>}
+          {displayDate && <p className="text-[11px] text-stone-500">{new Date(displayDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</p>}
         </div>
         <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
           source === 'ocr' ? 'bg-green-500/15 text-green-300' : 'bg-sky-500/15 text-sky-300')}>
