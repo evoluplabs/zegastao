@@ -3,7 +3,7 @@ import { httpsCallable } from 'firebase/functions';
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { functionsUsEast, db } from '@/firebase';
 import { prepareImage, tryOcr } from '@/lib/imagePrep';
-import { Camera, Loader2, Sparkles, CheckCircle2, Users, RefreshCw, ChevronRight } from 'lucide-react';
+import { Camera, FolderOpen, PlusCircle, Loader2, Sparkles, CheckCircle2, Users, RefreshCw, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ExtractedMarket { market: string; selection: string; odd: number; }
@@ -63,8 +63,16 @@ interface Props {
   onExtracted?: (slip: ExtractedSlip) => void;
 }
 
+function mergeMarkets(base: ExtractedMarket[], incoming: ExtractedMarket[]): ExtractedMarket[] {
+  const key = (m: ExtractedMarket) => `${m.market}:${m.selection.toLowerCase()}`;
+  const seen = new Set(base.map(key));
+  return [...base, ...incoming.filter((m) => !seen.has(key(m)))];
+}
+
 export function UploadOdds({ onExtracted }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const additionalInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('');
   const [result, setResult] = useState<ExtractResult | null>(null);
@@ -119,6 +127,29 @@ export function UploadOdds({ onExtracted }: Props) {
     }
   }
 
+  async function handleAdditionalFile(file: File) {
+    setBusy(true); setError('');
+    try {
+      setPhase('Lendo mercados adicionais…');
+      const { base64, mediaType } = await prepareImage(file);
+      const ocrText = await tryOcr(base64);
+      setPhase('Extraindo com o Zé…');
+      const res = await zeExtractOdds({ ocrText, imageBase64: base64, mediaType });
+      const newMarkets = res.data.slip.markets;
+      setResult((prev) => {
+        if (!prev) return null;
+        const merged = mergeMarkets(prev.slip.markets, newMarkets);
+        const updatedSlip = { ...prev.slip, markets: merged };
+        onExtracted?.(updatedSlip);
+        return { ...prev, slip: updatedSlip };
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não consegui ler esse print adicional.');
+    } finally {
+      setBusy(false); setPhase('');
+    }
+  }
+
   function pickGame(game: GamePreview) {
     setPendingGames([]);
     const slip: ExtractedSlip = {
@@ -147,25 +178,56 @@ export function UploadOdds({ onExtracted }: Props) {
       <div className="space-y-3">
         <div>
           <h3 className="text-base font-bold text-stone-100">📸 Manda o print da Betano</h3>
-          <p className="text-xs text-stone-400">O Zé lê todas as odds do print — de graça via OCR, Vision só no fallback.</p>
+          <p className="text-xs text-stone-400">
+            Para mais mercados (escanteios, cartões, gols), abra o jogo específico na Betano e tire um print da página do jogo — não só da lista.
+          </p>
         </div>
 
+        {/* Camera input (mobile: opens camera directly) */}
         <input
-          ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden"
+          ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
         />
+        {/* Gallery/files input (no capture — shows file picker + gallery on mobile) */}
+        <input
+          ref={galleryInputRef} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
+        />
+        {/* Additional markets input */}
+        <input
+          ref={additionalInputRef} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAdditionalFile(f); e.target.value = ''; }}
+        />
 
-        <button
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-          className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-6 font-semibold transition-colors disabled:opacity-60',
-            result ? 'border-stone-700 bg-stone-800/40 text-stone-400 text-sm py-4' : 'border-green-500/40 bg-green-500/5 text-green-300'
-          )}
-        >
-          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-          {busy ? (phase || 'Lendo…') : result ? 'Printar outro jogo' : 'Escolher / tirar foto'}
-        </button>
+        {busy ? (
+          <div className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-700 bg-stone-800/40 px-4 py-6 text-sm font-semibold text-stone-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            {phase || 'Lendo…'}
+          </div>
+        ) : (
+          <div className={cn('grid gap-2', result ? 'grid-cols-2' : 'grid-cols-2')}>
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-5 text-sm font-semibold transition-colors',
+                result ? 'border-stone-700 bg-stone-800/40 text-stone-400' : 'border-green-500/40 bg-green-500/5 text-green-300'
+              )}
+            >
+              <Camera className="h-4 w-4" />
+              {result ? 'Nova câmera' : 'Câmera'}
+            </button>
+            <button
+              onClick={() => galleryInputRef.current?.click()}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-5 text-sm font-semibold transition-colors',
+                result ? 'border-stone-700 bg-stone-800/40 text-stone-400' : 'border-green-500/40 bg-green-500/5 text-green-300'
+              )}
+            >
+              <FolderOpen className="h-4 w-4" />
+              {result ? 'Nova galeria' : 'Galeria'}
+            </button>
+          </div>
+        )}
 
         {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       </div>
@@ -209,7 +271,17 @@ export function UploadOdds({ onExtracted }: Props) {
 
       {/* Resultado do upload */}
       {result && selected === 'upload' && pendingGames.length === 0 && (
-        <OddsCard slip={result.slip} groups={groups} source={result.source} />
+        <>
+          <OddsCard slip={result.slip} groups={groups} source={result.source} />
+          <button
+            onClick={() => additionalInputRef.current?.click()}
+            disabled={busy}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-stone-700 bg-stone-900/40 px-4 py-3 text-sm text-stone-400 hover:border-green-500/40 hover:text-green-300 transition-colors disabled:opacity-50"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Adicionar mais mercados (escanteios, cartões…)
+          </button>
+        </>
       )}
 
       {/* Waze das Odds — feed da comunidade */}
