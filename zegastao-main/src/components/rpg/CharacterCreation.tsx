@@ -5,6 +5,7 @@ import {
   getClass, getAvatar, getSpecies,
   type CharacterClassId,
 } from '@/lib/rpg/character';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 
 const ACCENT_RING: Record<string, string> = {
   green: 'border-primary ring-primary/30',
@@ -25,6 +26,8 @@ export interface CharacterDraft {
   avatarId: string;
   companionSpeciesId: string;
   companionName: string;
+  companionGoalName: string;
+  companionGoalAmount: number;
 }
 
 interface Props {
@@ -198,6 +201,25 @@ export function CharacterCreation({ value, onChange }: Props) {
               placeholder={species.suggestedName}
               maxLength={18}
               className="w-full rounded-xl border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/50"
+            />
+          </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
+            <p className="text-xs font-semibold text-primary">Primeira meta do seu companion 🎯</p>
+            <p className="text-[11px] text-muted-foreground">Seu companion cresce conforme você guardar dinheiro nessa meta.</p>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Nome da meta</label>
+              <input
+                value={value.companionGoalName}
+                onChange={(e) => set({ companionGoalName: e.target.value })}
+                placeholder="Reserva de emergência"
+                maxLength={40}
+                className="w-full rounded-xl border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/50"
+              />
+            </div>
+            <CurrencyInput
+              label="Valor da meta (R$)"
+              value={value.companionGoalAmount}
+              onChange={(v) => set({ companionGoalAmount: v })}
             />
           </div>
         </div>

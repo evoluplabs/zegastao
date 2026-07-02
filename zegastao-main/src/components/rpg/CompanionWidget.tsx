@@ -7,6 +7,8 @@ import {
 interface Props {
   /** HP financeiro 0–100. */
   hp: number;
+  /** Progresso da caixinha ativa 0–100. Omitir para esconder a barra. */
+  savingsProgress?: number;
   /** compact = versão pequena (header/sidebar). */
   variant?: 'full' | 'compact';
   className?: string;
@@ -17,7 +19,7 @@ interface Props {
  * sobra dinheiro, preocupado quando aperta. É o "cuidar do bichinho" amarrado
  * à saúde financeira real do usuário.
  */
-export function CompanionWidget({ hp, variant = 'full', className }: Props) {
+export function CompanionWidget({ hp, savingsProgress, variant = 'full', className }: Props) {
   const profile = useStore((s) => s.profile);
   const species = getSpecies(profile?.companionSpeciesId);
   const companionName = profile?.companionName?.trim() || species.suggestedName;
@@ -75,6 +77,18 @@ export function CompanionWidget({ hp, variant = 'full', className }: Props) {
               <div className={cn('stat-bar-fill', hpColor)} style={{ width: `${hp}%` }} />
             </div>
           </div>
+
+          {savingsProgress !== undefined && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <span className="text-muted-foreground">🎯 Meta</span>
+                <span className="font-bold text-primary">{savingsProgress}%</span>
+              </div>
+              <div className="stat-bar h-2">
+                <div className="stat-bar-fill bg-primary" style={{ width: `${savingsProgress}%` }} />
+              </div>
+            </div>
+          )}
 
           <p className="text-xs text-muted-foreground mt-2 leading-snug">{state.line}</p>
         </div>

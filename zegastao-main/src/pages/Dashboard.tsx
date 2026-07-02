@@ -239,6 +239,13 @@ export function Dashboard() {
 
   const companionHP = hpFinanceiro(actualIncome || income, expenses);
 
+  const activeCaixinha = caixinhas.find(
+    (c) => c.id === profile?.companionCaixinhaId && c.status === 'active',
+  );
+  const savingsProgress = activeCaixinha
+    ? Math.min(100, Math.round((activeCaixinha.totalSaved / activeCaixinha.targetAmount) * 100))
+    : undefined;
+
   return (
     <>
       {/* Tour guiado pós-onboarding (overlay) */}
@@ -253,7 +260,7 @@ export function Dashboard() {
 
         {/* Companion — reage ao HP financeiro */}
         <div data-tour="companion">
-          <CompanionWidget hp={companionHP} />
+          <CompanionWidget hp={companionHP} savingsProgress={savingsProgress} />
         </div>
 
         {/* Boas-vindas pós-onboarding */}

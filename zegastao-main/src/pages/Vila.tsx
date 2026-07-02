@@ -20,14 +20,14 @@ import { useState } from 'react';
 
 type VilaTab = 'vila' | 'fazenda' | 'aliados' | 'ranking';
 
-// Companions desbloqueáveis por XP (extra além do escolhido no onboarding)
-const COMPANION_UNLOCKS: { speciesId: string; requiredXP: number; label: string }[] = [
-  { speciesId: 'dragon',  requiredXP: 0,    label: 'Inicial' },
-  { speciesId: 'fox',     requiredXP: 200,  label: '200 XP' },
-  { speciesId: 'owl',     requiredXP: 500,  label: '500 XP' },
-  { speciesId: 'cat',     requiredXP: 1000, label: '1.000 XP' },
-  { speciesId: 'dog',     requiredXP: 2000, label: '2.000 XP' },
-  { speciesId: 'chick',   requiredXP: 5000, label: '5.000 XP' },
+// Companions desbloqueáveis por metas de caixinha concluídas
+const COMPANION_UNLOCKS: { speciesId: string; requiredCaixinhas: number; label: string }[] = [
+  { speciesId: 'dragon',  requiredCaixinhas: 0, label: 'Inicial' },
+  { speciesId: 'fox',     requiredCaixinhas: 1, label: '1 meta concluída' },
+  { speciesId: 'owl',     requiredCaixinhas: 2, label: '2 metas concluídas' },
+  { speciesId: 'cat',     requiredCaixinhas: 3, label: '3 metas concluídas' },
+  { speciesId: 'dog',     requiredCaixinhas: 4, label: '4 metas concluídas' },
+  { speciesId: 'chick',   requiredCaixinhas: 5, label: '5 metas concluídas' },
 ];
 
 function CompanionUnlockPanel() {
@@ -35,6 +35,7 @@ function CompanionUnlockPanel() {
   const setStoreProfile = useStore((s) => s.setProfile);
   const xp = profile?.xp ?? 0;
   const level = levelFromXP(xp);
+  const completedCaixinhas = profile?.completedCaixinhasCount ?? 0;
   const currentSpeciesId = profile?.companionSpeciesId ?? 'dragon';
 
   // Equipa um companion desbloqueado: grava no perfil (Firestore + store).
@@ -51,16 +52,16 @@ function CompanionUnlockPanel() {
         <span className="text-xl">🥚</span>
         <div>
           <p className="font-display font-bold text-sm">Companions</p>
-          <p className="text-xs text-muted-foreground">Toque para equipar — desbloqueie mais por XP</p>
+          <p className="text-xs text-muted-foreground">Toque para equipar — desbloqueie concluindo metas</p>
         </div>
         <div className="ml-auto">
           <p className="text-xs font-bold text-gold">{xp.toLocaleString('pt-BR')} XP · Lv {level}</p>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2 p-3">
-        {COMPANION_UNLOCKS.map(({ speciesId, requiredXP, label }) => {
+        {COMPANION_UNLOCKS.map(({ speciesId, requiredCaixinhas, label }) => {
           const species = getSpecies(speciesId);
-          const unlocked = xp >= requiredXP;
+          const unlocked = completedCaixinhas >= requiredCaixinhas;
           const isActive = speciesId === currentSpeciesId;
           return (
             <button

@@ -8,7 +8,7 @@ import { usePartnerCaixinhas } from '@/hooks/usePartnerCaixinhas';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSharedFinances } from '@/hooks/useSharedFinances';
 import { useStore } from '@/store/useStore';
-import { addUserDoc, deleteUserDoc, updateUserDoc, setUserDoc } from '@/lib/firestore';
+import { addUserDoc, deleteUserDoc, updateUserDoc, setUserDoc, setProfile } from '@/lib/firestore';
 import { useToast } from '@/components/ui/Toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -116,6 +116,16 @@ function CaixinhaDetail({
           name: 'Primeira caixinha concluída',
           achievedAt: new Date(),
           celebrationShown: false,
+        });
+      } catch {
+        // não-crítico
+      }
+      // Incrementar contador de caixinhas concluídas e desligar caixinha do companion
+      try {
+        const prevCount = profile?.completedCaixinhasCount ?? 0;
+        await setProfile({
+          completedCaixinhasCount: prevCount + 1,
+          ...(profile?.companionCaixinhaId === caixinha.id ? { companionCaixinhaId: null } : {}),
         });
       } catch {
         // não-crítico

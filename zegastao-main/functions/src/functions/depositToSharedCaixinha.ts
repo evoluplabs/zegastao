@@ -56,6 +56,19 @@ export const depositToSharedCaixinha = onCall(
       ],
     });
 
+    if (completed) {
+      const ownerProfileRef = db.collection('users').doc(ownerUid).collection('profile').doc('main');
+      const ownerProfile = await ownerProfileRef.get();
+      if (ownerProfile.exists) {
+        const prevCount = (ownerProfile.data()?.completedCaixinhasCount as number) ?? 0;
+        const update: Record<string, unknown> = { completedCaixinhasCount: prevCount + 1 };
+        if (ownerProfile.data()?.companionCaixinhaId === caixinhaId) {
+          update.companionCaixinhaId = null;
+        }
+        await ownerProfileRef.update(update);
+      }
+    }
+
     return { ok: true, totalSaved: newTotal, completed };
   }
 );

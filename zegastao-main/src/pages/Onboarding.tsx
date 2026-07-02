@@ -12,6 +12,7 @@ import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { track, Events } from '@/lib/analytics';
 import { CharacterCreation, type CharacterDraft } from '@/components/rpg/CharacterCreation';
+import { getSpecies } from '@/lib/rpg/character';
 import type { AccountType } from '@/types';
 
 const SKILL_CATEGORIES = [
@@ -83,7 +84,9 @@ export function Onboarding() {
     classId: 'guardiao',
     avatarId: 'mage',
     companionSpeciesId: 'dragon',
-    companionName: 'Fagulha',
+    companionName: '',
+    companionGoalName: 'Reserva de emergência',
+    companionGoalAmount: 0,
   });
   const name = character.name;
   const [income, setIncome] = useState(0);
@@ -136,7 +139,7 @@ export function Onboarding() {
         characterClass: character.classId,
         avatarId: character.avatarId,
         companionSpeciesId: character.companionSpeciesId,
-        companionName: character.companionName.trim() || 'Fagulha',
+        companionName: character.companionName.trim() || getSpecies(character.companionSpeciesId)?.suggestedName || 'Fagulha',
         tourDone: false,
       });
 
@@ -158,7 +161,29 @@ export function Onboarding() {
         });
       }
 
-      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false, characterClass: character.classId, avatarId: character.avatarId, companionSpeciesId: character.companionSpeciesId, companionName: character.companionName.trim() || 'Fagulha', tourDone: false });
+      // Criar primeira caixinha ligada ao companion
+      let companionCaixinhaId: string | undefined;
+      if (character.companionGoalAmount > 0) {
+        const today = new Date();
+        const sixMonthsFromNow = new Date(today);
+        sixMonthsFromNow.setDate(today.getDate() + 180);
+        const companionName = character.companionName.trim() || getSpecies(character.companionSpeciesId)?.suggestedName || 'Fagulha';
+        const caixinhaRef = await addUserDoc('caixinhas', {
+          name: character.companionGoalName.trim() || `Meta do ${companionName}`,
+          emoji: getSpecies(character.companionSpeciesId)?.emoji ?? '🐉',
+          targetAmount: character.companionGoalAmount,
+          targetDate: sixMonthsFromNow.toISOString().slice(0, 10),
+          startDate: today.toISOString().slice(0, 10),
+          totalSaved: 0,
+          deposits: [],
+          status: 'active',
+          frequency: 'daily',
+        });
+        companionCaixinhaId = caixinhaRef.id;
+        await setProfile({ companionCaixinhaId });
+      }
+
+      setStoreProfile({ ...profile, name, monthlyIncome: income, skills, investmentGoals: dreams, onboardingDone: true, setupWizardDone: false, characterClass: character.classId, avatarId: character.avatarId, companionSpeciesId: character.companionSpeciesId, companionName: character.companionName.trim() || getSpecies(character.companionSpeciesId)?.suggestedName || 'Fagulha', tourDone: false, ...(companionCaixinhaId ? { companionCaixinhaId } : {}) });
       track(Events.ONBOARDING_COMPLETED, { skills: skills.length, dreams: dreams.length, accounts: accounts.length });
       if (user) registerForPushNotifications(user.uid).catch(() => {});
       navigate('/dashboard?welcome=1');
