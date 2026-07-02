@@ -18,8 +18,9 @@ import { ActionSheet } from '@/components/ActionSheet';
 import { DebtWizard } from '@/components/flows/DebtWizard';
 import { GoalWizard } from '@/components/flows/GoalWizard';
 import { TransactionWizard } from '@/components/flows/TransactionWizard';
+import { useUIMode } from '@/hooks/useUIMode';
 
-const NAV = [
+const NAV_RPG = [
   { to: '/dashboard', label: 'Castelo', icon: LayoutDashboard, end: true },
   { to: '/carteira', label: 'Arsenal', icon: Wallet },
   null, // FAB placeholder
@@ -27,12 +28,23 @@ const NAV = [
   { to: '/profile', label: 'Ficha', icon: UserCircle },
 ];
 
+const NAV_CLASSIC = [
+  { to: '/dashboard', label: 'Início', icon: LayoutDashboard, end: true },
+  { to: '/carteira', label: 'Carteira', icon: Wallet },
+  null, // FAB placeholder
+  { to: '/inventario', label: 'Patrimônio', icon: Package },
+  { to: '/profile', label: 'Perfil', icon: UserCircle },
+];
+
 export function MobileNav() {
   const navigate = useNavigate();
+  const { isClassic } = useUIMode();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [openDebt, setOpenDebt] = useState(false);
   const [openGoal, setOpenGoal] = useState(false);
   const [openTx, setOpenTx] = useState(false);
+
+  const NAV = isClassic ? NAV_CLASSIC : NAV_RPG;
 
   const actions = [
     {
@@ -67,8 +79,8 @@ export function MobileNav() {
     },
     {
       icon: <Package className="h-5 w-5" />,
-      label: 'Inventário',
-      description: 'Itens para vender → missões',
+      label: isClassic ? 'Patrimônio' : 'Inventário',
+      description: isClassic ? 'Seus ativos e itens' : 'Itens para vender → missões',
       onClick: () => navigate('/inventario'),
     },
   ];

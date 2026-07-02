@@ -23,6 +23,7 @@ import { Logo } from '@/components/ui/Logo';
 import { FEATURES } from '@/lib/features';
 import { useToast } from '@/components/ui/Toast';
 import { CharacterPanel } from '@/components/CharacterPanel';
+import { useUIMode } from '@/hooks/useUIMode';
 
 const BLOCKED_BETTING_PHASES = ['survival', 'reorganizing'];
 
@@ -31,6 +32,7 @@ export function Sidebar() {
   const referral = useReferral();
   const { profile } = useStore();
   const { toast } = useToast();
+  const { isClassic } = useUIMode();
 
   const phase = profile?.financialPhase;
   // Em modo de teste (VITE_FEATURE_ZE_APOSTADOR=true), mostra para qualquer fase.
@@ -41,7 +43,12 @@ export function Sidebar() {
   const irMonth = new Date().getMonth() + 1;
   const isIRSeason = irMonth >= 1 && irMonth <= 4;
 
-  const NAV = [
+  const NAV = isClassic ? [
+    { to: '/dashboard', label: 'Início', sub: 'Visão geral das finanças', icon: LayoutDashboard, end: true },
+    { to: '/carteira', label: 'Carteira', sub: 'Contas, dívidas e metas', icon: CreditCard },
+    { to: '/transactions', label: 'Transações', sub: 'Histórico e extratos', icon: Receipt },
+    { to: '/copilot', label: 'Copiloto IA', sub: 'Análise e conselho', icon: MessageCircle },
+  ] : [
     { to: '/dashboard', label: 'Castelo', sub: 'Visão geral do reino', icon: LayoutDashboard, end: true },
     { to: '/carteira', label: 'Arsenal', sub: 'Contas, bosses, dívidas', icon: CreditCard },
     { to: '/transactions', label: 'Livro de Ouro', sub: 'Histórico e extratos', icon: Receipt },
@@ -56,10 +63,12 @@ export function Sidebar() {
         <Logo size="sm" />
       </div>
 
-      {/* Character panel compact */}
-      <div className="border-b">
-        <CharacterPanel compact />
-      </div>
+      {/* Character panel compact — RPG only */}
+      {!isClassic && (
+        <div className="border-b">
+          <CharacterPanel compact />
+        </div>
+      )}
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV.map(({ to, label, sub, icon: Icon, end }) => (
@@ -97,8 +106,8 @@ export function Sidebar() {
         >
           <PiggyBank className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-sm font-medium leading-tight">Cofre da Guilda</p>
-            <p className="text-[10px] leading-tight opacity-60">Baú com meta diária</p>
+            <p className="text-sm font-medium leading-tight">{isClassic ? 'Caixinhas' : 'Cofre da Guilda'}</p>
+            <p className="text-[10px] leading-tight opacity-60">{isClassic ? 'Metas de poupança' : 'Baú com meta diária'}</p>
           </div>
         </NavLink>
 
@@ -115,8 +124,8 @@ export function Sidebar() {
         >
           <Package className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-sm font-medium leading-tight">Inventário</p>
-            <p className="text-[10px] leading-tight opacity-60">Itens → Missões de venda</p>
+            <p className="text-sm font-medium leading-tight">{isClassic ? 'Patrimônio' : 'Inventário'}</p>
+            <p className="text-[10px] leading-tight opacity-60">{isClassic ? 'Seus ativos e itens' : 'Itens → Missões de venda'}</p>
           </div>
         </NavLink>
 

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { CharacterPanel } from '@/components/CharacterPanel';
 import { CompanionWidget } from '@/components/rpg/CompanionWidget';
+import { useUIMode } from '@/hooks/useUIMode';
 import { GuidedTour } from '@/components/rpg/GuidedTour';
 import { hpFinanceiro, hpStatus } from '@/lib/xp';
 import { useStore } from '@/store/useStore';
@@ -62,6 +63,7 @@ function SkeletonHero() {
 
 export function Dashboard() {
   const profile = useStore((s) => s.profile);
+  const { isRPG } = useUIMode();
   const { data: allTransactions, loading: txLoading } = useTransactions(false);
   const { data: debts } = useDebts();
   const { data: goals } = useGoals();
@@ -253,15 +255,41 @@ export function Dashboard() {
 
       <div className="space-y-4">
 
-        {/* Character Panel — RPG identity */}
-        <div data-tour="character">
-          <CharacterPanel />
-        </div>
+        {isRPG ? (
+          <>
+            {/* Character Panel — RPG identity */}
+            <div data-tour="character">
+              <CharacterPanel />
+            </div>
 
-        {/* Companion — reage ao HP financeiro */}
-        <div data-tour="companion">
-          <CompanionWidget hp={companionHP} savingsProgress={savingsProgress} />
-        </div>
+            {/* Companion — reage ao HP financeiro */}
+            <div data-tour="companion">
+              <CompanionWidget hp={companionHP} savingsProgress={savingsProgress} />
+            </div>
+          </>
+        ) : (
+          /* Classic header */
+          <div className="rounded-2xl border bg-card p-4 space-y-3">
+            <p className="text-lg font-bold text-foreground">
+              Olá{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}! 👋
+            </p>
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-muted-foreground">Saúde Financeira</span>
+                <span className="font-bold text-foreground">{companionHP}%</span>
+              </div>
+              <div className="h-2.5 w-full rounded-full overflow-hidden bg-secondary">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    companionHP >= 55 ? 'bg-primary' : companionHP >= 30 ? 'bg-gold' : 'bg-boss'
+                  )}
+                  style={{ width: `${companionHP}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Boas-vindas pós-onboarding */}
         {showWelcome && (

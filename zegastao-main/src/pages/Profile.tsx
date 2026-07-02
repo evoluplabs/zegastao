@@ -10,6 +10,7 @@ import { CharacterPanel } from '@/components/CharacterPanel';
 import { ProfessionPanel } from '@/components/ProfessionPanel';
 import { FEATURES } from '@/lib/features';
 import { useTheme } from '@/hooks/useTheme';
+import { useUIMode } from '@/hooks/useUIMode';
 import { useSharedFinances } from '@/hooks/useSharedFinances';
 import type { AppTheme } from '@/types';
 import { useStore } from '@/store/useStore';
@@ -100,6 +101,7 @@ export function Profile() {
   const [showContext, setShowContext] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { uiMode, setUIMode } = useUIMode();
   const { isLinked, loading: partnerLoading, error: partnerError, linkPartner, unlinkPartner } = useSharedFinances();
   const [partnerEmail, setPartnerEmail] = useState('');
   const [partnerName, setPartnerName] = useState<string | null>(null);
@@ -143,14 +145,18 @@ export function Profile() {
   return (
     <div className="space-y-5 max-w-lg mx-auto">
 
-      {/* Ficha do Personagem — CharacterPanel */}
-      <CharacterPanel />
+      {/* Ficha do Personagem — CharacterPanel (RPG only) */}
+      {uiMode === 'rpg' && (
+        <>
+          <CharacterPanel />
 
-      {/* Profissões */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">⚔️ Profissões</p>
-        <ProfessionPanel professionXP={profile?.professionXP} />
-      </div>
+          {/* Profissões */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">⚔️ Profissões</p>
+            <ProfessionPanel professionXP={profile?.professionXP} />
+          </div>
+        </>
+      )}
 
       {/* Inventário link */}
       <Link
@@ -347,6 +353,37 @@ export function Profile() {
               >
                 <Icon className="h-4 w-4" />
                 {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Modo de Interface */}
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Modo de Interface</p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-sm font-medium mb-3">Experiência do aplicativo</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: 'rpg', label: 'Aventureiro', emoji: '⚔️', desc: 'MMORPG' },
+              { value: 'classic', label: 'Clássico', emoji: '📊', desc: 'Financeiro' },
+            ] as const).map(({ value, label, emoji, desc }) => (
+              <button
+                key={value}
+                onClick={() => setUIMode(value)}
+                className={cn(
+                  'flex flex-col items-center gap-1 rounded-xl border py-3 text-xs font-medium transition-colors',
+                  uiMode === value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                )}
+              >
+                <span className="text-lg">{emoji}</span>
+                <span className="font-semibold">{label}</span>
+                <span className="text-[10px] opacity-70">{desc}</span>
               </button>
             ))}
           </div>

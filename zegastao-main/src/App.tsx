@@ -92,6 +92,12 @@ import { Caixinha } from '@/pages/Caixinha';
 import { Vila } from '@/pages/Vila';
 import { AdminRoute } from '@/components/AdminRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useUIMode } from '@/hooks/useUIMode';
+
+function RPGRoute({ element }: { element: JSX.Element }) {
+  const { isClassic } = useUIMode();
+  return isClassic ? <Navigate to="/dashboard" replace /> : element;
+}
 
 export default function App() {
   useAuthListener();
@@ -128,7 +134,7 @@ export default function App() {
           <Route path="/financas" element={<Navigate to="/carteira" replace />} />
           <Route path="/transactions" element={<ErrorBoundary><Transactions /></ErrorBoundary>} />
           <Route path="/copilot" element={<ErrorBoundary><Copilot /></ErrorBoundary>} />
-          <Route path="/journey" element={<ErrorBoundary><Journey /></ErrorBoundary>} />
+          <Route path="/journey" element={<RPGRoute element={<ErrorBoundary><Journey /></ErrorBoundary>} />} />
 
           {/* Rotas legadas → redirects para nova arquitetura */}
           <Route path="/debts" element={<Navigate to="/carteira" replace />} />
@@ -144,7 +150,7 @@ export default function App() {
           <Route path="/referrals" element={<ErrorBoundary><Referrals /></ErrorBoundary>} />
           <Route path="/caixinha" element={<ErrorBoundary><Caixinha /></ErrorBoundary>} />
           <Route path="/inventario" element={<ErrorBoundary><Inventory /></ErrorBoundary>} />
-          <Route path="/vila" element={<ErrorBoundary><Vila /></ErrorBoundary>} />
+          <Route path="/vila" element={<RPGRoute element={<ErrorBoundary><Vila /></ErrorBoundary>} />} />
           {FEATURES.ZE_APOSTADOR && <Route path="/apostas" element={<ErrorBoundary><Betting /></ErrorBoundary>} />}
         </Route>
       </Routes>

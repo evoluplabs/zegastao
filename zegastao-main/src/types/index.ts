@@ -421,8 +421,9 @@ export interface Profile {
   avatarId?: string;
   companionSpeciesId?: string;
   companionName?: string;
-  companionCaixinhaId?: string;      // ID da caixinha ativa ligada ao companion atual
-  completedCaixinhasCount?: number;  // quantas caixinhas foram concluídas
+  companionCaixinhaId?: string;
+  completedCaixinhasCount?: number;
+  uiMode?: 'rpg' | 'classic';
   tourDone?: boolean;
   // Daily check-in / streak
   lastCheckIn?: string;   // YYYY-MM-DD
