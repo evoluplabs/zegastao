@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus, Package, Trash2, CheckCircle2, ArrowRight,
-  Store, X, Copy, Check, Phone, Zap, ShoppingBag,
+  Store, X, Copy, Check, Phone, Zap, ShoppingBag, MessageCircle,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useUserCollection } from '@/hooks/useCollection';
