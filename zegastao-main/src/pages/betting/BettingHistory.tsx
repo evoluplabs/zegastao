@@ -84,26 +84,26 @@ export function BettingHistory() {
   return (
     <div className="space-y-5">
       {/* Resumo */}
-      <div className="rounded-2xl border border-stone-800 bg-stone-900/70 p-5">
+      <div className="rounded-2xl border border-border bg-card/70 p-5">
         {settled.length === 0 ? (
-          <p className="text-center text-sm text-stone-400">
+          <p className="text-center text-sm text-muted-foreground">
             Ainda sem apostas avaliadas. Registre o resultado das suas apostas para alimentar a inteligência das próximas análises.
           </p>
         ) : (
           <>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-stone-400">Taxa de acerto geral</p>
+                <p className="text-xs text-muted-foreground">Taxa de acerto geral</p>
                 <p className={cn('text-4xl font-extrabold', hitRateColor(hitRate))}>{hitRate}%</p>
-                <p className="text-xs text-stone-500">{hits} de {settled.length} apostas</p>
+                <p className="text-xs text-muted-foreground/70">{hits} de {settled.length} apostas</p>
               </div>
               {bestMarket && (
                 <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-right">
                   <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-green-400">
                     <TrendingUp className="h-3 w-3" /> Melhor mercado
                   </p>
-                  <p className="font-bold text-stone-100">{BETTING_MARKET_LABELS[bestMarket.market] || bestMarket.market}</p>
-                  <p className="text-xs text-stone-400">{Math.round((bestMarket.hit / bestMarket.total) * 100)}% de acerto</p>
+                  <p className="font-bold text-foreground">{BETTING_MARKET_LABELS[bestMarket.market] || bestMarket.market}</p>
+                  <p className="text-xs text-muted-foreground">{Math.round((bestMarket.hit / bestMarket.total) * 100)}% de acerto</p>
                 </div>
               )}
             </div>
@@ -115,10 +115,10 @@ export function BettingHistory() {
                 return (
                   <div key={m.market} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-stone-300">{BETTING_MARKET_LABELS[m.market] || m.market}</span>
-                      <span className="text-stone-400">{rate}% ({m.hit}/{m.total})</span>
+                      <span className="text-foreground/80">{BETTING_MARKET_LABELS[m.market] || m.market}</span>
+                      <span className="text-muted-foreground">{rate}% ({m.hit}/{m.total})</span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-800">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                       <div className={cn('h-full rounded-full', rate >= 60 ? 'bg-green-500' : rate >= 40 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${rate}%` }} />
                     </div>
                   </div>
@@ -127,7 +127,7 @@ export function BettingHistory() {
             </div>
 
             {bestMarket && (
-              <p className="mt-4 rounded-lg bg-stone-800/60 px-3 py-2 text-xs text-stone-400">
+              <p className="mt-4 rounded-lg bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
                 💡 Seu melhor mercado é <span className="font-semibold text-green-400">{BETTING_MARKET_LABELS[bestMarket.market] || bestMarket.market}</span> — os agentes priorizam esse padrão nas próximas análises.
               </p>
             )}
@@ -137,16 +137,16 @@ export function BettingHistory() {
 
       {/* Lista de apostas */}
       <div className="space-y-2">
-        <h3 className="px-1 text-sm font-semibold text-stone-300">Suas apostas</h3>
+        <h3 className="px-1 text-sm font-semibold text-foreground/80">Suas apostas</h3>
         {bets.length === 0 && (
-          <p className="px-1 text-sm text-stone-500">Nenhuma aposta registrada ainda.</p>
+          <p className="px-1 text-sm text-muted-foreground/70">Nenhuma aposta registrada ainda.</p>
         )}
         {bets.map((bet) => (
-          <div key={bet.id} className="rounded-xl border border-stone-800 bg-stone-900/60 p-3">
+          <div key={bet.id} className="rounded-xl border border-border bg-card/60 p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-stone-200">{bet.selection}</p>
-                <p className="text-xs text-stone-500">
+                <p className="text-sm font-medium text-foreground/90">{bet.selection}</p>
+                <p className="text-xs text-muted-foreground/70">
                   {BETTING_MARKET_LABELS[bet.market] || bet.market} · @{bet.odd} · {formatBRL(bet.amount)}
                 </p>
               </div>
@@ -168,14 +168,14 @@ export function BettingHistory() {
             </div>
 
             {bet.outcome === 'pending' && (
-              <div className="mt-3 flex items-center gap-2 border-t border-stone-800 pt-3">
+              <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
                 <input
                   type="number"
                   inputMode="decimal"
                   placeholder="Retorno R$"
                   value={profitInputs[bet.id] ?? ''}
                   onChange={(e) => setProfitInputs((p) => ({ ...p, [bet.id]: e.target.value }))}
-                  className="h-9 w-28 rounded-lg border border-stone-700 bg-stone-800 px-2 text-sm text-stone-100 placeholder:text-stone-600 focus:border-green-400 focus:outline-none"
+                  className="h-9 w-28 rounded-lg border border-border bg-secondary px-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-green-400 focus:outline-none"
                 />
                 <button
                   disabled={recordingId === bet.id}

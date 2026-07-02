@@ -16,13 +16,13 @@ export function BettingResultsGrid({ result }: Props) {
   return (
     <div className="space-y-5">
       {/* Resumo de orçamento */}
-      <div className="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+      <div className="rounded-2xl border border-border bg-card/70 p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="text-stone-400">Orçamento da sessão</span>
-          <span className="font-bold text-stone-100">{formatBRL(sessionBudget)}</span>
+          <span className="text-muted-foreground">Orçamento da sessão</span>
+          <span className="font-bold text-foreground">{formatBRL(sessionBudget)}</span>
         </div>
         {/* Barra segmentada */}
-        <div className="flex h-3 w-full overflow-hidden rounded-full bg-stone-800">
+        <div className="flex h-3 w-full overflow-hidden rounded-full bg-secondary">
           {allocated.map((a, i) => (
             <div
               key={a.matchId}
@@ -32,7 +32,7 @@ export function BettingResultsGrid({ result }: Props) {
             />
           ))}
         </div>
-        <div className="mt-2 flex justify-between text-xs text-stone-500">
+        <div className="mt-2 flex justify-between text-xs text-muted-foreground/70">
           <span>Sugerido: <span className="text-green-400 font-semibold">{formatBRL(totalSuggested)}</span></span>
           <span>Não alocado: {formatBRL(remainingBudget)}</span>
         </div>
@@ -50,7 +50,7 @@ export function BettingResultsGrid({ result }: Props) {
       </div>
 
       {/* Calculadora de retorno (tema claro embutido) */}
-      <div className="rounded-2xl bg-stone-900/40 p-1">
+      <div className="rounded-2xl bg-card/40 p-1">
         <ReturnCalculator />
       </div>
 

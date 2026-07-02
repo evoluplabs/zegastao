@@ -44,8 +44,8 @@ export function GuruAudit() {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-bold text-stone-100">Desmascarador de Guru</h3>
-        <p className="text-sm text-stone-400">Recebeu um bilhete "premiado" de algum tipster? Manda o print que o Zé mostra a real.</p>
+        <h3 className="text-lg font-bold text-foreground">Desmascarador de Guru</h3>
+        <p className="text-sm text-muted-foreground">Recebeu um bilhete "premiado" de algum tipster? Manda o print que o Zé mostra a real.</p>
       </div>
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden"
@@ -60,7 +60,7 @@ export function GuruAudit() {
       {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
       {result && (
-        <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+        <div className="space-y-3 rounded-2xl border border-border bg-card/60 p-4">
           <div className="grid grid-cols-3 gap-2 text-center">
             <Stat label="Pernas" value={String(result.legs)} />
             <Stat label="Odd total" value={result.combinedOdd.toFixed(2)} />
@@ -70,9 +70,9 @@ export function GuruAudit() {
             <div className="flex items-center gap-2 text-sm font-semibold text-amber-300">
               <AlertTriangle className="h-4 w-4" /> Margem da casa: ~{result.houseEdgePct}%
             </div>
-            <p className="mt-1 text-sm text-stone-300">{verdict}</p>
+            <p className="mt-1 text-sm text-foreground/80">{verdict}</p>
           </div>
-          <p className="text-[11px] text-stone-500">
+          <p className="text-[11px] text-muted-foreground/70">
             Estimativa honesta: a "chance real" tira a margem embutida nas odds. Quanto mais pernas, mais a casa lucra.
           </p>
         </div>
@@ -83,9 +83,9 @@ export function GuruAudit() {
 
 function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="rounded-xl bg-stone-800/60 p-2">
-      <div className={highlight ? 'text-xl font-extrabold text-amber-400' : 'text-xl font-bold text-stone-100'}>{value}</div>
-      <div className="text-[10px] text-stone-500">{label}</div>
+    <div className="rounded-xl bg-secondary/60 p-2">
+      <div className={highlight ? 'text-xl font-extrabold text-amber-400' : 'text-xl font-bold text-foreground'}>{value}</div>
+      <div className="text-[10px] text-muted-foreground/70">{label}</div>
     </div>
   );
 }

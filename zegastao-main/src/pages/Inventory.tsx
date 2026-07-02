@@ -179,17 +179,17 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/70">
-      <div className="w-full max-w-sm rounded-2xl border border-[#3a2e1d] bg-[#211a11] overflow-hidden">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-[#211a11] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#3a2e1d]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <span className="text-2xl">{categoryIcon}</span>
             <div>
-              <p className="font-bold text-stone-100 text-sm">{item.name}</p>
+              <p className="font-bold text-foreground text-sm">{item.name}</p>
               <p className="text-xs text-amber-400">{formatBRL(value)} estimado</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors p-1">
+          <button onClick={onClose} className="text-muted-foreground/70 hover:text-foreground/80 transition-colors p-1">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -198,23 +198,23 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
           {/* Mode picker */}
           {mode === 'choose' && (
             <>
-              <p className="text-xs text-stone-500 uppercase tracking-widest font-bold">Como vender?</p>
+              <p className="text-xs text-muted-foreground/70 uppercase tracking-widest font-bold">Como vender?</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setMode('quick')}
-                  className="rounded-xl border border-[#3a2e1d] bg-[#1a130b] p-4 text-left hover:border-amber-500/40 transition-colors"
+                  className="rounded-xl border border-border bg-[#1a130b] p-4 text-left hover:border-amber-500/40 transition-colors"
                 >
                   <Zap className="h-5 w-5 text-amber-400 mb-2" />
-                  <p className="font-bold text-sm text-stone-100">Vender Rápido</p>
-                  <p className="text-[11px] text-stone-500 mt-1">Plataformas de revenda — dinheiro em dias</p>
+                  <p className="font-bold text-sm text-foreground">Vender Rápido</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Plataformas de revenda — dinheiro em dias</p>
                 </button>
                 <button
                   onClick={() => setMode('market')}
-                  className="rounded-xl border border-[#3a2e1d] bg-[#1a130b] p-4 text-left hover:border-green-500/40 transition-colors"
+                  className="rounded-xl border border-border bg-[#1a130b] p-4 text-left hover:border-green-500/40 transition-colors"
                 >
                   <Store className="h-5 w-5 text-green-400 mb-2" />
-                  <p className="font-bold text-sm text-stone-100">Anunciar no Mercado</p>
-                  <p className="text-[11px] text-stone-500 mt-1">WhatsApp + Loja da Guilda — você define o preço</p>
+                  <p className="font-bold text-sm text-foreground">Anunciar no Mercado</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">WhatsApp + Loja da Guilda — você define o preço</p>
                 </button>
               </div>
 
@@ -233,7 +233,7 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
           {/* Quick Sell */}
           {mode === 'quick' && (
             <>
-              <button onClick={() => setMode('choose')} className="text-xs text-stone-500 hover:text-stone-300 flex items-center gap-1">
+              <button onClick={() => setMode('choose')} className="text-xs text-muted-foreground/70 hover:text-foreground/80 flex items-center gap-1">
                 ← Voltar
               </button>
               <div>
@@ -245,20 +245,20 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                       href={p.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-xl border border-[#3a2e1d] bg-[#1a130b] px-4 py-3 hover:border-amber-500/30 transition-colors"
+                      className="flex items-center justify-between rounded-xl border border-border bg-[#1a130b] px-4 py-3 hover:border-amber-500/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg">{p.emoji}</span>
-                        <span className="text-sm font-semibold text-stone-200">{p.name}</span>
+                        <span className="text-sm font-semibold text-foreground/90">{p.name}</span>
                       </div>
-                      <span className="text-xs text-stone-500">Anunciar →</span>
+                      <span className="text-xs text-muted-foreground/70">Anunciar →</span>
                     </a>
                   ))}
                 </div>
               </div>
 
-              <div className="border-t border-[#3a2e1d] pt-4">
-                <p className="text-xs text-stone-500 mb-3">Já vendeu? Registre para ganhar XP:</p>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs text-muted-foreground/70 mb-3">Já vendeu? Registre para ganhar XP:</p>
                 {!confirmSold ? (
                   <button
                     onClick={() => setConfirmSold(true)}
@@ -268,14 +268,14 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-xs text-stone-400">Por quanto vendeu?</p>
+                    <p className="text-xs text-muted-foreground">Por quanto vendeu?</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-stone-500">R$</span>
+                      <span className="text-sm text-muted-foreground/70">R$</span>
                       <input
                         value={soldFor}
                         onChange={(e) => setSoldFor(e.target.value)}
                         placeholder={String(value)}
-                        className="flex-1 rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-green-500/50"
+                        className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-green-500/50"
                         inputMode="decimal"
                         autoFocus
                       />
@@ -287,7 +287,7 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                       >
                         🎉 Confirmar!
                       </button>
-                      <button onClick={() => setConfirmSold(false)} className="px-4 py-2.5 rounded-xl border border-[#3a2e1d] text-xs text-stone-500 hover:bg-[#2b2115]">
+                      <button onClick={() => setConfirmSold(false)} className="px-4 py-2.5 rounded-xl border border-border text-xs text-muted-foreground/70 hover:bg-secondary">
                         Cancelar
                       </button>
                     </div>
@@ -300,19 +300,19 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
           {/* Market / Announce */}
           {mode === 'market' && (
             <>
-              <button onClick={() => setMode('choose')} className="text-xs text-stone-500 hover:text-stone-300 flex items-center gap-1">
+              <button onClick={() => setMode('choose')} className="text-xs text-muted-foreground/70 hover:text-foreground/80 flex items-center gap-1">
                 ← Voltar
               </button>
 
               {/* Price */}
               <div>
-                <p className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">Preço por unidade</p>
+                <p className="text-xs text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Preço por unidade</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-stone-500 font-semibold">R$</span>
+                  <span className="text-sm text-muted-foreground/70 font-semibold">R$</span>
                   <input
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="flex-1 rounded-xl border border-[#3a2e1d] bg-[#15110b] px-4 py-3 text-lg font-bold text-stone-100 focus:outline-none focus:border-green-500/50"
+                    className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-lg font-bold text-foreground focus:outline-none focus:border-green-500/50"
                     inputMode="decimal"
                   />
                 </div>
@@ -324,16 +324,16 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
               </div>
 
               {/* Announcement preview */}
-              <div className="rounded-xl bg-[#1a130b] border border-[#3a2e1d] p-4">
+              <div className="rounded-xl bg-[#1a130b] border border-border p-4">
                 <p className="text-[10px] text-green-400 uppercase tracking-wide font-bold mb-2">Prévia do anúncio</p>
-                <pre className="text-xs text-stone-300 whitespace-pre-wrap font-sans leading-relaxed">{announcementText}</pre>
+                <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">{announcementText}</pre>
               </div>
 
               {/* Share buttons */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#3a2e1d] bg-[#1a130b] text-stone-300 text-sm font-semibold hover:bg-[#2b2115] transition-colors"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-[#1a130b] text-foreground/80 text-sm font-semibold hover:bg-secondary transition-colors"
                 >
                   {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
                   {copied ? 'Copiado!' : 'Copiar texto'}
@@ -351,20 +351,20 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
 
               <div className="grid grid-cols-2 gap-2">
                 <a href={olxUrl} target="_blank" rel="noopener noreferrer"
-                  className="py-2.5 text-center rounded-xl border border-[#3a2e1d] text-xs text-stone-400 hover:border-amber-500/30 hover:text-amber-400 transition-colors">
+                  className="py-2.5 text-center rounded-xl border border-border text-xs text-muted-foreground hover:border-amber-500/30 hover:text-amber-400 transition-colors">
                   🛒 OLX
                 </a>
                 <a href="https://www.facebook.com/marketplace/" target="_blank" rel="noopener noreferrer"
-                  className="py-2.5 text-center rounded-xl border border-[#3a2e1d] text-xs text-stone-400 hover:border-sky-500/30 hover:text-sky-400 transition-colors">
+                  className="py-2.5 text-center rounded-xl border border-border text-xs text-muted-foreground hover:border-sky-500/30 hover:text-sky-400 transition-colors">
                   📘 Facebook
                 </a>
               </div>
 
               {/* Guild store listing */}
-              <div className="border border-[#3a2e1d] rounded-xl p-4 space-y-3">
+              <div className="border border-border rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Store className="h-4 w-4 text-amber-400" />
-                  <p className="text-sm font-bold text-stone-200">Loja da Guilda</p>
+                  <p className="text-sm font-bold text-foreground/90">Loja da Guilda</p>
                   {listed && (
                     <span className="ml-auto text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/30 rounded-full px-2 py-0.5">
                       ✅ Listado
@@ -373,16 +373,16 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                 </div>
                 {!listed ? (
                   <>
-                    <p className="text-xs text-stone-500">
+                    <p className="text-xs text-muted-foreground/70">
                       Liste publicamente para que outros aventureiros vejam e entrem em contato. Opcional: adicione seu WhatsApp para contato direto.
                     </p>
                     <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-stone-500 shrink-0" />
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
                       <input
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="WhatsApp (opcional, ex: 11999998888)"
-                        className="flex-1 rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-xs text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-green-500/50"
+                        className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground/90 placeholder:text-muted-foreground/50 focus:outline-none focus:border-green-500/50"
                         type="tel"
                       />
                     </div>
@@ -391,9 +391,9 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                         type="checkbox"
                         checked={negotiable}
                         onChange={(e) => setNegotiable(e.target.checked)}
-                        className="h-4 w-4 rounded border-[#3a2e1d] bg-[#15110b] accent-amber-500"
+                        className="h-4 w-4 rounded border-border bg-background accent-amber-500"
                       />
-                      <span className="text-xs text-stone-400">Aceito propostas (preço negociável)</span>
+                      <span className="text-xs text-muted-foreground">Aceito propostas (preço negociável)</span>
                     </label>
                     <button
                       onClick={handleListPublic}
@@ -404,7 +404,7 @@ function SellModal({ item, bestDebt, currentUser, onClose, onListPublic, onMarkS
                     </button>
                   </>
                 ) : (
-                  <p className="text-xs text-stone-500">
+                  <p className="text-xs text-muted-foreground/70">
                     Seu item está visível na Loja da Guilda. Quando vender, marque como vendido e ele será removido automaticamente.
                   </p>
                 )}
@@ -463,10 +463,10 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
 
   return (
     <div className="rounded-xl border border-primary/30 bg-[#211a11] p-4 space-y-4">
-      <h3 className="font-bold text-sm text-stone-100">+ Novo item no Inventário</h3>
+      <h3 className="font-bold text-sm text-foreground">+ Novo item no Inventário</h3>
 
       <div>
-        <p className="text-xs text-stone-500 mb-2">Categoria</p>
+        <p className="text-xs text-muted-foreground/70 mb-2">Categoria</p>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
             <button
@@ -476,7 +476,7 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
                 category === cat
                   ? 'bg-green-500 text-stone-950 border-green-500'
-                  : 'border-[#3a2e1d] text-stone-400 hover:border-green-500/40'
+                  : 'border-border text-muted-foreground hover:border-green-500/40'
               )}
             >
               <span>{CATEGORY_ICONS[cat]}</span>
@@ -487,12 +487,12 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
       </div>
 
       <div>
-        <p className="text-xs text-stone-500 mb-1">Nome do item</p>
+        <p className="text-xs text-muted-foreground/70 mb-1">Nome do item</p>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder='ex: TV Samsung 32"'
-          className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-green-500/50"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-green-500/50"
         />
         {name.length < 2 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -500,7 +500,7 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
               <button
                 key={s.name}
                 onClick={() => setName(s.name)}
-                className="text-[11px] px-2 py-1 rounded-md border border-[#3a2e1d] text-stone-500 hover:border-green-500/40 hover:text-green-400 transition-colors"
+                className="text-[11px] px-2 py-1 rounded-md border border-border text-muted-foreground/70 hover:border-green-500/40 hover:text-green-400 transition-colors"
               >
                 {s.emoji} {s.name}
               </button>
@@ -510,16 +510,16 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
       </div>
 
       <div>
-        <p className="text-xs text-stone-500 mb-1">
+        <p className="text-xs text-muted-foreground/70 mb-1">
           Valor estimado {suggestion ? `(sugestão: ${formatBRL(suggestion.minValue)}–${formatBRL(suggestion.maxValue)})` : ''}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-stone-500">R$</span>
+          <span className="text-sm text-muted-foreground/70">R$</span>
           <input
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}
             placeholder={estimV > 0 ? String(estimV) : 'ex: 350'}
-            className="flex-1 rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-green-500/50"
+            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-green-500/50"
             inputMode="decimal"
           />
         </div>
@@ -535,7 +535,7 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
 
       {/* Condição */}
       <div>
-        <p className="text-xs text-stone-500 mb-2">Condição</p>
+        <p className="text-xs text-muted-foreground/70 mb-2">Condição</p>
         <div className="flex flex-wrap gap-2">
           {CONDITION_ORDER.map((c) => (
             <button
@@ -545,7 +545,7 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
                 'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
                 condition === c
                   ? 'bg-green-500 text-stone-950 border-green-500'
-                  : 'border-[#3a2e1d] text-stone-400 hover:border-green-500/40'
+                  : 'border-border text-muted-foreground hover:border-green-500/40'
               )}
             >
               {CONDITION_LABELS[c]}
@@ -556,14 +556,14 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
 
       {/* Descrição (opcional) */}
       <div>
-        <p className="text-xs text-stone-500 mb-1">Descrição (opcional)</p>
+        <p className="text-xs text-muted-foreground/70 mb-1">Descrição (opcional)</p>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Detalhes: marca, tempo de uso, acessórios inclusos..."
           rows={2}
           maxLength={280}
-          className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-green-500/50 resize-none"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-green-500/50 resize-none"
         />
       </div>
 
@@ -577,7 +577,7 @@ function AddItemForm({ onAdd, onCancel }: AddItemFormProps) {
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2.5 rounded-lg border border-[#3a2e1d] text-stone-500 text-sm hover:bg-[#2b2115] transition-colors"
+          className="px-4 py-2.5 rounded-lg border border-border text-muted-foreground/70 text-sm hover:bg-secondary transition-colors"
         >
           Cancelar
         </button>
@@ -613,7 +613,7 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
       <div className="rounded-xl border border-green-500/20 bg-green-950/10 p-4 flex items-center gap-3 opacity-70">
         <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-stone-300 line-through">{item.name}</p>
+          <p className="text-sm font-semibold text-foreground/80 line-through">{item.name}</p>
           <p className="text-xs text-green-400">
             ✅ Vendido por {formatBRL(item.soldFor ?? value)} · +100 XP
           </p>
@@ -624,12 +624,12 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
 
   return (
     <>
-      <div className="rounded-xl border border-[#3a2e1d] bg-[#211a11] p-4 space-y-3 hover:border-green-500/20 transition-colors">
+      <div className="rounded-xl border border-border bg-[#211a11] p-4 space-y-3 hover:border-green-500/20 transition-colors">
         <div className="flex items-start gap-3">
           <span className="text-2xl shrink-0">{CATEGORY_ICONS[item.category as InventoryCategory]}</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-sm text-stone-100">{item.name}</h3>
+              <h3 className="font-bold text-sm text-foreground">{item.name}</h3>
               <RarityBadge rarity={rarityForValue(value)} />
               {item.status === 'listed' && (
                 <span className="text-[10px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full px-2 py-0.5">
@@ -637,7 +637,7 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-muted-foreground/70">
               {CATEGORY_LABELS[item.category as InventoryCategory]}
               {item.condition ? ` · ${CONDITION_LABELS[item.condition]}` : ''}
             </p>
@@ -645,7 +645,7 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
           </div>
           <button
             onClick={() => onDelete(item.id)}
-            className="text-stone-600 hover:text-red-400 transition-colors p-1 shrink-0"
+            className="text-muted-foreground/50 hover:text-red-400 transition-colors p-1 shrink-0"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -665,11 +665,11 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
           <p className="text-xs font-bold text-amber-400 uppercase tracking-wide mb-1">
             ⚡ MISSÃO ESPECIAL
           </p>
-          <p className="text-xs text-stone-300">
+          <p className="text-xs text-foreground/80">
             Vender <span className="font-semibold">{item.name}</span> → Recompensa: ~{formatBRL(value)}
             {bestDebt ? ` → ${debtImpact}% do Boss ${bestDebt.creditor}` : ''}
           </p>
-          <p className="text-[10px] text-stone-500 mt-1">+100 XP ao concluir</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-1">+100 XP ao concluir</p>
         </div>
 
         <button
@@ -729,15 +729,15 @@ function MarketplaceCard({ listing, onInspect }: { listing: MarketplaceListing; 
           {listing.categoryIcon}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-stone-100 truncate">{listing.itemName}</p>
-          <p className="text-xs text-stone-500 truncate">
+          <p className="font-bold text-sm text-foreground truncate">{listing.itemName}</p>
+          <p className="text-xs text-muted-foreground/70 truncate">
             {listing.category} · {listing.userAlias}
             {listing.condition ? ` · ${CONDITION_LABELS[listing.condition]}` : ''}
           </p>
         </div>
         <div className="text-right shrink-0">
           <p className="text-sm font-extrabold text-amber-400">{formatBRL(listing.price)}</p>
-          {negotiable && <p className="text-[9px] text-stone-500">negociável</p>}
+          {negotiable && <p className="text-[9px] text-muted-foreground/70">negociável</p>}
         </div>
       </div>
       <div className="flex items-center justify-between">
@@ -759,40 +759,40 @@ function InspectModal({ listing, onClose }: { listing: MarketplaceListing; onClo
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl border border-[#3a2e1d] bg-[#211a11] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className={cn('px-5 py-4 border-b border-[#3a2e1d] flex items-center gap-3', meta.bg)}>
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-[#211a11] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className={cn('px-5 py-4 border-b border-border flex items-center gap-3', meta.bg)}>
           <span className="text-3xl">{listing.categoryIcon}</span>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-stone-100">{listing.itemName}</p>
+            <p className="font-bold text-foreground">{listing.itemName}</p>
             <div className="mt-1"><RarityBadge rarity={rarity} /></div>
           </div>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 p-1"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="text-muted-foreground/70 hover:text-foreground/80 p-1"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-stone-500">Preço</span>
+            <span className="text-xs text-muted-foreground/70">Preço</span>
             <span className="text-lg font-extrabold text-amber-400">
-              {formatBRL(listing.price)} {negotiable && <span className="text-[11px] text-stone-500 font-normal">(negociável)</span>}
+              {formatBRL(listing.price)} {negotiable && <span className="text-[11px] text-muted-foreground/70 font-normal">(negociável)</span>}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-2.5">
-              <p className="text-stone-500">Categoria</p>
-              <p className="text-stone-200 font-semibold">{listing.category}</p>
+            <div className="rounded-lg border border-border bg-[#1a130b] p-2.5">
+              <p className="text-muted-foreground/70">Categoria</p>
+              <p className="text-foreground/90 font-semibold">{listing.category}</p>
             </div>
-            <div className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-2.5">
-              <p className="text-stone-500">Condição</p>
-              <p className="text-stone-200 font-semibold">{listing.condition ? CONDITION_LABELS[listing.condition] : '—'}</p>
+            <div className="rounded-lg border border-border bg-[#1a130b] p-2.5">
+              <p className="text-muted-foreground/70">Condição</p>
+              <p className="text-foreground/90 font-semibold">{listing.condition ? CONDITION_LABELS[listing.condition] : '—'}</p>
             </div>
           </div>
           {listing.description && (
-            <div className="rounded-lg border border-[#3a2e1d] bg-[#1a130b] p-3">
-              <p className="text-[10px] text-stone-500 uppercase tracking-wide font-bold mb-1">Descrição</p>
-              <p className="text-xs text-stone-300 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
+            <div className="rounded-lg border border-border bg-[#1a130b] p-3">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide font-bold mb-1">Descrição</p>
+              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
             </div>
           )}
-          <p className="text-xs text-stone-500">Vendedor: <span className="text-stone-300 font-semibold">{listing.userAlias}</span></p>
+          <p className="text-xs text-muted-foreground/70">Vendedor: <span className="text-foreground/80 font-semibold">{listing.userAlias}</span></p>
 
           {waUrl ? (
             <a
@@ -805,7 +805,7 @@ function InspectModal({ listing, onClose }: { listing: MarketplaceListing; onClo
               {negotiable ? 'Fazer oferta no WhatsApp' : 'Contatar via WhatsApp'}
             </a>
           ) : (
-            <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[#3a2e1d] text-stone-500 text-xs">
+            <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-muted-foreground/70 text-xs">
               Vendedor não deixou contato direto
             </div>
           )}
@@ -929,25 +929,25 @@ export function Inventory() {
   return (
     <div className="space-y-4 pb-24">
       {/* Header */}
-      <div className="rounded-xl border border-[#3a2e1d] bg-gradient-to-br from-amber-950/30 via-[#211a11] to-[#211a11] p-5 space-y-2">
+      <div className="rounded-xl border border-border bg-gradient-to-br from-amber-950/30 via-[#211a11] to-[#211a11] p-5 space-y-2">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/20 flex items-center justify-center">
             <Package className="h-6 w-6 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-stone-100">Inventário</h1>
-            <p className="text-xs text-stone-500">Seus itens → Missões de venda → Ouro real</p>
+            <h1 className="text-xl font-bold text-foreground">Inventário</h1>
+            <p className="text-xs text-muted-foreground/70">Seus itens → Missões de venda → Ouro real</p>
           </div>
         </div>
 
         {availableItems.length > 0 && (
           <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="bg-[#1a130b] border border-[#3a2e1d] rounded-lg p-3">
-              <p className="text-[10px] text-stone-500 uppercase tracking-wide">Itens disponíveis</p>
-              <p className="text-xl font-bold text-stone-100">{availableItems.length}</p>
+            <div className="bg-[#1a130b] border border-border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">Itens disponíveis</p>
+              <p className="text-xl font-bold text-foreground">{availableItems.length}</p>
             </div>
-            <div className="bg-[#1a130b] border border-[#3a2e1d] rounded-lg p-3">
-              <p className="text-[10px] text-stone-500 uppercase tracking-wide">Potencial de venda</p>
+            <div className="bg-[#1a130b] border border-border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">Potencial de venda</p>
               <p className="text-xl font-bold text-amber-400">{formatBRL(totalPotential)}</p>
             </div>
           </div>
@@ -968,14 +968,14 @@ export function Inventory() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex rounded-xl border border-[#3a2e1d] overflow-hidden bg-[#1a130b]">
+      <div className="flex rounded-xl border border-border overflow-hidden bg-[#1a130b]">
         <button
           onClick={() => setTab('inventory')}
           className={cn(
             'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors',
             tab === 'inventory'
               ? 'bg-green-500 text-stone-950'
-              : 'text-stone-400 hover:text-stone-200'
+              : 'text-muted-foreground hover:text-foreground/90'
           )}
         >
           <Package className="h-4 w-4" />
@@ -983,7 +983,7 @@ export function Inventory() {
           {availableItems.length > 0 && (
             <span className={cn(
               'text-[10px] rounded-full px-1.5 font-bold',
-              tab === 'inventory' ? 'bg-stone-950/30 text-stone-950' : 'bg-[#3a2e1d] text-stone-400'
+              tab === 'inventory' ? 'bg-background/30 text-stone-950' : 'bg-secondary text-muted-foreground'
             )}>
               {availableItems.length}
             </span>
@@ -995,7 +995,7 @@ export function Inventory() {
             'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors',
             tab === 'store'
               ? 'bg-amber-500 text-stone-950'
-              : 'text-stone-400 hover:text-stone-200'
+              : 'text-muted-foreground hover:text-foreground/90'
           )}
         >
           <Store className="h-4 w-4" />
@@ -1003,7 +1003,7 @@ export function Inventory() {
           {activeListings.length > 0 && (
             <span className={cn(
               'text-[10px] rounded-full px-1.5 font-bold',
-              tab === 'store' ? 'bg-stone-950/30 text-stone-950' : 'bg-[#3a2e1d] text-stone-400'
+              tab === 'store' ? 'bg-background/30 text-stone-950' : 'bg-secondary text-muted-foreground'
             )}>
               {activeListings.length}
             </span>
@@ -1029,14 +1029,14 @@ export function Inventory() {
           {loading && (
             <div className="space-y-3">
               {[1, 2].map((i) => (
-                <div key={i} className="h-36 rounded-xl border border-[#3a2e1d] bg-[#211a11] animate-pulse" />
+                <div key={i} className="h-36 rounded-xl border border-border bg-[#211a11] animate-pulse" />
               ))}
             </div>
           )}
 
           {!loading && availableItems.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-bold text-stone-300 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-foreground/80 flex items-center gap-2">
                 <span className="text-amber-400">⚡</span>
                 Missões ativas ({availableItems.length})
               </h2>
@@ -1057,8 +1057,8 @@ export function Inventory() {
           {!loading && items.length === 0 && (
             <div className="text-center py-12 space-y-3">
               <span className="text-5xl">📦</span>
-              <p className="font-bold text-stone-100">Inventário vazio</p>
-              <p className="text-sm text-stone-500 max-w-xs mx-auto">
+              <p className="font-bold text-foreground">Inventário vazio</p>
+              <p className="text-sm text-muted-foreground/70 max-w-xs mx-auto">
                 Adicione itens que você tem em casa — TV, celular, móveis — e o sistema vai gerar missões de venda para atacar seus bosses.
               </p>
             </div>
@@ -1066,7 +1066,7 @@ export function Inventory() {
 
           {soldItems.length > 0 && (
             <div className="space-y-2 pt-2">
-              <h2 className="text-sm font-bold text-stone-500">
+              <h2 className="text-sm font-bold text-muted-foreground/70">
                 ✅ Vendidos ({soldItems.length})
               </h2>
               {soldItems.map((item) => (
@@ -1090,7 +1090,7 @@ export function Inventory() {
             >
               <div>
                 <p className="text-sm font-bold text-red-400">☠️ Ver Boss {bestDebt.creditor}</p>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-muted-foreground/70">
                   {formatBRL(debtRemaining(bestDebt))} restantes
                 </p>
               </div>
@@ -1103,33 +1103,33 @@ export function Inventory() {
       {/* ── Guild Store tab ── */}
       {tab === 'store' && (
         <>
-          <div className="rounded-xl border border-[#3a2e1d] bg-gradient-to-br from-amber-950/20 via-[#211a11] to-[#211a11] p-4 space-y-1">
+          <div className="rounded-xl border border-border bg-gradient-to-br from-amber-950/20 via-[#211a11] to-[#211a11] p-4 space-y-1">
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-amber-400" />
-              <p className="font-bold text-sm text-stone-100">Mercado da Guilda</p>
+              <p className="font-bold text-sm text-foreground">Mercado da Guilda</p>
             </div>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-muted-foreground/70">
               Itens reais de outros aventureiros — por raridade, condição e preço. Contato via WhatsApp, sem taxas.
             </p>
           </div>
 
           {/* Barra de busca + sort + toggle de filtros */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 rounded-xl border border-[#3a2e1d] bg-[#15110b] px-3 py-2">
-              <Search className="h-4 w-4 text-stone-500 shrink-0" />
+            <div className="flex-1 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+              <Search className="h-4 w-4 text-muted-foreground/70 shrink-0" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Buscar item..."
-                className="flex-1 min-w-0 bg-transparent text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none"
+                className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               />
-              {q && <button onClick={() => setQ('')} className="text-stone-500 hover:text-stone-300"><X className="h-3.5 w-3.5" /></button>}
+              {q && <button onClick={() => setQ('')} className="text-muted-foreground/70 hover:text-foreground/80"><X className="h-3.5 w-3.5" /></button>}
             </div>
             <button
               onClick={() => setShowFilters((v) => !v)}
               className={cn(
                 'flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
-                filtersActive || showFilters ? 'border-amber-500/40 text-amber-400 bg-amber-500/10' : 'border-[#3a2e1d] text-stone-400'
+                filtersActive || showFilters ? 'border-amber-500/40 text-amber-400 bg-amber-500/10' : 'border-border text-muted-foreground'
               )}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -1139,10 +1139,10 @@ export function Inventory() {
 
           {/* Painel de filtros */}
           {showFilters && (
-            <div className="rounded-xl border border-[#3a2e1d] bg-[#1a130b] p-4 space-y-4">
+            <div className="rounded-xl border border-border bg-[#1a130b] p-4 space-y-4">
               {/* Categoria */}
               <div>
-                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2 flex items-center gap-1.5"><Tag className="h-3 w-3" /> Categoria</p>
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2 flex items-center gap-1.5"><Tag className="h-3 w-3" /> Categoria</p>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(CATEGORY_LABELS) as InventoryCategory[]).map((cat) => {
                     const label = CATEGORY_LABELS[cat];
@@ -1153,7 +1153,7 @@ export function Inventory() {
                         onClick={() => toggleSet(catFilter, label, setCatFilter)}
                         className={cn(
                           'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border transition-colors',
-                          active ? 'bg-green-500 text-stone-950 border-green-500' : 'border-[#3a2e1d] text-stone-400 hover:border-green-500/40'
+                          active ? 'bg-green-500 text-stone-950 border-green-500' : 'border-border text-muted-foreground hover:border-green-500/40'
                         )}
                       >
                         {CATEGORY_ICONS[cat]} {label}
@@ -1165,7 +1165,7 @@ export function Inventory() {
 
               {/* Qualidade */}
               <div>
-                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2">Qualidade</p>
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Qualidade</p>
                 <div className="flex flex-wrap gap-2">
                   {RARITY_ORDER.map((r) => {
                     const m = RARITY_META[r];
@@ -1176,7 +1176,7 @@ export function Inventory() {
                         onClick={() => toggleSet(rarFilter, r, setRarFilter)}
                         className={cn(
                           'px-2.5 py-1 rounded-lg text-xs border transition-colors',
-                          active ? cn(m.text, m.border, m.bg, 'font-bold') : 'border-[#3a2e1d] text-stone-400 hover:border-stone-500'
+                          active ? cn(m.text, m.border, m.bg, 'font-bold') : 'border-border text-muted-foreground hover:border-border/70'
                         )}
                       >
                         {m.emoji} {m.label}
@@ -1188,29 +1188,29 @@ export function Inventory() {
 
               {/* Preço */}
               <div>
-                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2">Preço (R$)</p>
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Preço (R$)</p>
                 <div className="flex items-center gap-2">
                   <input
                     value={priceMin}
                     onChange={(e) => setPriceMin(e.target.value)}
                     placeholder="mín"
                     inputMode="decimal"
-                    className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50"
                   />
-                  <span className="text-stone-600">—</span>
+                  <span className="text-muted-foreground/50">—</span>
                   <input
                     value={priceMax}
                     onChange={(e) => setPriceMax(e.target.value)}
                     placeholder="máx"
                     inputMode="decimal"
-                    className="w-full rounded-lg border border-[#3a2e1d] bg-[#15110b] px-3 py-2 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50"
                   />
                 </div>
               </div>
 
               {/* Ordenação */}
               <div>
-                <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-2">Ordenar por</p>
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Ordenar por</p>
                 <div className="grid grid-cols-2 gap-2">
                   {([
                     ['recent', 'Mais recente'],
@@ -1223,7 +1223,7 @@ export function Inventory() {
                       onClick={() => setSort(key)}
                       className={cn(
                         'px-3 py-1.5 rounded-lg text-xs border transition-colors',
-                        sort === key ? 'bg-amber-500 text-stone-950 border-amber-500 font-bold' : 'border-[#3a2e1d] text-stone-400 hover:border-amber-500/40'
+                        sort === key ? 'bg-amber-500 text-stone-950 border-amber-500 font-bold' : 'border-border text-muted-foreground hover:border-amber-500/40'
                       )}
                     >
                       {label}
@@ -1235,7 +1235,7 @@ export function Inventory() {
               {filtersActive && (
                 <button
                   onClick={() => { setQ(''); setCatFilter(new Set()); setRarFilter(new Set()); setPriceMin(''); setPriceMax(''); }}
-                  className="text-xs text-stone-500 hover:text-stone-300 underline"
+                  className="text-xs text-muted-foreground/70 hover:text-foreground/80 underline"
                 >
                   Limpar filtros
                 </button>
@@ -1246,7 +1246,7 @@ export function Inventory() {
           {listingsLoading && (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 rounded-xl border border-[#3a2e1d] bg-[#211a11] animate-pulse" />
+                <div key={i} className="h-24 rounded-xl border border-border bg-[#211a11] animate-pulse" />
               ))}
             </div>
           )}
@@ -1254,8 +1254,8 @@ export function Inventory() {
           {!listingsLoading && activeListings.length === 0 && (
             <div className="text-center py-12 space-y-3">
               <span className="text-5xl">🏪</span>
-              <p className="font-bold text-stone-100">Mercado vazio</p>
-              <p className="text-sm text-stone-500 max-w-xs mx-auto">
+              <p className="font-bold text-foreground">Mercado vazio</p>
+              <p className="text-sm text-muted-foreground/70 max-w-xs mx-auto">
                 Ainda não há itens anunciados. Seja o primeiro — vá até "Meu Inventário" e liste um item na Loja da Guilda.
               </p>
               <button
@@ -1270,14 +1270,14 @@ export function Inventory() {
 
           {!listingsLoading && activeListings.length > 0 && (
             <>
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-muted-foreground/70">
                 {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'itens'}
                 {filtersActive ? ' (filtrado)' : ''}
               </p>
               {filteredListings.length === 0 ? (
                 <div className="text-center py-10 space-y-2">
                   <span className="text-4xl">🔍</span>
-                  <p className="text-sm text-stone-400">Nenhum item bate com os filtros.</p>
+                  <p className="text-sm text-muted-foreground">Nenhum item bate com os filtros.</p>
                 </div>
               ) : (
                 <div className="space-y-3">

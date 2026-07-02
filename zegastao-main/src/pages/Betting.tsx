@@ -150,11 +150,11 @@ export function Betting() {
   }
 
   if (mandate === 'loading') {
-    return <div className="flex min-h-60 items-center justify-center bg-stone-950"><Loader2 className="h-8 w-8 animate-spin text-green-400" /></div>;
+    return <div className="flex min-h-60 items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-green-400" /></div>;
   }
   if (mandate === null) {
     return (
-      <div className="min-h-screen bg-stone-950 py-8">
+      <div className="min-h-screen bg-background py-8">
         <MandateOnboarding onComplete={() => {
           localStorage.removeItem('ze_apostador_tour_v2');
           setMandate('loading');
@@ -171,7 +171,7 @@ export function Betting() {
 
   return (
     <>
-    <div className="min-h-screen bg-stone-950 text-stone-100">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-2xl space-y-5 p-4 pb-16">
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -180,9 +180,9 @@ export function Betting() {
               <Sparkles className="h-3 w-3" /> ⚔️ Sistema de Raid
             </div>
             <h1 className="text-2xl font-bold">Seu Raid Ativo</h1>
-            <p className="text-sm text-stone-400">Raids inteligentes, diversão com estratégia</p>
+            <p className="text-sm text-muted-foreground">Raids inteligentes, diversão com estratégia</p>
           </div>
-          <button data-tour="pause" onClick={selfExclude} className="flex items-center gap-1.5 rounded-lg border border-stone-700 px-2.5 py-1.5 text-xs text-stone-400 hover:text-stone-200">
+          <button data-tour="pause" onClick={selfExclude} className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground/90">
             <PauseCircle className="h-3.5 w-3.5" /> Pausar Raid
           </button>
         </div>
@@ -191,20 +191,20 @@ export function Betting() {
 
         {/* Tabs — só visíveis quando há ciclo ativo ou encerrado */}
         {cycle && (
-          <div className="flex rounded-xl border border-stone-800 bg-stone-900/40 p-1">
+          <div className="flex rounded-xl border border-border bg-card/40 p-1">
             <button
               onClick={() => setTab('raid')}
-              className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors', tab === 'raid' ? 'bg-stone-800 text-stone-100' : 'text-stone-500 hover:text-stone-300')}
+              className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors', tab === 'raid' ? 'bg-secondary text-foreground' : 'text-muted-foreground/70 hover:text-foreground/80')}
             >
               <TrendingUp className="h-3.5 w-3.5" /> ⚔️ Raid
             </button>
             <button
               onClick={() => setTab('history')}
-              className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors', tab === 'history' ? 'bg-stone-800 text-stone-100' : 'text-stone-500 hover:text-stone-300')}
+              className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors', tab === 'history' ? 'bg-secondary text-foreground' : 'text-muted-foreground/70 hover:text-foreground/80')}
             >
               <History className="h-3.5 w-3.5" /> Histórico
               {rounds.filter(r => r.outcome !== 'pending').length > 0 && (
-                <span className="rounded-full bg-stone-700 px-1.5 text-[10px] text-stone-300">
+                <span className="rounded-full bg-secondary px-1.5 text-[10px] text-foreground/80">
                   {rounds.filter(r => r.outcome !== 'pending').length}
                 </span>
               )}
@@ -214,15 +214,15 @@ export function Betting() {
 
         {/* Sem ciclo ativo → começar (sempre visível) */}
         {(!cycle || closed) && (
-          <div className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
+          <div className="space-y-4 rounded-2xl border border-border bg-card/60 p-5">
             {closed && (
-              <div className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-sm', cycle!.status === 'won' ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-stone-700 text-stone-300')}>
+              <div className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-sm', cycle!.status === 'won' ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-border text-foreground/80')}>
                 {cycle!.status === 'won' ? <Trophy className="h-4 w-4" /> : <Flag className="h-4 w-4" />}
                 Raid {cycle!.status === 'won' ? 'concluído com vitória! 🎯' : cycle!.status === 'lost' ? 'encerrado no stop-loss.' : 'encerrado.'} Banca final: {formatBRL(cycle!.currentBankroll)}.
               </div>
             )}
-            <div className="flex items-center gap-2 text-stone-100"><Target className="h-5 w-5 text-green-400" /><h2 className="text-lg font-bold">⚔️ Iniciar Raid</h2></div>
-            <p className="text-sm text-stone-400">Um raid é sua missão de apostas. Você começa com {formatBRL(mandate.cycleBudget)} e o Zé encerra sozinho quando você chegar na meta ou pra te proteger de perder demais.</p>
+            <div className="flex items-center gap-2 text-foreground"><Target className="h-5 w-5 text-green-400" /><h2 className="text-lg font-bold">⚔️ Iniciar Raid</h2></div>
+            <p className="text-sm text-muted-foreground">Um raid é sua missão de apostas. Você começa com {formatBRL(mandate.cycleBudget)} e o Zé encerra sozinho quando você chegar na meta ou pra te proteger de perder demais.</p>
             <RiskPicker riskLevel={riskLevel} setRiskLevel={setRiskLevel} targetMultiplier={targetMultiplier} setTargetMultiplier={setTargetMultiplier} />
             <Button data-tour="start" onClick={startCycle} loading={loading} className="w-full bg-green-500 text-stone-950 hover:bg-green-400">⚔️ Entrar no Raid</Button>
           </div>
@@ -232,15 +232,15 @@ export function Betting() {
         {cycle && !closed && tab === 'raid' && (
           <>
             {/* Banca + progresso */}
-            <div data-tour="banca" className="space-y-2 rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+            <div data-tour="banca" className="space-y-2 rounded-2xl border border-border bg-card/70 p-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-stone-400">Banca do Raid</span>
+                <span className="text-muted-foreground">Banca do Raid</span>
                 <span className="font-bold text-green-400">{formatBRL(cycle.currentBankroll)}</span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-stone-800">
+              <div className="h-2.5 overflow-hidden rounded-full bg-secondary">
                 <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-sky-400 transition-all" style={{ width: `${progressPct}%` }} />
               </div>
-              <div className="flex justify-between text-xs text-stone-500">
+              <div className="flex justify-between text-xs text-muted-foreground/70">
                 <span>Início {formatBRL(cycle.budget)}</span>
                 <span>Meta {formatBRL(target)}</span>
               </div>
@@ -251,11 +251,11 @@ export function Betting() {
                 {extractedSlip?.homeTeam && (
                   <div className="mb-2 flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2">
                     <Sparkles className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                    <span className="text-sm font-semibold text-stone-100">
-                      {extractedSlip.homeTeam} <span className="text-stone-500">x</span> {extractedSlip.awayTeam}
+                    <span className="text-sm font-semibold text-foreground">
+                      {extractedSlip.homeTeam} <span className="text-muted-foreground/70">x</span> {extractedSlip.awayTeam}
                     </span>
                     {extractedSlip.matchDate && (
-                      <span className="ml-auto text-[11px] text-stone-500">
+                      <span className="ml-auto text-[11px] text-muted-foreground/70">
                         {new Date(extractedSlip.matchDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                       </span>
                     )}
@@ -264,10 +264,10 @@ export function Betting() {
                 <GuidedBetCard cycleId={cycle.id} round={latestPending} referralCode={referralCode} onUpdated={loadCycle} />
               </div>
             ) : (
-              <div className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
+              <div className="space-y-4 rounded-2xl border border-border bg-card/60 p-5">
                 <div>
-                  <h2 className="text-lg font-bold text-stone-100">⚔️ Próximo Encontro</h2>
-                  <p className="mt-1 text-sm text-stone-400">
+                  <h2 className="text-lg font-bold text-foreground">⚔️ Próximo Encontro</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Abre a Betano, escolha um jogo e tira um print da página do jogo. O Zé lê as odds e monta a estratégia.
                   </p>
                 </div>
@@ -277,10 +277,10 @@ export function Betting() {
                 {extractedSlip?.homeTeam && (
                   <div className="flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />
-                    <span className="text-sm font-semibold text-stone-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {extractedSlip.homeTeam} x {extractedSlip.awayTeam}
                     </span>
-                    {extractedSlip.league && <span className="ml-auto text-xs text-stone-500">{extractedSlip.league}</span>}
+                    {extractedSlip.league && <span className="ml-auto text-xs text-muted-foreground/70">{extractedSlip.league}</span>}
                   </div>
                 )}
 
@@ -302,16 +302,16 @@ export function Betting() {
             )}
 
             {/* Ferramentas da Guilda */}
-            <div data-tour="tools" className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/40 p-4">
-              <h3 className="text-xs font-semibold text-stone-500">Ferramentas da Guilda</h3>
+            <div data-tour="tools" className="space-y-3 rounded-2xl border border-border bg-card/40 p-4">
+              <h3 className="text-xs font-semibold text-muted-foreground/70">Ferramentas da Guilda</h3>
               <button onClick={() => setTool(tool === 'guru' ? 'none' : 'guru')}
-                className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-stone-700 text-stone-300')}>
+                className={cn('flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold', tool === 'guru' ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-border text-foreground/80')}>
                 <Search className="h-4 w-4" /> Desmascarar guru
               </button>
               {tool === 'guru' && <GuruAudit />}
             </div>
 
-            <button onClick={abortCycle} className="w-full rounded-xl border border-stone-800 py-2 text-xs text-stone-500 hover:text-stone-300">Abandonar Raid</button>
+            <button onClick={abortCycle} className="w-full rounded-xl border border-border py-2 text-xs text-muted-foreground/70 hover:text-foreground/80">Abandonar Raid</button>
           </>
         )}
 
@@ -320,7 +320,7 @@ export function Betting() {
           <RoundHistory rounds={rounds} cycle={cycle} />
         )}
 
-        <p className="px-2 text-center text-[11px] leading-relaxed text-stone-600">
+        <p className="px-2 text-center text-[11px] leading-relaxed text-muted-foreground/50">
           Análise educacional, sem garantia de resultado. Apostas têm risco de perda total. +18. Jogue com responsabilidade.
         </p>
       </div>
@@ -349,9 +349,9 @@ function RoundHistory({ rounds, cycle }: { rounds: ZeRound[]; cycle: ZeCycle }) 
 
   if (settled.length === 0) {
     return (
-      <div className="rounded-2xl border border-stone-800 bg-stone-900/40 p-8 text-center">
-        <p className="text-stone-500">Nenhum encontro registrado ainda.</p>
-        <p className="mt-1 text-xs text-stone-600">Os resultados aparecem aqui depois da primeira aposta.</p>
+      <div className="rounded-2xl border border-border bg-card/40 p-8 text-center">
+        <p className="text-muted-foreground/70">Nenhum encontro registrado ainda.</p>
+        <p className="mt-1 text-xs text-muted-foreground/50">Os resultados aparecem aqui depois da primeira aposta.</p>
       </div>
     );
   }
@@ -374,14 +374,14 @@ function RoundHistory({ rounds, cycle }: { rounds: ZeRound[]; cycle: ZeCycle }) 
           return (
             <div key={r.id} className={cn(
               'rounded-xl border px-3 py-2.5',
-              r.outcome === 'won' ? 'border-green-500/20 bg-green-500/5' : 'border-stone-800 bg-stone-900/40',
+              r.outcome === 'won' ? 'border-green-500/20 bg-green-500/5' : 'border-border bg-card/40',
             )}>
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-stone-200">
+                  <p className="truncate text-sm text-foreground/90">
                     {firstLeg ? `${firstLeg.homeTeam} x ${firstLeg.awayTeam}` : r.type === 'multiple' ? `Múltipla ${r.legs?.length}j` : firstLeg}
                   </p>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-[11px] text-muted-foreground/70">
                     @{r.combinedOdd} · {r.type === 'multiple' ? `${r.legs?.length} pernas` : firstLeg?.selection}
                   </p>
                 </div>
@@ -394,8 +394,8 @@ function RoundHistory({ rounds, cycle }: { rounds: ZeRound[]; cycle: ZeCycle }) 
         })}
       </div>
 
-      <p className="text-center text-xs text-stone-600">
-        Banca atual: <span className="text-stone-400 font-semibold">{formatBRL(cycle.currentBankroll)}</span>
+      <p className="text-center text-xs text-muted-foreground/50">
+        Banca atual: <span className="text-muted-foreground font-semibold">{formatBRL(cycle.currentBankroll)}</span>
       </p>
     </div>
   );
@@ -403,9 +403,9 @@ function RoundHistory({ rounds, cycle }: { rounds: ZeRound[]; cycle: ZeCycle }) 
 
 function StatCard({ label, value, color }: { label: string; value: string; color: 'green' | 'red' | 'neutral' }) {
   return (
-    <div className="rounded-xl border border-stone-800 bg-stone-900/60 p-3 text-center">
-      <p className={cn('text-base font-bold', color === 'green' ? 'text-green-400' : color === 'red' ? 'text-red-400' : 'text-stone-200')}>{value}</p>
-      <p className="text-[11px] text-stone-500">{label}</p>
+    <div className="rounded-xl border border-border bg-card/60 p-3 text-center">
+      <p className={cn('text-base font-bold', color === 'green' ? 'text-green-400' : color === 'red' ? 'text-red-400' : 'text-foreground/90')}>{value}</p>
+      <p className="text-[11px] text-muted-foreground/70">{label}</p>
     </div>
   );
 }
@@ -422,12 +422,12 @@ function NoBetModal({ message, gameLabel, onClose, onTryAnother }: NoBetModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-md rounded-2xl border border-stone-700 bg-stone-900 p-5 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl">
         {/* Fechar */}
-        <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-1 text-stone-500 hover:text-stone-300">
+        <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-1 text-muted-foreground/70 hover:text-foreground/80">
           <X className="h-4 w-4" />
         </button>
 
@@ -437,17 +437,17 @@ function NoBetModal({ message, gameLabel, onClose, onTryAnother }: NoBetModalPro
             <ShieldAlert className="h-5 w-5 text-amber-400" />
           </div>
           <div>
-            <p className="font-bold text-stone-100">O Zé passou, mas não entrou</p>
-            {gameLabel && <p className="text-xs text-stone-500">{gameLabel}</p>}
+            <p className="font-bold text-foreground">O Zé passou, mas não entrou</p>
+            {gameLabel && <p className="text-xs text-muted-foreground/70">{gameLabel}</p>}
           </div>
         </div>
 
         {/* Mensagem */}
-        <p className="mb-4 text-sm leading-relaxed text-stone-300">{message}</p>
+        <p className="mb-4 text-sm leading-relaxed text-foreground/80">{message}</p>
 
         {/* Dica extra */}
-        <div className="mb-4 rounded-xl border border-stone-800 bg-stone-800/40 px-3 py-2.5 text-xs text-stone-400">
-          <span className="font-semibold text-stone-300">Por que isso acontece?</span> O Zé calcula a probabilidade real do resultado e a compara com o que a casa oferece. Quando nenhuma odd cobre o risco com margem suficiente, ele prefere não recomendar — isso é jogo responsável.
+        <div className="mb-4 rounded-xl border border-border bg-secondary/40 px-3 py-2.5 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground/80">Por que isso acontece?</span> O Zé calcula a probabilidade real do resultado e a compara com o que a casa oferece. Quando nenhuma odd cobre o risco com margem suficiente, ele prefere não recomendar — isso é jogo responsável.
         </div>
 
         {/* Botões */}
@@ -460,7 +460,7 @@ function NoBetModal({ message, gameLabel, onClose, onTryAnother }: NoBetModalPro
           </button>
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border border-stone-700 py-2.5 text-sm font-semibold text-stone-300 hover:border-stone-600"
+            className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-foreground/80 hover:border-border"
           >
             Entendido
           </button>
@@ -476,20 +476,20 @@ function RiskPicker({ riskLevel, setRiskLevel, targetMultiplier, setTargetMultip
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-stone-400">Dificuldade do Raid</p>
+      <p className="text-xs text-muted-foreground">Dificuldade do Raid</p>
       <div className="grid grid-cols-2 gap-2">
         {ZE_RISK_LEVELS.filter((r) => r.level !== 3).map((r) => (
-          <button key={r.level} onClick={() => setRiskLevel(r.level)} className={cn('rounded-xl border p-2 text-left text-xs', riskLevel === r.level ? 'border-green-400 bg-green-400/10' : 'border-stone-700')}>
-            <span className="font-semibold text-stone-100">{r.emoji} {r.label}</span>
+          <button key={r.level} onClick={() => setRiskLevel(r.level)} className={cn('rounded-xl border p-2 text-left text-xs', riskLevel === r.level ? 'border-green-400 bg-green-400/10' : 'border-border')}>
+            <span className="font-semibold text-foreground">{r.emoji} {r.label}</span>
           </button>
         ))}
       </div>
       {riskLevel === 2 && (
         <div className="space-y-1">
-          <p className="text-xs text-stone-400">Tentar multiplicar por quanto? Quanto mais alto, mais difícil acertar.</p>
+          <p className="text-xs text-muted-foreground">Tentar multiplicar por quanto? Quanto mais alto, mais difícil acertar.</p>
           <div className="flex gap-2">
             {TARGET_OPTIONS.map((t) => (
-              <button key={t} onClick={() => setTargetMultiplier(t)} className={cn('flex-1 rounded-lg border px-2 py-1.5 text-sm', targetMultiplier === t ? 'border-amber-400 bg-amber-400/15 text-amber-300' : 'border-stone-700 text-stone-300')}>{t}x</button>
+              <button key={t} onClick={() => setTargetMultiplier(t)} className={cn('flex-1 rounded-lg border px-2 py-1.5 text-sm', targetMultiplier === t ? 'border-amber-400 bg-amber-400/15 text-amber-300' : 'border-border text-foreground/80')}>{t}x</button>
             ))}
           </div>
         </div>

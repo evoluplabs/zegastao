@@ -62,7 +62,7 @@ export function ShareableBetCard({ homeTeam, awayTeam, selection, odd, profit, r
       >
         <MessageCircle className="h-4 w-4" /> Mandar no WhatsApp
       </button>
-      <p className="flex items-center gap-1 text-[11px] text-stone-500"><Download className="h-3 w-3" /> Imagem ideal pra status e stories</p>
+      <p className="flex items-center gap-1 text-[11px] text-muted-foreground/70"><Download className="h-3 w-3" /> Imagem ideal pra status e stories</p>
     </div>
   );
 }

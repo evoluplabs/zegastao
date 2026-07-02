@@ -94,8 +94,8 @@ export function BettingTour({ autoStart = true, betsCompleted = 0 }: Props) {
         className={cn(
           'fixed bottom-20 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-colors',
           betsCompleted > 0
-            ? 'border-stone-700 bg-stone-900 text-stone-500 hover:text-stone-300'
-            : 'border-green-500/40 bg-stone-900 text-green-400 hover:bg-stone-800',
+            ? 'border-border bg-card text-muted-foreground/70 hover:text-foreground/80'
+            : 'border-green-500/40 bg-card text-green-400 hover:bg-secondary',
         )}
       >
         <HelpCircle className="h-5 w-5" />

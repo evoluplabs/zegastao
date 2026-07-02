@@ -83,8 +83,8 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
   // ----- Skip (sem aposta hoje) -----
   if (card.skip) {
     return (
-      <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-5 text-center">
-        <p className="text-stone-300">{card.reasoning}</p>
+      <div className="rounded-2xl border border-border bg-card/60 p-5 text-center">
+        <p className="text-foreground/80">{card.reasoning}</p>
       </div>
     );
   }
@@ -94,7 +94,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
     const won = result === 'won';
     return (
       <div className={cn('space-y-4 rounded-2xl border p-5', won ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/20 bg-red-500/5')}>
-        <div className="flex items-center gap-2 font-bold text-stone-100">
+        <div className="flex items-center gap-2 font-bold text-foreground">
           {won ? <Trophy className="h-5 w-5 text-green-400" /> : <Frown className="h-5 w-5 text-red-400" />}
           {won ? '🏆 Monstro derrotado!' : '🔴 Você foi derrotado.'}
         </div>
@@ -105,7 +105,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
             odd={card.combinedOdd} profit={Math.max(0, (parseFloat(payout) || stake * card.combinedOdd) - stake)} referralCode={referralCode}
           />
         ) : (
-          <p className="text-sm text-stone-400">Faz parte do raid. O importante é a disciplina — sem correr atrás do prejuízo.</p>
+          <p className="text-sm text-muted-foreground">Faz parte do raid. O importante é a disciplina — sem correr atrás do prejuízo.</p>
         )}
       </div>
     );
@@ -114,19 +114,19 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
   const isMarginal = card.evPct < 0;
 
   return (
-    <div className={cn('overflow-hidden rounded-2xl border bg-stone-900/70',
-      isMarginal ? 'border-amber-500/40' : 'border-stone-800')}>
+    <div className={cn('overflow-hidden rounded-2xl border bg-card/70',
+      isMarginal ? 'border-amber-500/40' : 'border-border')}>
       {/* Cabeçalho */}
-      <div className={cn('border-b border-stone-800 px-4 py-3',
-        isMarginal ? 'bg-gradient-to-r from-amber-500/10 to-stone-900' : 'bg-gradient-to-r from-green-500/10 to-sky-500/5')}>
+      <div className={cn('border-b border-border px-4 py-3',
+        isMarginal ? 'bg-gradient-to-r from-amber-500/10 to-card' : 'bg-gradient-to-r from-green-500/10 to-sky-500/5')}>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-stone-100">{card.type === 'multiple' ? `⚔️ Raid: ${card.legs.length} Encontros` : '⚔️ Encontro Único'}</span>
+          <span className="text-sm font-bold text-foreground">{card.type === 'multiple' ? `⚔️ Raid: ${card.legs.length} Encontros` : '⚔️ Encontro Único'}</span>
           <span className={cn('rounded-full px-2 py-0.5 text-sm font-extrabold',
             isMarginal ? 'bg-amber-500/15 text-amber-400' : 'bg-green-500/15 text-green-400')}>
             @{card.combinedOdd}
           </span>
         </div>
-        <p className="text-xs text-stone-400">Chance de acertar: {card.combinedProbPct}% · {card.evPct > 0 ? `Vantagem: +${card.evPct}%` : `A casa leva: ${Math.abs(card.evPct)}%`}</p>
+        <p className="text-xs text-muted-foreground">Chance de acertar: {card.combinedProbPct}% · {card.evPct > 0 ? `Vantagem: +${card.evPct}%` : `A casa leva: ${Math.abs(card.evPct)}%`}</p>
       </div>
 
       <div className="space-y-4 p-4">
@@ -139,15 +139,15 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
         )}
 
         {/* Por que essa aposta */}
-        <div className="flex items-start gap-2 rounded-xl bg-stone-800/40 p-3 text-sm text-stone-300">
+        <div className="flex items-start gap-2 rounded-xl bg-secondary/40 p-3 text-sm text-foreground/80">
           <Info className={cn('mt-0.5 h-4 w-4 shrink-0', isMarginal ? 'text-amber-400' : 'text-green-400')} /> {card.reasoning}
         </div>
 
         {/* Análise detalhada dos sub-agentes (form, h2h, stats) */}
         {card.finalAnalysis && (
-          <div className="rounded-xl border border-stone-700/50 bg-stone-800/20 p-3">
-            <p className="mb-1.5 text-xs font-semibold text-stone-400">📊 Por que o Zé escolheu essa aposta</p>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-stone-300">{card.finalAnalysis}</p>
+          <div className="rounded-xl border border-border/50 bg-secondary/20 p-3">
+            <p className="mb-1.5 text-xs font-semibold text-muted-foreground">📊 Por que o Zé escolheu essa aposta</p>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{card.finalAnalysis}</p>
           </div>
         )}
 
@@ -158,7 +158,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
             <p className="text-sm leading-relaxed text-amber-100/90">{card.seal}</p>
             <div className="flex gap-2">
               <Button onClick={() => setSealAccepted(true)} className="flex-1 bg-amber-500 text-stone-950 hover:bg-amber-400">Topo, é diversão 🎲</Button>
-              <button onClick={onUpdated} className="flex-1 rounded-lg border border-stone-600 text-sm text-stone-300">Me mostra algo mais seguro</button>
+              <button onClick={onUpdated} className="flex-1 rounded-lg border border-border text-sm text-foreground/80">Me mostra algo mais seguro</button>
             </div>
           </div>
         )}
@@ -172,24 +172,24 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
                 const lr = recalc?.legResults.find((r) => r.fixtureId === leg.fixtureId && r.market === leg.market);
                 const style = lr ? STATUS_STYLE[lr.status] : null;
                 return (
-                  <div key={key} className="rounded-xl border border-stone-800 bg-stone-800/30 p-3">
+                  <div key={key} className="rounded-xl border border-border bg-secondary/30 p-3">
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-xs text-stone-500">{leg.league} · {leg.marketLabel}</span>
-                      <span className="text-xs text-stone-500">previsão: {leg.modelProbPct}%</span>
+                      <span className="text-xs text-muted-foreground/70">{leg.league} · {leg.marketLabel}</span>
+                      <span className="text-xs text-muted-foreground/70">previsão: {leg.modelProbPct}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-stone-100">{leg.homeTeam} x {leg.awayTeam}</p>
+                        <p className="font-semibold text-foreground">{leg.homeTeam} x {leg.awayTeam}</p>
                         <p className="text-sm text-green-400">{leg.selection}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-stone-500">só vale ≥ {leg.minOdd}</p>
+                        <p className="text-xs text-muted-foreground/70">só vale ≥ {leg.minOdd}</p>
                         <div className="mt-1 flex items-center gap-1">
-                          <span className="text-xs text-stone-400">odd:</span>
+                          <span className="text-xs text-muted-foreground">odd:</span>
                           <input
                             type="number" step="0.01" inputMode="decimal"
                             value={odds[key]} onChange={(e) => setOdds((p) => ({ ...p, [key]: e.target.value }))}
-                            className="h-8 w-16 rounded-md border border-stone-700 bg-stone-900 px-2 text-right text-sm text-stone-100 focus:border-green-400 focus:outline-none"
+                            className="h-8 w-16 rounded-md border border-border bg-card px-2 text-right text-sm text-foreground focus:border-green-400 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -200,7 +200,7 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
                       </div>
                     )}
                     {/* Passo a passo */}
-                    <ol className="mt-2 space-y-0.5 text-[11px] text-stone-500">
+                    <ol className="mt-2 space-y-0.5 text-[11px] text-muted-foreground/70">
                       {leg.steps.map((s, i) => <li key={i}>{i + 1}. {s}</li>)}
                     </ol>
                   </div>
@@ -208,19 +208,19 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
               })}
             </div>
 
-            <Button onClick={recalcNow} loading={loading} variant="outline" className="w-full border-stone-700 text-stone-200">
+            <Button onClick={recalcNow} loading={loading} variant="outline" className="w-full border-border text-foreground/90">
               Conferir odds na Betano e recalcular
             </Button>
 
             {/* Stake + retorno */}
             <div className="flex items-center justify-between rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3">
               <div>
-                <p className="text-xs text-stone-400">Apostar</p>
+                <p className="text-xs text-muted-foreground">Apostar</p>
                 <p className="text-xl font-extrabold text-green-400">{formatBRL(stake)}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-stone-400">Pode pagar</p>
-                <p className="text-lg font-bold text-stone-100">+{formatBRL(potential)}</p>
+                <p className="text-xs text-muted-foreground">Pode pagar</p>
+                <p className="text-lg font-bold text-foreground">+{formatBRL(potential)}</p>
               </div>
             </div>
 
@@ -236,16 +236,16 @@ export function GuidedBetCard({ cycleId, round, referralCode, onUpdated }: Props
                 ⚔️ Entrei no Encontro — {formatBRL(stake)}
               </Button>
             ) : (
-              <div className="space-y-2 rounded-xl border border-stone-800 bg-stone-800/30 p-3">
-                <p className="text-sm font-medium text-stone-200">Resultado do Encontro 👀</p>
+              <div className="space-y-2 rounded-xl border border-border bg-secondary/30 p-3">
+                <p className="text-sm font-medium text-foreground/90">Resultado do Encontro 👀</p>
                 <div className="flex items-center gap-2">
-                  <input type="number" step="0.01" inputMode="decimal" value={payout} onChange={(e) => setPayout(e.target.value)} placeholder="Quanto recebeu (R$)" className="h-9 flex-1 rounded-md border border-stone-700 bg-stone-900 px-2 text-sm text-stone-100 focus:border-green-400 focus:outline-none" />
+                  <input type="number" step="0.01" inputMode="decimal" value={payout} onChange={(e) => setPayout(e.target.value)} placeholder="Quanto recebeu (R$)" className="h-9 flex-1 rounded-md border border-border bg-card px-2 text-sm text-foreground focus:border-green-400 focus:outline-none" />
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => recordResult('won')} loading={loading} className="flex-1 bg-green-500 text-stone-950 hover:bg-green-400">Vitória! 🏆</Button>
-                  <Button onClick={() => recordResult('lost')} loading={loading} variant="outline" className="flex-1 border-stone-700 text-stone-300">Derrota 🔴</Button>
+                  <Button onClick={() => recordResult('lost')} loading={loading} variant="outline" className="flex-1 border-border text-foreground/80">Derrota 🔴</Button>
                 </div>
-                <p className="text-[11px] text-stone-500">Confirmar o resultado deixa o Zé mais esperto com você 🧠</p>
+                <p className="text-[11px] text-muted-foreground/70">Confirmar o resultado deixa o Zé mais esperto com você 🧠</p>
               </div>
             )}
           </>

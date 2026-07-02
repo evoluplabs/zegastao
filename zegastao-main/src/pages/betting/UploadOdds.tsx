@@ -249,8 +249,8 @@ export function UploadOdds({ onExtracted }: Props) {
       {/* Upload */}
       <div className="space-y-3">
         <div>
-          <h3 className="text-base font-bold text-stone-100">📸 Manda o print da Betano</h3>
-          <p className="text-xs text-stone-400">
+          <h3 className="text-base font-bold text-foreground">📸 Manda o print da Betano</h3>
+          <p className="text-xs text-muted-foreground">
             Para mais mercados (escanteios, cartões, gols), abra o jogo específico na Betano e tire um print da página do jogo — não só da lista.
           </p>
         </div>
@@ -272,7 +272,7 @@ export function UploadOdds({ onExtracted }: Props) {
         />
 
         {busy ? (
-          <div className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-700 bg-stone-800/40 px-4 py-6 text-sm font-semibold text-stone-400">
+          <div className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-secondary/40 px-4 py-6 text-sm font-semibold text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             {phase || 'Lendo…'}
           </div>
@@ -282,7 +282,7 @@ export function UploadOdds({ onExtracted }: Props) {
               onClick={() => cameraInputRef.current?.click()}
               className={cn(
                 'flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-5 text-sm font-semibold transition-colors',
-                result ? 'border-stone-700 bg-stone-800/40 text-stone-400' : 'border-green-500/40 bg-green-500/5 text-green-300'
+                result ? 'border-border bg-secondary/40 text-muted-foreground' : 'border-green-500/40 bg-green-500/5 text-green-300'
               )}
             >
               <Camera className="h-4 w-4" />
@@ -292,7 +292,7 @@ export function UploadOdds({ onExtracted }: Props) {
               onClick={() => galleryInputRef.current?.click()}
               className={cn(
                 'flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-5 text-sm font-semibold transition-colors',
-                result ? 'border-stone-700 bg-stone-800/40 text-stone-400' : 'border-green-500/40 bg-green-500/5 text-green-300'
+                result ? 'border-border bg-secondary/40 text-muted-foreground' : 'border-green-500/40 bg-green-500/5 text-green-300'
               )}
             >
               <FolderOpen className="h-4 w-4" />
@@ -312,19 +312,19 @@ export function UploadOdds({ onExtracted }: Props) {
           </p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[11px] text-stone-400">Time da casa</label>
+              <label className="text-[11px] text-muted-foreground">Time da casa</label>
               <input
                 value={confirmNames.home}
                 onChange={(e) => setConfirmNames((p) => p ? { ...p, home: e.target.value } : null)}
-                className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-500/50"
+                className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-amber-500/50"
               />
             </div>
             <div>
-              <label className="text-[11px] text-stone-400">Time de fora</label>
+              <label className="text-[11px] text-muted-foreground">Time de fora</label>
               <input
                 value={confirmNames.away}
                 onChange={(e) => setConfirmNames((p) => p ? { ...p, away: e.target.value } : null)}
-                className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-500/50"
+                className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-amber-500/50"
               />
             </div>
           </div>
@@ -338,7 +338,7 @@ export function UploadOdds({ onExtracted }: Props) {
             </button>
             <button
               onClick={handleVisionRetry}
-              className="rounded-xl border border-stone-700 px-3 py-2 text-sm text-stone-400 transition-colors hover:border-stone-500 hover:text-stone-200"
+              className="rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground/90"
             >
               Ler com Vision
             </button>
@@ -352,7 +352,7 @@ export function UploadOdds({ onExtracted }: Props) {
           <p className="text-sm font-semibold text-amber-300">
             📋 {pendingGames.length} jogos encontrados — qual você quer analisar?
           </p>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-muted-foreground/70">
             Dica: para mais mercados (escanteios, cartões, gols), abra o jogo na Betano e tire um print da página do jogo.
           </p>
           <div className="grid gap-2">
@@ -362,15 +362,15 @@ export function UploadOdds({ onExtracted }: Props) {
                 <button
                   key={i}
                   onClick={() => pickGame(g)}
-                  className="w-full rounded-xl border border-stone-700 bg-stone-900/60 p-3 text-left hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors"
+                  className="w-full rounded-xl border border-border bg-card/60 p-3 text-left hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors"
                 >
-                  <p className="text-sm font-semibold text-stone-100">{g.homeTeam} <span className="text-stone-500">x</span> {g.awayTeam}</p>
-                  {g.league && <p className="text-[11px] text-stone-500">{g.league}</p>}
+                  <p className="text-sm font-semibold text-foreground">{g.homeTeam} <span className="text-muted-foreground/70">x</span> {g.awayTeam}</p>
+                  {g.league && <p className="text-[11px] text-muted-foreground/70">{g.league}</p>}
                   {h2h.length >= 3 && (
                     <div className="mt-2 flex gap-2">
                       {h2h.map((m, j) => (
-                        <div key={j} className="flex-1 rounded-lg bg-stone-800/60 py-1 text-center">
-                          <div className="text-[9px] text-stone-500">{['1', 'X', '2'][j]}</div>
+                        <div key={j} className="flex-1 rounded-lg bg-secondary/60 py-1 text-center">
+                          <div className="text-[9px] text-muted-foreground/70">{['1', 'X', '2'][j]}</div>
                           <div className="text-xs font-bold text-green-400">{m.odd.toFixed(2)}</div>
                         </div>
                       ))}
@@ -390,7 +390,7 @@ export function UploadOdds({ onExtracted }: Props) {
           <button
             onClick={() => additionalInputRef.current?.click()}
             disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-stone-700 bg-stone-900/40 px-4 py-3 text-sm text-stone-400 hover:border-green-500/40 hover:text-green-300 transition-colors disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card/40 px-4 py-3 text-sm text-muted-foreground hover:border-green-500/40 hover:text-green-300 transition-colors disabled:opacity-50"
           >
             <PlusCircle className="h-4 w-4" />
             Adicionar mais mercados (escanteios, cartões…)
@@ -399,34 +399,34 @@ export function UploadOdds({ onExtracted }: Props) {
       )}
 
       {/* Waze das Odds — feed compacto da comunidade */}
-      <div className="rounded-xl border border-stone-800 bg-stone-900/40">
+      <div className="rounded-xl border border-border bg-card/40">
         <button
           onClick={() => setWazeExpanded((v) => !v)}
           className="flex w-full items-center justify-between px-3 py-2.5"
         >
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-400">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
             Waze das Odds
             {community.length > 0 && (
-              <span className="rounded-full bg-stone-700 px-1.5 py-0.5 text-[10px] text-stone-300">{community.length}</span>
+              <span className="rounded-full bg-secondary/80 px-1.5 py-0.5 text-[10px] text-foreground/80">{community.length}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={(e) => { e.stopPropagation(); fetchCommunity(); }} className="text-stone-600 hover:text-stone-400">
+            <button onClick={(e) => { e.stopPropagation(); fetchCommunity(); }} className="text-muted-foreground/50 hover:text-muted-foreground">
               <RefreshCw className={cn('h-3 w-3', loadingComm && 'animate-spin')} />
             </button>
-            {wazeExpanded ? <ChevronUp className="h-3.5 w-3.5 text-stone-500" /> : <ChevronDown className="h-3.5 w-3.5 text-stone-500" />}
+            {wazeExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground/70" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/70" />}
           </div>
         </button>
 
         {wazeExpanded && (
-          <div className="border-t border-stone-800 px-3 pb-3 pt-2">
+          <div className="border-t border-border px-3 pb-3 pt-2">
             {loadingComm ? (
               <div className="flex h-16 items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-stone-600" />
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
               </div>
             ) : community.length === 0 ? (
-              <p className="py-3 text-center text-xs text-stone-600">Nenhum jogo ainda. Seja o primeiro!</p>
+              <p className="py-3 text-center text-xs text-muted-foreground/50">Nenhum jogo ainda. Seja o primeiro!</p>
             ) : (
               <div className="space-y-1">
                 {community.slice(0, 6).map((g) => {
@@ -440,20 +440,20 @@ export function UploadOdds({ onExtracted }: Props) {
                       onClick={() => useCached(g)}
                       className={cn(
                         'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors',
-                        isSelected ? 'bg-green-500/10' : 'hover:bg-stone-800/60'
+                        isSelected ? 'bg-green-500/10' : 'hover:bg-secondary/60'
                       )}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-semibold text-stone-200">
-                          {g.payload.homeTeam} <span className="text-stone-500">x</span> {g.payload.awayTeam}
+                        <p className="truncate text-xs font-semibold text-foreground/90">
+                          {g.payload.homeTeam} <span className="text-muted-foreground/70">x</span> {g.payload.awayTeam}
                           {g.payload.superOdds && <Sparkles className="ml-1 inline h-2.5 w-2.5 text-amber-400" />}
                         </p>
-                        <p className="text-[10px] text-stone-600">{daysSince(g.fetchedAt)}</p>
+                        <p className="text-[10px] text-muted-foreground/50">{daysSince(g.fetchedAt)}</p>
                       </div>
                       {h2h.length >= 3 && (
                         <div className="flex shrink-0 gap-1.5 text-[11px]">
                           {h2h.map((m, i) => (
-                            <span key={i} className={cn('font-bold', isSelected ? 'text-green-400' : 'text-stone-400')}>
+                            <span key={i} className={cn('font-bold', isSelected ? 'text-green-400' : 'text-muted-foreground')}>
                               {m.odd.toFixed(2)}
                             </span>
                           ))}
@@ -491,7 +491,7 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
   const displayDate = slip.matchDate ? fixDateYear(slip.matchDate) : undefined;
   const isPastGame = displayDate ? new Date(`${displayDate}T23:59:59Z`) < new Date(Date.now() - 24 * 60 * 60 * 1000) : false;
   return (
-    <div className="space-y-3 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+    <div className="space-y-3 rounded-2xl border border-border bg-card/60 p-4">
       {isPastGame && (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300">
           ⚠️ Jogo já realizado ({displayDate}) — você pode ver as odds mas não é possível analisar.
@@ -500,11 +500,11 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
       {/* Header do jogo */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-stone-100">
+          <p className="text-sm font-bold text-foreground">
             {slip.homeTeam || 'Jogo'} {slip.awayTeam ? `x ${slip.awayTeam}` : ''}
           </p>
-          {slip.league && <p className="text-[11px] text-stone-500">{slip.league}</p>}
-          {displayDate && <p className="text-[11px] text-stone-500">{new Date(displayDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</p>}
+          {slip.league && <p className="text-[11px] text-muted-foreground/70">{slip.league}</p>}
+          {displayDate && <p className="text-[11px] text-muted-foreground/70">{new Date(displayDate + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</p>}
         </div>
         <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
           source === 'ocr' ? 'bg-green-500/15 text-green-300' : 'bg-sky-500/15 text-sky-300')}>
@@ -523,8 +523,8 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
         {groups.map((g, i) => {
           if (g.type === 'h2h') {
             return (
-              <div key={i} className="rounded-xl border border-stone-700/60 bg-stone-800/40 p-2.5">
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">Resultado</p>
+              <div key={i} className="rounded-xl border border-border/60 bg-secondary/40 p-2.5">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">Resultado</p>
                 <div className="grid grid-cols-3 gap-1.5">
                   <OddChip label="1 (Casa)" odd={g.home.odd} />
                   <OddChip label="X (Empate)" odd={g.draw.odd} />
@@ -536,9 +536,9 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
           const m = g.m;
           const label = MARKET_PT[m.market] || (m.market !== 'other' ? m.market : null);
           return (
-            <div key={i} className="flex items-center justify-between rounded-lg bg-stone-800/40 px-3 py-2 text-sm">
-              <span className="text-stone-300">
-                {label && <span className="mr-1 text-stone-500">{label}:</span>}
+            <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2 text-sm">
+              <span className="text-foreground/80">
+                {label && <span className="mr-1 text-muted-foreground/70">{label}:</span>}
                 {m.selection}
               </span>
               <span className="font-bold text-green-400">{m.odd.toFixed(2)}</span>
@@ -547,7 +547,7 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
         })}
       </div>
 
-      <p className="flex items-center gap-1 text-[11px] text-stone-500">
+      <p className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
         <CheckCircle2 className="h-3 w-3 text-green-500" />
         Salvo no Waze das Odds — a comunidade reaproveita sem precisar printar de novo
       </p>
@@ -557,8 +557,8 @@ function OddsCard({ slip, groups, source }: { slip: ExtractedSlip; groups: Marke
 
 function OddChip({ label, odd }: { label: string; odd: number }) {
   return (
-    <div className="rounded-lg bg-stone-900 py-2 text-center">
-      <div className="text-[9px] text-stone-500 truncate px-1">{label}</div>
+    <div className="rounded-lg bg-card py-2 text-center">
+      <div className="text-[9px] text-muted-foreground/70 truncate px-1">{label}</div>
       <div className="text-sm font-extrabold text-green-400">{odd.toFixed(2)}</div>
     </div>
   );
