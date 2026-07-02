@@ -3,11 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   Plus, Package, Trash2, CheckCircle2, ArrowRight,
   Store, X, Copy, Check, Phone, Zap, ShoppingBag,
-  MessageCircle, Search, SlidersHorizontal, Tag,
 } from 'lucide-react';
-import { orderBy } from 'firebase/firestore';
 import { useStore } from '@/store/useStore';
-import { useUserCollection, usePublicCollection } from '@/hooks/useCollection';
+import { useUserCollection } from '@/hooks/useCollection';
 import {
   addUserDoc, updateUserDoc, deleteUserDoc,
   addPublicDoc, updatePublicDoc, deletePublicDoc,
@@ -21,19 +19,16 @@ import {
   estimatedValue,
   rarityForValue,
   RARITY_META,
-  RARITY_ORDER,
   CONDITION_LABELS,
   CONDITION_ORDER,
   type InventoryCategory,
   type Rarity,
   type ItemCondition,
 } from '@/lib/inventorySuggestions';
-import type { InventoryItem, Debt, MarketplaceListing } from '@/types';
+import type { InventoryItem, Debt } from '@/types';
+import { levelFromXP } from '@/lib/xp';
+import { getClass } from '@/lib/rpg/character';
 
-// Raridade de um anúncio (compat: deriva do preço se o doc antigo não tiver rarity).
-function listingRarity(l: MarketplaceListing): Rarity {
-  return l.rarity ?? rarityForValue(l.price);
-}
 
 function RarityBadge({ rarity }: { rarity: Rarity }) {
   const m = RARITY_META[rarity];
@@ -698,180 +693,25 @@ function ItemCard({ item, bestDebt, currentUser, onSell, onDelete, onListPublic 
 }
 
 // ─────────────────────────────────────────────
-//  MarketplaceCard — community listing
+//  Main page
 // ─────────────────────────────────────────────
 
-function listingWaUrl(listing: MarketplaceListing): string | null {
-  if (!listing.whatsappLink) return null;
-  const negotiable = listing.listingType === 'negotiable';
-  const msg = negotiable
-    ? `Olá! Vi seu anúncio de *${listing.itemName}* (${formatBRL(listing.price)}) na Loja da Guilda do Zé Gastão. Gostaria de fazer uma proposta — ainda está disponível?`
-    : `Olá! Vi seu anúncio de *${listing.itemName}* por ${formatBRL(listing.price)} na Loja da Guilda do Zé Gastão. Ainda está disponível?`;
-  return `https://wa.me/${listing.whatsappLink.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
-}
 
-function MarketplaceCard({ listing, onInspect }: { listing: MarketplaceListing; onInspect: (l: MarketplaceListing) => void }) {
-  const rarity = listingRarity(listing);
-  const meta = RARITY_META[rarity];
-  const negotiable = listing.listingType === 'negotiable';
-
-  return (
-    <button
-      type="button"
-      onClick={() => onInspect(listing)}
-      className={cn(
-        'w-full text-left rounded-xl border bg-[#211a11] p-4 space-y-2 transition-all hover:ring-2 active:scale-[0.99]',
-        meta.border, meta.ring
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <span className={cn('text-2xl h-11 w-11 rounded-lg flex items-center justify-center shrink-0', meta.bg)}>
-          {listing.categoryIcon}
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-foreground truncate">{listing.itemName}</p>
-          <p className="text-xs text-muted-foreground/70 truncate">
-            {listing.category} · {listing.userAlias}
-            {listing.condition ? ` · ${CONDITION_LABELS[listing.condition]}` : ''}
-          </p>
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-sm font-extrabold text-amber-400">{formatBRL(listing.price)}</p>
-          {negotiable && <p className="text-[9px] text-muted-foreground/70">negociável</p>}
-        </div>
-      </div>
-      <div className="flex items-center justify-between">
-        <RarityBadge rarity={rarity} />
-        <span className="text-[11px] text-green-400 font-semibold flex items-center gap-1">
-          Inspecionar <ArrowRight className="h-3 w-3" />
-        </span>
-      </div>
-    </button>
-  );
-}
-
-// Modal de inspeção do item do mercado.
-function InspectModal({ listing, onClose }: { listing: MarketplaceListing; onClose: () => void }) {
-  const rarity = listingRarity(listing);
-  const meta = RARITY_META[rarity];
-  const waUrl = listingWaUrl(listing);
-  const negotiable = listing.listingType === 'negotiable';
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-[#211a11] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className={cn('px-5 py-4 border-b border-border flex items-center gap-3', meta.bg)}>
-          <span className="text-3xl">{listing.categoryIcon}</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-foreground">{listing.itemName}</p>
-            <div className="mt-1"><RarityBadge rarity={rarity} /></div>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground/70 hover:text-foreground/80 p-1"><X className="h-5 w-5" /></button>
-        </div>
-
-        <div className="p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground/70">Preço</span>
-            <span className="text-lg font-extrabold text-amber-400">
-              {formatBRL(listing.price)} {negotiable && <span className="text-[11px] text-muted-foreground/70 font-normal">(negociável)</span>}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-border bg-[#1a130b] p-2.5">
-              <p className="text-muted-foreground/70">Categoria</p>
-              <p className="text-foreground/90 font-semibold">{listing.category}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-[#1a130b] p-2.5">
-              <p className="text-muted-foreground/70">Condição</p>
-              <p className="text-foreground/90 font-semibold">{listing.condition ? CONDITION_LABELS[listing.condition] : '—'}</p>
-            </div>
-          </div>
-          {listing.description && (
-            <div className="rounded-lg border border-border bg-[#1a130b] p-3">
-              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide font-bold mb-1">Descrição</p>
-              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground/70">Vendedor: <span className="text-foreground/80 font-semibold">{listing.userAlias}</span></p>
-
-          {waUrl ? (
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20c05c] transition-colors"
-            >
-              <MessageCircle className="h-4 w-4" />
-              {negotiable ? 'Fazer oferta no WhatsApp' : 'Contatar via WhatsApp'}
-            </a>
-          ) : (
-            <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-muted-foreground/70 text-xs">
-              Vendedor não deixou contato direto
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 //  Main page
 // ─────────────────────────────────────────────
 
 export function Inventory() {
-  const { user } = useStore();
+  const { user, profile } = useStore();
   const { data: items = [], loading } = useUserCollection<InventoryItem>('inventory');
-  const { data: listings = [], loading: listingsLoading } = usePublicCollection<MarketplaceListing>(
-    'marketplace',
-    [orderBy('listedAt', 'desc')]
-  );
   const { data: debts } = useDebts();
   const [showForm, setShowForm] = useState(false);
-  const [tab, setTab] = useState<'inventory' | 'store'>('inventory');
-
-  // Filtros da Loja da Guilda (client-side, sem custo extra de Firestore).
-  const [q, setQ] = useState('');
-  const [catFilter, setCatFilter] = useState<Set<string>>(new Set());
-  const [rarFilter, setRarFilter] = useState<Set<Rarity>>(new Set());
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const [sort, setSort] = useState<'recent' | 'price_asc' | 'price_desc' | 'rarity'>('recent');
-  const [showFilters, setShowFilters] = useState(false);
-  const [inspecting, setInspecting] = useState<MarketplaceListing | null>(null);
 
   const bestDebt = useMemo(() => getHighestInterestDebt(debts), [debts]);
   const availableItems = items.filter((i) => i.status !== 'sold');
   const soldItems = items.filter((i) => i.status === 'sold');
   const totalPotential = availableItems.reduce((s, i) => s + (i.customValue ?? i.estimatedValue), 0);
-  const activeListings = useMemo(() => listings.filter((l) => l.status === 'active'), [listings]);
-
-  function toggleSet<T>(set: Set<T>, value: T, setter: (s: Set<T>) => void) {
-    const next = new Set(set);
-    if (next.has(value)) next.delete(value);
-    else next.add(value);
-    setter(next);
-  }
-  const filtersActive = q.trim() !== '' || catFilter.size > 0 || rarFilter.size > 0 || priceMin !== '' || priceMax !== '';
-
-  const filteredListings = useMemo(() => {
-    const min = priceMin ? parseFloat(priceMin.replace(',', '.')) : -Infinity;
-    const max = priceMax ? parseFloat(priceMax.replace(',', '.')) : Infinity;
-    const ql = q.trim().toLowerCase();
-    let out = activeListings.filter((l) => {
-      if (ql && !l.itemName.toLowerCase().includes(ql)) return false;
-      if (catFilter.size && !catFilter.has(l.category)) return false;
-      if (rarFilter.size && !rarFilter.has(listingRarity(l))) return false;
-      if (l.price < min || l.price > max) return false;
-      return true;
-    });
-    out = [...out];
-    if (sort === 'price_asc') out.sort((a, b) => a.price - b.price);
-    else if (sort === 'price_desc') out.sort((a, b) => b.price - a.price);
-    else if (sort === 'rarity') out.sort((a, b) => RARITY_ORDER.indexOf(listingRarity(b)) - RARITY_ORDER.indexOf(listingRarity(a)));
-    // 'recent' mantém a ordem do query (listedAt desc).
-    return out;
-  }, [activeListings, q, catFilter, rarFilter, priceMin, priceMax, sort]);
 
   async function handleAdd(item: Omit<InventoryItem, 'id'>) {
     if (!user) return;
@@ -904,6 +744,8 @@ export function Inventory() {
     if (!user) return;
     const alias = user.displayName?.split(' ')[0] || 'Aventureiro';
     const catKey = item.category as InventoryCategory;
+    const sellerClass = profile?.characterClass ? getClass(profile.characterClass)?.name ?? null : null;
+    const sellerLevel = profile?.xp != null ? levelFromXP(profile.xp) : null;
     const ref = await addPublicDoc('marketplace', {
       itemId: item.id,
       userId: user.uid,
@@ -919,6 +761,8 @@ export function Inventory() {
       condition: item.condition ?? null,
       description: item.description ?? null,
       listingType: negotiable ? 'negotiable' : 'fixed',
+      sellerClass,
+      sellerLevel,
     });
     await updateUserDoc('inventory', item.id, {
       status: 'listed',
@@ -967,54 +811,8 @@ export function Inventory() {
         )}
       </div>
 
-      {/* Tab bar */}
-      <div className="flex rounded-xl border border-border overflow-hidden bg-[#1a130b]">
-        <button
-          onClick={() => setTab('inventory')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors',
-            tab === 'inventory'
-              ? 'bg-green-500 text-stone-950'
-              : 'text-muted-foreground hover:text-foreground/90'
-          )}
-        >
-          <Package className="h-4 w-4" />
-          Meu Inventário
-          {availableItems.length > 0 && (
-            <span className={cn(
-              'text-[10px] rounded-full px-1.5 font-bold',
-              tab === 'inventory' ? 'bg-background/30 text-stone-950' : 'bg-secondary text-muted-foreground'
-            )}>
-              {availableItems.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setTab('store')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors',
-            tab === 'store'
-              ? 'bg-amber-500 text-stone-950'
-              : 'text-muted-foreground hover:text-foreground/90'
-          )}
-        >
-          <Store className="h-4 w-4" />
-          Loja da Guilda
-          {activeListings.length > 0 && (
-            <span className={cn(
-              'text-[10px] rounded-full px-1.5 font-bold',
-              tab === 'store' ? 'bg-background/30 text-stone-950' : 'bg-secondary text-muted-foreground'
-            )}>
-              {activeListings.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* ── My Inventory tab ── */}
-      {tab === 'inventory' && (
-        <>
-          {showForm ? (
+      {/* ── My Inventory ── */}
+      {showForm ? (
             <AddItemForm onAdd={handleAdd} onCancel={() => setShowForm(false)} />
           ) : (
             <button
@@ -1097,201 +895,20 @@ export function Inventory() {
               <ArrowRight className="h-4 w-4 text-red-400 shrink-0" />
             </Link>
           )}
-        </>
-      )}
 
-      {/* ── Guild Store tab ── */}
-      {tab === 'store' && (
-        <>
-          <div className="rounded-xl border border-border bg-gradient-to-br from-amber-950/20 via-[#211a11] to-[#211a11] p-4 space-y-1">
-            <div className="flex items-center gap-2">
-              <Store className="h-4 w-4 text-amber-400" />
-              <p className="font-bold text-sm text-foreground">Mercado da Guilda</p>
-            </div>
-            <p className="text-xs text-muted-foreground/70">
-              Itens reais de outros aventureiros — por raridade, condição e preço. Contato via WhatsApp, sem taxas.
-            </p>
-          </div>
+      {/* Mercado da Guilda link */}
+      <Link
+        to="/mercado"
+        className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors"
+      >
+        <ShoppingBag className="h-6 w-6 text-amber-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm text-foreground">Mercado da Guilda</p>
+          <p className="text-xs text-muted-foreground">Itens de outros aventureiros</p>
+        </div>
+        <span className="text-amber-400 font-bold text-sm shrink-0">→</span>
+      </Link>
 
-          {/* Barra de busca + sort + toggle de filtros */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
-              <Search className="h-4 w-4 text-muted-foreground/70 shrink-0" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar item..."
-                className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-              />
-              {q && <button onClick={() => setQ('')} className="text-muted-foreground/70 hover:text-foreground/80"><X className="h-3.5 w-3.5" /></button>}
-            </div>
-            <button
-              onClick={() => setShowFilters((v) => !v)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
-                filtersActive || showFilters ? 'border-amber-500/40 text-amber-400 bg-amber-500/10' : 'border-border text-muted-foreground'
-              )}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filtros
-            </button>
-          </div>
-
-          {/* Painel de filtros */}
-          {showFilters && (
-            <div className="rounded-xl border border-border bg-[#1a130b] p-4 space-y-4">
-              {/* Categoria */}
-              <div>
-                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2 flex items-center gap-1.5"><Tag className="h-3 w-3" /> Categoria</p>
-                <div className="flex flex-wrap gap-2">
-                  {(Object.keys(CATEGORY_LABELS) as InventoryCategory[]).map((cat) => {
-                    const label = CATEGORY_LABELS[cat];
-                    const active = catFilter.has(label);
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => toggleSet(catFilter, label, setCatFilter)}
-                        className={cn(
-                          'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border transition-colors',
-                          active ? 'bg-green-500 text-stone-950 border-green-500' : 'border-border text-muted-foreground hover:border-green-500/40'
-                        )}
-                      >
-                        {CATEGORY_ICONS[cat]} {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Qualidade */}
-              <div>
-                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Qualidade</p>
-                <div className="flex flex-wrap gap-2">
-                  {RARITY_ORDER.map((r) => {
-                    const m = RARITY_META[r];
-                    const active = rarFilter.has(r);
-                    return (
-                      <button
-                        key={r}
-                        onClick={() => toggleSet(rarFilter, r, setRarFilter)}
-                        className={cn(
-                          'px-2.5 py-1 rounded-lg text-xs border transition-colors',
-                          active ? cn(m.text, m.border, m.bg, 'font-bold') : 'border-border text-muted-foreground hover:border-border/70'
-                        )}
-                      >
-                        {m.emoji} {m.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Preço */}
-              <div>
-                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Preço (R$)</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={priceMin}
-                    onChange={(e) => setPriceMin(e.target.value)}
-                    placeholder="mín"
-                    inputMode="decimal"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50"
-                  />
-                  <span className="text-muted-foreground/50">—</span>
-                  <input
-                    value={priceMax}
-                    onChange={(e) => setPriceMax(e.target.value)}
-                    placeholder="máx"
-                    inputMode="decimal"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50"
-                  />
-                </div>
-              </div>
-
-              {/* Ordenação */}
-              <div>
-                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-bold mb-2">Ordenar por</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    ['recent', 'Mais recente'],
-                    ['price_asc', 'Menor preço'],
-                    ['price_desc', 'Maior preço'],
-                    ['rarity', 'Raridade'],
-                  ] as const).map(([key, label]) => (
-                    <button
-                      key={key}
-                      onClick={() => setSort(key)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs border transition-colors',
-                        sort === key ? 'bg-amber-500 text-stone-950 border-amber-500 font-bold' : 'border-border text-muted-foreground hover:border-amber-500/40'
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {filtersActive && (
-                <button
-                  onClick={() => { setQ(''); setCatFilter(new Set()); setRarFilter(new Set()); setPriceMin(''); setPriceMax(''); }}
-                  className="text-xs text-muted-foreground/70 hover:text-foreground/80 underline"
-                >
-                  Limpar filtros
-                </button>
-              )}
-            </div>
-          )}
-
-          {listingsLoading && (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 rounded-xl border border-border bg-[#211a11] animate-pulse" />
-              ))}
-            </div>
-          )}
-
-          {!listingsLoading && activeListings.length === 0 && (
-            <div className="text-center py-12 space-y-3">
-              <span className="text-5xl">🏪</span>
-              <p className="font-bold text-foreground">Mercado vazio</p>
-              <p className="text-sm text-muted-foreground/70 max-w-xs mx-auto">
-                Ainda não há itens anunciados. Seja o primeiro — vá até "Meu Inventário" e liste um item na Loja da Guilda.
-              </p>
-              <button
-                onClick={() => setTab('inventory')}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-bold hover:bg-amber-500/30 transition-colors"
-              >
-                <Package className="h-4 w-4" />
-                Ir para Meu Inventário
-              </button>
-            </div>
-          )}
-
-          {!listingsLoading && activeListings.length > 0 && (
-            <>
-              <p className="text-xs text-muted-foreground/70">
-                {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'itens'}
-                {filtersActive ? ' (filtrado)' : ''}
-              </p>
-              {filteredListings.length === 0 ? (
-                <div className="text-center py-10 space-y-2">
-                  <span className="text-4xl">🔍</span>
-                  <p className="text-sm text-muted-foreground">Nenhum item bate com os filtros.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredListings.map((listing) => (
-                    <MarketplaceCard key={listing.id} listing={listing} onInspect={setInspecting} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-
-      {inspecting && <InspectModal listing={inspecting} onClose={() => setInspecting(null)} />}
     </div>
   );
 }

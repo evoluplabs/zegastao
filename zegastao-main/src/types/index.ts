@@ -469,6 +469,8 @@ export interface MarketplaceListing {
   description?: string;
   /** 'fixed' = preço fixo; 'negotiable' = aceita propostas. */
   listingType?: 'fixed' | 'negotiable';
+  sellerClass?: string;
+  sellerLevel?: number;
 }
 
 // Caçada — bounty de renda extra que o aventureiro aceita e acompanha.

@@ -1,10 +1,10 @@
 // E7 — A Vila (hub da comunidade)
 // Reúne: Loja da Guilda P2P, NPCs (Sábio, Feirante), recompensa diária,
 // aliados, ranking e desbloqueio de companions extras.
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Package, ShoppingBag, MapPin,
-  Infinity as InfinityIcon, Lock,
+  Infinity as InfinityIcon, Lock, X,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { setProfile } from '@/lib/firestore';
@@ -104,10 +104,74 @@ function CompanionUnlockPanel() {
   );
 }
 
+const FEIRANTE_DIALOGUES = [
+  'Aventureiro! Meu mercado está aberto — venha ver as melhores ofertas da guilda!',
+  'Troco ouro por itens, itens por ouro. A roda da fortuna gira aqui!',
+  'Dizem que o melhor negócio é o que agrada os dois lados. Veja o que tenho hoje!',
+  'Pssst... tenho item raro chegando. Seja o primeiro a ver!',
+  'Minha tenda nunca fecha para aventureiros de bom coração!',
+];
+
+function FeiranteDialogue({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const day = Math.floor(Date.now() / 86400000);
+  const line = FEIRANTE_DIALOGUES[day % FEIRANTE_DIALOGUES.length];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 pb-8" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl border bg-card overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* NPC header */}
+        <div className="flex items-center gap-3 border-b bg-amber-500/10 px-5 py-4">
+          <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
+            🪙
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-foreground">Feirante</p>
+            <p className="text-[10px] text-amber-500/80 uppercase tracking-wider font-semibold">Mercador da Guilda</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {/* Dialogue */}
+        <div className="px-5 py-4">
+          <div className="rounded-xl bg-secondary/50 border border-border p-3 mb-4">
+            <p className="text-sm text-foreground leading-relaxed italic">"{line}"</p>
+          </div>
+          {/* Action buttons */}
+          <div className="space-y-2">
+            <button
+              onClick={() => { onClose(); navigate('/mercado'); }}
+              className="w-full flex items-center gap-3 rounded-xl bg-amber-500 px-4 py-3 text-sm font-bold text-stone-950 hover:bg-amber-400 transition-colors"
+            >
+              <ShoppingBag className="h-4 w-4 shrink-0" />
+              📜 Ver o Mercado da Guilda
+            </button>
+            <button
+              onClick={() => { onClose(); navigate('/inventario'); }}
+              className="w-full flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm font-bold text-foreground hover:bg-secondary transition-colors"
+            >
+              <Package className="h-4 w-4 shrink-0" />
+              💰 Listar meu item
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground hover:bg-secondary/40 transition-colors"
+            >
+              ❌ Sair
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Hub da Vila — NPCs e locais
 function VilaHub() {
   const milestones = useMilestones();
   const achievedCount = milestones.length;
+  const [feiranteOpen, setFeiranteOpen] = useState(false);
 
   const NPCS = [
     {
@@ -117,14 +181,6 @@ function VilaHub() {
       desc: 'Conselheiro de finanças com IA. Tenda sempre aberta.',
       to: '/copilot',
       cta: 'Falar com o Sábio',
-    },
-    {
-      id: 'feirante',
-      emoji: '🪙',
-      name: 'Feirante',
-      desc: 'Missões de venda e Loja da Guilda P2P.',
-      to: '/inventario',
-      cta: 'Visitar o Mercado',
     },
     {
       id: 'cofre',
@@ -170,6 +226,19 @@ function VilaHub() {
           <MapPin className="h-3.5 w-3.5" /> Locais da Vila
         </p>
         <div className="grid grid-cols-2 gap-2">
+          {/* Feirante — interactive dialogue NPC */}
+          <button
+            onClick={() => setFeiranteOpen(true)}
+            className="rounded-xl border bg-card p-3 flex flex-col gap-2 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all active:scale-95 text-left"
+          >
+            <span className="text-3xl">🪙</span>
+            <div>
+              <p className="font-bold text-sm">Feirante</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">Mercado P2P da Guilda — compra, venda, negocie.</p>
+            </div>
+            <span className="text-[10px] font-bold text-amber-500">Falar com Feirante →</span>
+          </button>
+
           {NPCS.map((npc) => (
             <Link
               key={npc.id}
@@ -190,18 +259,20 @@ function VilaHub() {
       {/* Companions */}
       <CompanionUnlockPanel />
 
-      {/* Loja da Guilda quick-link */}
+      {/* Mercado quick-link */}
       <Link
-        to="/inventario"
+        to="/mercado"
         className="flex items-center gap-3 rounded-2xl border border-gold/20 bg-gold/5 p-4 hover:border-gold/40 transition-colors"
       >
         <ShoppingBag className="h-8 w-8 text-gold shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="font-display font-bold text-sm">Loja da Guilda</p>
+          <p className="font-display font-bold text-sm">Mercado da Guilda</p>
           <p className="text-xs text-muted-foreground">Itens à venda pela comunidade</p>
         </div>
         <span className="text-gold font-bold text-sm shrink-0">→</span>
       </Link>
+
+      {feiranteOpen && <FeiranteDialogue onClose={() => setFeiranteOpen(false)} />}
     </div>
   );
 }
